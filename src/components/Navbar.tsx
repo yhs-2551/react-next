@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { github } from "@/utils/icon";
 import ThemeDropdown from "./ThemeDropdown/ThemeDropdown";
 import SearchDialog from "./SearchDialog/SearchDialog";
-import { useGlobalContext } from "@/context/globalContext";
+import { useGlobalContext } from "@/context/GlobalContextProvider";
 
+ 
 function Navbar() {
     const router = useRouter();
-    const { state } = useGlobalContext();
+    // const { state } = useGlobalContext();
 
     return (
         <div className='w-full py-4 flex items-center justify-between'>
