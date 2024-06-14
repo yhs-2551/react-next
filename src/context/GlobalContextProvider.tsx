@@ -44,6 +44,7 @@ export const GlobalContextProvider: React.FC<{ children: React.ReactNode }> = ({
     const fetchAirQuality = async () => {
         try {
             const res = await axios.get("api/pollution");
+            console.log("유즈222 이펙트 에어", res.data);
             setAirQuality(res.data);
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
@@ -62,6 +63,7 @@ export const GlobalContextProvider: React.FC<{ children: React.ReactNode }> = ({
     useEffect(() => {
         fetchForecast();
         fetchAirQuality();
+        console.log("유즈333 이펙트 에어", airQuality);
     }, []);
 
     return (
