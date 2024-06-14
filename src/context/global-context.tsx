@@ -5,7 +5,6 @@ import React, {
     createContext,
     useState,
     useEffect,
-    ReactNode,
 } from "react";
 
 import { WeatherResponse } from "@/types/type";
@@ -16,17 +15,20 @@ import { WeatherResponse } from "@/types/type";
 const GlobalContext = createContext<any>(null);
 const GlobalContextUpdate = createContext<() => void>(() => {});
 
-export const GlobalContextProvider: React.FC<{ children: React.ReactNode }> = ({
-    children,
-}) => {
-    const [forecast, setForecast] = useState<any>(null);
+export const GlobalContextProvider = ({
+    children 
+}: { children: React.ReactNode }) => {
+    const [weather, setWeather] = useState<any>(null);
     const [airQuality, setAirQuality] = useState<any>(null);
+    const [fiveDayForecast, setFiveDayForecast] = useState<any>(null);
 
-    const fetchForecast = async () => {
+    const fetchWeather = async () => {
         try {
             const res = await axios.get("api/weather");
 
-            setForecast(res.data);
+            console.log("결과값", res);
+
+            setWeather(res.data);
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
                 // Log axios specific error message
@@ -50,25 +52,44 @@ export const GlobalContextProvider: React.FC<{ children: React.ReactNode }> = ({
             if (axios.isAxiosError(error)) {
                 // Log axios specific error message
                 console.error(
-                    "Axios error fetching forecast data",
+                    "Axios error fetching air pollution data",
                     error.message
                 );
             } else {
                 // Log generic error message
-                console.error("Unexpected error fetching forecast data", error);
+                console.error("Unexpected error fetching air pollution data", error);
             }
         }
     };
 
+    const fetchFiveDayForecast = async () => {
+        try {
+            const res = await axios.get("api/fiveday");
+            setFiveDayForecast(res.data);
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error)) {
+                // Log axios specific error message
+                console.error(
+                    "Axios error fetching five day data",
+                    error.message
+                );
+            } else {
+                // Log generic error message
+                console.error("Unexpected error fetching five day data", error);
+            }
+        }
+    }
+
     useEffect(() => {
-        fetchForecast();
+        fetchWeather();
         fetchAirQuality();
-        console.log("유즈333 이펙트 에어", airQuality);
+        fetchFiveDayForecast();
+      
     }, []);
 
     return (
-        <GlobalContext.Provider value={{ forecast, airQuality }}>
-            <GlobalContextUpdate.Provider value={fetchForecast}>
+        <GlobalContext.Provider value={{ weather, airQuality, fiveDayForecast }}>
+            <GlobalContextUpdate.Provider value={() => {}}>
                 {children}
             </GlobalContextUpdate.Provider>
         </GlobalContext.Provider>

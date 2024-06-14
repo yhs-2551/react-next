@@ -1,6 +1,6 @@
 "use client";
 
-import { useGlobalContext } from "@/context/GlobalContextProvider";
+import { useGlobalContext } from "@/context/global-context";
 import {
     clearSky,
     cloudy,
@@ -15,14 +15,14 @@ import React, { useEffect, useState } from "react";
 import moment from "moment";
 
 function Temperature() {
-    const { forecast } = useGlobalContext();
+    const { weather } = useGlobalContext();
 
-    const main = forecast?.main;
-    const timezone = forecast?.timezone;
-    const name = forecast?.name;
-    const weather = forecast?.weather;
+    const main = weather?.main;
+    const timezone = weather?.timezone;
+    const name = weather?.name;
+    const forecast = weather?.weather;
 
-    if (!forecast || !weather) {
+    if (!forecast || !forecast) {
         return <div>Loading...</div>;
     }
 
@@ -33,7 +33,7 @@ function Temperature() {
     const [localTime, setLocalTime] = useState<string>("");
     const [currentDay, setCurrentDay] = useState<string>("");
 
-    const { main: weatherCondition, description } = weather[0];
+    const { main: weatherCondition, description } = forecast[0];
     const getIcon = () => {
         switch (weatherCondition) {
             case "Drizzle":

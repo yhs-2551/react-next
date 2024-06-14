@@ -8,20 +8,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         const lat = 37.5665;
         const lon = 126.978;
 
-        const url = `http://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}
+        const pollutionUrl = `http://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}
 `;
-        const res = await axios.get(url);
+        const pollutionRes = await axios.get(pollutionUrl);
 
-        return NextResponse.json(res.data);
+        return NextResponse.json(pollutionRes.data);
         
     } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
-            console.error("Axios error fetching forecast data", error.message);
+            console.error("Axios error fetching air pollution data", error.message);
         } else {
-            console.error("Unexpected error fetching forecast data", error);
+            console.error("Unexpected error fetching air pollution data", error);
         }
 
-        return new NextResponse("Error Fetching forecast data", {
+        return new NextResponse("Error Fetching air pollution data", {
             status: 500,
         });
     }
