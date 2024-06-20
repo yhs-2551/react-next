@@ -14,7 +14,7 @@ function AirPollution() {
     }
 
     const { airQuality } = useGlobalContext();
-    console.log("왜 안댐", airQuality);
+   
 
     if (
         !airQuality ||
@@ -28,12 +28,16 @@ function AirPollution() {
     }
 
     const airQualityIndex: number = airQuality.list[0].main.aqi * 10;
-    const filteredIndex: AirQualityIndexText | undefined =
+
+     console.log("airQualityIndex", airQuality);
+
+    const filteredIndexTextObj: AirQualityIndexText | undefined =
         airQualityIndexText.find((item) => {
             return item.rating === airQualityIndex;
         });
+ 
 
-        console.log("filter" + filteredIndex);
+ 
 
     return (
         <div className='air-pollution pt-6 px-4 h-[12rem] border rounded-lg flex flex-col gap-8 dark:bg-dark-grey shadow-sm dark:shadow-none col-span-full sm-2:col-span-2 md:col-span-2 xl:col-span-2'>
@@ -41,7 +45,7 @@ function AirPollution() {
                 {thermo} Air Pollution
             </h2>
             <Progress value={airQualityIndex} max={100} className='progress' />
-            <p>Air quality is {filteredIndex?.description}&#46;</p>
+            <p>Air quality is {filteredIndexTextObj?.description}&#46;</p>
         </div>
     );
 }

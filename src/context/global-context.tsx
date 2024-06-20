@@ -1,11 +1,6 @@
 "use client";
 import axios from "axios";
-import React, {
-    useContext,
-    createContext,
-    useState,
-    useEffect,
-} from "react";
+import React, { useContext, createContext, useState, useEffect } from "react";
 
 import { WeatherResponse } from "@/types/type";
 
@@ -16,17 +11,18 @@ const GlobalContext = createContext<any>(null);
 const GlobalContextUpdate = createContext<() => void>(() => {});
 
 export const GlobalContextProvider = ({
-    children 
-}: { children: React.ReactNode }) => {
+    children,
+}: {
+    children: React.ReactNode;
+}) => {
     const [weather, setWeather] = useState<any>(null);
     const [airQuality, setAirQuality] = useState<any>(null);
     const [fiveDayForecast, setFiveDayForecast] = useState<any>(null);
+    const [uvIndex, setUvIndex] = useState({});
 
     const fetchWeather = async () => {
         try {
             const res = await axios.get("api/weather");
-
-            console.log("결과값", res);
 
             setWeather(res.data);
         } catch (error: unknown) {
@@ -46,7 +42,6 @@ export const GlobalContextProvider = ({
     const fetchAirQuality = async () => {
         try {
             const res = await axios.get("api/pollution");
-            console.log("유즈222 이펙트 에어", res.data);
             setAirQuality(res.data);
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
@@ -57,7 +52,10 @@ export const GlobalContextProvider = ({
                 );
             } else {
                 // Log generic error message
-                console.error("Unexpected error fetching air pollution data", error);
+                console.error(
+                    "Unexpected error fetching air pollution data",
+                    error
+                );
             }
         }
     };
@@ -78,17 +76,28 @@ export const GlobalContextProvider = ({
                 console.error("Unexpected error fetching five day data", error);
             }
         }
-    }
+    };
+
+    const fetchUvIndex = async () => {
+        try {
+            const res = await axios.get("/api/uv");
+            setUvIndex(res.data);
+        } catch (error) {
+            console.error("Unexpected error fetching uv data", error);
+        }
+    };
 
     useEffect(() => {
         fetchWeather();
         fetchAirQuality();
         fetchFiveDayForecast();
-      
+        fetchUvIndex();
     }, []);
 
     return (
-        <GlobalContext.Provider value={{ weather, airQuality, fiveDayForecast }}>
+        <GlobalContext.Provider
+            value={{ weather, airQuality, fiveDayForecast }}
+        >
             <GlobalContextUpdate.Provider value={() => {}}>
                 {children}
             </GlobalContextUpdate.Provider>

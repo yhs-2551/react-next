@@ -1,21 +1,17 @@
 import axios from "axios";
 import { NextRequest, NextResponse } from "next/server";
 
-
-export async function GET(req: NextRequest): Promise<NextResponse> {
+export async function GET(req: NextRequest) {
     try {
         const apiKey = process.env.OPENWEATHERMAP_API_KEY;
         const lat = 37.5665;
         const lon = 126.978;
 
         const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
-        
+
         const weatherRes = await axios.get(weatherUrl);
- 
-        console.log(weatherRes);
 
         return NextResponse.json(weatherRes.data);
- 
     } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
             // Log axios specific error message
@@ -24,8 +20,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             // Log generic error message
             console.error("Unexpected error fetching weather data", error);
         }
-        
+
         // Return error response
-        return new NextResponse("Error Fetching weather data", { status: 500 });
+        return new Response("Error Fetching weather data", { status: 500 });
     }
 }

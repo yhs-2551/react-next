@@ -51,7 +51,6 @@ function Temperature() {
         }
     };
     useEffect(() => {
-        console.log("타임존값" + timezone);
     
         const interVal = setInterval(() => {
             if (timezone) {
