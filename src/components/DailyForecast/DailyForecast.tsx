@@ -18,13 +18,10 @@ function DailyForecast() {
     const city = fiveDayForecast?.city;
     const list = fiveDayForecast?.list;
 
-    if (!fiveDayForecast || !city || !list) {
+    if (!fiveDayForecast || !city || !list || !weather || !forecast) {
         return <Skeleton className='h-[12rem] w-full' />;
     }
-
-    if (!weather || !forecast) {
-        return <Skeleton className='h-[12rem] w-full' />;
-    }
+ 
 
     const today = new Date();
     const todayString = today.toISOString().split("T")[0];
@@ -82,6 +79,9 @@ function DailyForecast() {
                                         dt_txt: string;
                                         main: { temp: number };
                                     }) => {
+
+                                        const temp = Math.trunc(forecast.main.temp)
+
                                         return (
                                             <CarouselItem
                                                 className='flex flex-col gap-4 basis-[8.5rem] cursor-grab'
@@ -95,7 +95,7 @@ function DailyForecast() {
 
                                                 <p>{getIcon()}</p>
                                                 <p className='mt-4'>
-                                                    {Math.trunc(forecast.main.temp)}&deg;
+                                                    {temp}&deg;
                                                 </p>
                                             </CarouselItem>
                                         );

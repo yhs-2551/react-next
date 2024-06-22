@@ -31,7 +31,7 @@ function Sunset() {
                 <p className="pt-4 text-2xl">{convertedSunsetTime}</p>
             </div>
             
-        <p>일출: {convertedSunriseTime}</p>
+        <p className="text-sm">일출: {convertedSunriseTime}</p>
         </div>
     );
 }

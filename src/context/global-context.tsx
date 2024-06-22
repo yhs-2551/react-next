@@ -24,7 +24,8 @@ export const GlobalContextProvider = ({
         try {
             const res = await axios.get("api/weather");
 
-            setWeather(res.data);
+            // setWeather(res.data);
+            return res.data;
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
                 // Log axios specific error message
@@ -42,7 +43,8 @@ export const GlobalContextProvider = ({
     const fetchAirQuality = async () => {
         try {
             const res = await axios.get("api/pollution");
-            setAirQuality(res.data);
+            // setAirQuality(res.data);
+            return res.data;
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
                 // Log axios specific error message
@@ -63,7 +65,8 @@ export const GlobalContextProvider = ({
     const fetchFiveDayForecast = async () => {
         try {
             const res = await axios.get("api/fiveday");
-            setFiveDayForecast(res.data);
+            // setFiveDayForecast(res.data);
+            return res.data;
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
                 // Log axios specific error message
@@ -81,22 +84,34 @@ export const GlobalContextProvider = ({
     const fetchUvIndex = async () => {
         try {
             const res = await axios.get("/api/uv");
-            setUvIndex(res.data);
+            // setUvIndex(res.data);
+            return res.data;
         } catch (error) {
             console.error("Unexpected error fetching uv data", error);
         }
     };
 
+    const fetchAllData = async () => {
+        const [weather, airQuality, forecast, uvIndex] = await Promise.all([
+            fetchWeather(),
+            fetchAirQuality(),
+            fetchFiveDayForecast(),
+            fetchUvIndex(),
+        ]);
+
+        setWeather(weather);
+        setAirQuality(airQuality);
+        setFiveDayForecast(forecast);
+        setUvIndex(uvIndex);
+    };
+
     useEffect(() => {
-        fetchWeather();
-        fetchAirQuality();
-        fetchFiveDayForecast();
-        fetchUvIndex();
+        fetchAllData();
     }, []);
 
     return (
         <GlobalContext.Provider
-            value={{ weather, airQuality, fiveDayForecast }}
+            value={{ weather, airQuality, fiveDayForecast, uvIndex }}
         >
             <GlobalContextUpdate.Provider value={() => {}}>
                 {children}

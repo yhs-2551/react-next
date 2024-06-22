@@ -13,6 +13,7 @@ import React, { useEffect, useState } from "react";
 
 // import { WeatherResponse } from "@/types/type";
 import moment from "moment";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function Temperature() {
     const { weather } = useGlobalContext();
@@ -22,8 +23,8 @@ function Temperature() {
     const name = weather?.name;
     const forecast = weather?.weather;
 
-    if (!forecast || !forecast) {
-        return <div>Loading...</div>;
+    if (!forecast) {
+        return <Skeleton className='h-[12rem] w-full' />;
     }
 
     const temp = Math.trunc(main?.temp ?? 0);
@@ -51,19 +52,18 @@ function Temperature() {
         }
     };
     useEffect(() => {
-    
         const interVal = setInterval(() => {
             if (timezone) {
                 const localMoment = moment().utcOffset(timezone / 60);
                 const formattedTime = localMoment.format("HH:mm:ss");
                 const day = localMoment.format("dddd");
-    
+
                 setLocalTime(formattedTime);
                 setCurrentDay(day);
             }
         }, 1000);
         return () => clearInterval(interVal);
-    }, []);  
+    }, []);
 
     return (
         <div className='pt-6 pb-5 px-4 border rounded-lg flex flex-col justify-between dark:bg-dark-grey shadow-sm dark:shadow-none'>
@@ -87,7 +87,7 @@ function Temperature() {
                     </span>
                 </div>
 
-                <p className="flex items-center gap-2">
+                <p className='flex items-center gap-2'>
                     <span>Low: {minTemp}&deg;</span>
                     <span>High: {maxTemp}&deg;</span>
                 </p>

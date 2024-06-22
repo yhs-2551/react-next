@@ -4,9 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
     try {
+        
         const apiKey = process.env.OPENWEATHERMAP_API_KEY;
-        const lat = 37.5665;
-        const lon = 126.978;
+        const lat = 37.5506;
+        const lon = 126.8496;
 
         const dailyUrl = `http://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
         const dailyRes = await fetch(dailyUrl, {
