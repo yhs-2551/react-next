@@ -18,18 +18,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 function Temperature() {
     const { weather } = useGlobalContext();
 
-    const main = weather?.main;
-    const timezone = weather?.timezone;
-    const name = weather?.name;
-    const forecast = weather?.weather;
-
-    if (!forecast) {
+    if (!weather) {
         return <Skeleton className='h-[12rem] w-full' />;
     }
 
-    const temp = Math.trunc(main?.temp ?? 0);
-    const minTemp = Math.trunc(main?.temp_min ?? 0);
-    const maxTemp = Math.trunc(main?.temp_max ?? 0);
+    const main = weather.main;
+    const timezone = weather.timezone;
+    const name = weather.name;
+    const forecast = weather.weather;
+
+    const temp = Math.trunc(main.temp ?? 0);
+    const minTemp = Math.trunc(main.temp_min ?? 0);
+    const maxTemp = Math.trunc(main.temp_max ?? 0);
 
     const [localTime, setLocalTime] = useState<string>("");
     const [currentDay, setCurrentDay] = useState<string>("");
