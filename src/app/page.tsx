@@ -33,6 +33,8 @@ export default function Home() {
                     <Visibility />
                     <Pressure />
                     </div>
+
+                    <div className="mapbox-con mt-4 flex gap-4"></div>
                 </div>
             </div>
         </main>
