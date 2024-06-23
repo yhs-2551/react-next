@@ -15,18 +15,15 @@ function DailyForecast() {
     const { weather, fiveDayForecast } = useGlobalContext();
 
     const forecast = weather?.weather;
-    const city = fiveDayForecast?.city;
+
     const list = fiveDayForecast?.list;
 
-    if (!fiveDayForecast || !city || !list || !weather || !forecast) {
+    if (!fiveDayForecast || !list || !weather || !forecast) {
         return <Skeleton className='h-[12rem] w-full' />;
     }
- 
 
     const today = new Date();
     const todayString = today.toISOString().split("T")[0];
-
-    console.log("리스트", list);
 
     //filter the list for today's forecast
     const todaysForecast = list.filter(
@@ -34,8 +31,8 @@ function DailyForecast() {
             return forecast.dt_txt.startsWith(todayString);
         }
     );
-//     console.log("투데이즈 필터edd2222", moment(todaysForecast[0].dt_txt));
-//    console.log("투데이즈 필터edd", moment(todaysForecast[0].dt_txt).format("YYYY-MM-HH:MM"));
+    //     console.log("투데이즈 필터edd2222", moment(todaysForecast[0].dt_txt));
+    //    console.log("투데이즈 필터edd", moment(todaysForecast[0].dt_txt).format("YYYY-MM-HH:MM"));
 
     const { main: weatherCondition } = forecast[0];
     const getIcon = () => {
@@ -60,7 +57,9 @@ function DailyForecast() {
             <div className='h-full flex gap-10 overflow-hidden'>
                 {todaysForecast.length < 1 ? (
                     <div>
-                        <h1 className="text-[3rem] line-through text-rose-5000">No Data Available!</h1>
+                        <h1 className='text-[3rem] line-through text-rose-5000'>
+                            No Data Available!
+                        </h1>
                     </div>
                 ) : (
                     <div className='w-full'>
@@ -79,8 +78,9 @@ function DailyForecast() {
                                         dt_txt: string;
                                         main: { temp: number };
                                     }) => {
-
-                                        const temp = Math.trunc(forecast.main.temp)
+                                        const temp = Math.trunc(
+                                            forecast.main.temp
+                                        );
 
                                         return (
                                             <CarouselItem

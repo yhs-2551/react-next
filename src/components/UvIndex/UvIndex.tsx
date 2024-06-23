@@ -67,7 +67,7 @@ function UvIndex() {
                     <UvProgress
                         value={marginLeftPercentage}
                         max={14}
-                        className='progress'
+                        className='uv'
                     />
                 </div>
             </div>

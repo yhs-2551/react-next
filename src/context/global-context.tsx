@@ -28,13 +28,11 @@ export const GlobalContextProvider = ({
             return res.data;
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
-                // Log axios specific error message
                 console.error(
                     "Axios error fetching forecast data",
                     error.message
                 );
             } else {
-                // Log generic error message
                 console.error("Unexpected error fetching forecast data", error);
             }
         }
@@ -69,7 +67,6 @@ export const GlobalContextProvider = ({
             return res.data;
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
-                // Log axios specific error message
                 console.error(
                     "Axios error fetching five day data",
                     error.message
