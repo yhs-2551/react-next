@@ -14,14 +14,16 @@ function AirPollution() {
     }
 
     const { airQuality } = useGlobalContext();
+    
+    const airQualityList = airQuality?.list;
 
-    if (!airQuality) {
+    if (!airQuality || !airQualityList) {
         return (
             <Skeleton className='h-[1rem] w-full col-span-2 md:col-span-full' />
         );
     }
 
-    const airQualityIndex: number = airQuality.list[0].main.aqi * 10;
+    const airQualityIndex: number = airQualityList[0].main.aqi * 10;
 
     console.log("airQualityIndex", airQuality);
 

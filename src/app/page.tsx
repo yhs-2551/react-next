@@ -3,7 +3,10 @@ import DailyForecast from "@/components/DailyForecast/DailyForecast";
 import FeelsLike from "@/components/FeelsLike/FeelsLike";
 import FiveDayForeCast from "@/components/FiveDayForecast/FiveDayForeCast";
 import Humidity from "@/components/Humidity/Humidity";
-import Mapbox from "@/components/Mapbox/Mapbox";
+
+const DynamicMapbox = dynamic(() => import("@/components/Mapbox/Mapbox"), {
+    ssr: false,
+});
 import Navbar from "@/components/Navbar";
 import Population from "@/components/Population/Population";
 import Pressure from "@/components/Pressure/Pressure";
@@ -13,6 +16,7 @@ import UvIndex from "@/components/UvIndex/UvIndex";
 import Visibility from "@/components/Visibility/Visibility";
 import Wind from "@/components/Wind/Wind";
 import defaultStates from "@/utils/defaultStates";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 
 export default function Home() {
@@ -40,7 +44,7 @@ export default function Home() {
                         </div>
 
                         <div className='mapbox-con mt-4 flex gap-4'>
-                            <Mapbox />
+                            <DynamicMapbox />
                             <div className='states flex flex-col gap-3 flex-1'>
                                 <h2 className='flex items-center gap-2 font-medium'>
                                     Top Large Cities

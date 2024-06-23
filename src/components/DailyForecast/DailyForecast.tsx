@@ -31,10 +31,15 @@ function DailyForecast() {
             return forecast.dt_txt.startsWith(todayString);
         }
     );
-    //     console.log("투데이즈 필터edd2222", moment(todaysForecast[0].dt_txt));
-    //    console.log("투데이즈 필터edd", moment(todaysForecast[0].dt_txt).format("YYYY-MM-HH:MM"));
+
+    if (todaysForecast.length < 1) {
+        return (
+            <Skeleton className='h-[12rem] w-full     col-span-full sm-2:col-span-2 md:col-span-2 xl:col-span-2' />
+        );
+    }
 
     const { main: weatherCondition } = forecast[0];
+
     const getIcon = () => {
         switch (weatherCondition) {
             case "Drizzle":
@@ -53,15 +58,9 @@ function DailyForecast() {
     };
 
     return (
-        <div className=" pt-6 px-4 h-[12rem] border rounded-lg flex flex-col gap-8 dark:bg-dark-grey shadow-sm dark:shadow-none col-span-full sm-2:col-span-2 md:col-span-2 xl:col-span-2'">
+        <div className=' pt-6 px-4 h-[12rem] border rounded-lg flex flex-col gap-8 dark:bg-dark-grey shadow-sm dark:shadow-none col-span-full sm-2:col-span-2 md:col-span-2 xl:col-span-2'>
             <div className='h-full flex gap-10 overflow-hidden'>
-                {todaysForecast.length < 1 ? (
-                    <div>
-                        <h1 className='text-[3rem] line-through text-rose-5000'>
-                            No Data Available!
-                        </h1>
-                    </div>
-                ) : (
+                {
                     <div className='w-full'>
                         {/* todaysForecast.map(
                         (forecast: {
@@ -104,7 +103,7 @@ function DailyForecast() {
                             </CarouselContent>
                         </Carousel>
                     </div>
-                )}
+                }
             </div>
         </div>
     );

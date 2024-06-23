@@ -7,11 +7,12 @@ import { Skeleton } from "../ui/skeleton";
 
 function Humidity() {
     const { weather } = useGlobalContext();
+    const humidity = weather?.main?.humidity;
 
-    if (!weather) {
+    if (!weather || !humidity) {
         return <Skeleton className='h-[12rem] w-full' />;
     }
-    const humidity = weather.main.humidity;
+
 
     const getHumidityText = (humidity: number) => {
         if (humidity < 30) {

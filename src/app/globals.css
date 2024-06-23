@@ -74,16 +74,17 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* 대기 오염 그라디언트 */
 .dust {
     background: linear-gradient(
         90deg,
         rgba(0, 128, 0, 1) 0%,
-        /* 녹색 - 좋음 */ rgba(173, 216, 230, 1) 20%,
-        /* 연한 파란색 - 보통 */ rgba(255, 255, 0, 1) 40%,
-        /* 노란색 - 약간 나쁨 */ rgba(255, 165, 0, 1) 60%,
-        /* 주황색 - 나쁨 */ rgba(255, 0, 0, 1) 80%,
-        /* 빨간색 - 매우 나쁨 */ rgba(139, 0, 0, 1) 100%
-            /* 짙은 빨간색 - 위험 */
+        rgba(173, 216, 230, 1) 20%,
+        rgba(255, 255, 0, 1) 40%,
+        rgba(255, 165, 0, 1) 60%,
+        rgba(255, 0, 0, 1) 80%,
+        rgba(139, 0, 0, 1) 100%
     );
 }
 
@@ -92,23 +93,74 @@
     background: linear-gradient(
         90deg,
         rgba(0, 0, 255, 1) 0%,
-        /* 파란색 - 낮음 */ rgba(0, 128, 128, 1) 20%,
-        /* 청록색 - 보통 */ rgba(0, 255, 0, 1) 40%,
-        /* 초록색 - 약간 높음 */ rgba(255, 255, 0, 1) 60%,
-        /* 노란색 - 높음 */ rgba(255, 165, 0, 1) 80%,
-        /* 주황색 - 매우 높음 */ rgba(255, 0, 0, 1) 100%
-            /* 빨간색 - 극히 높음 */
+        rgba(0, 128, 128, 1) 20%,
+        rgba(0, 255, 0, 1) 40%,
+        rgba(255, 255, 0, 1) 60%,
+        rgba(255, 165, 0, 1) 80%,
+        rgba(255, 0, 0, 1) 100%
     );
 }
+
+/* 온도 그라디언트  */
 
 .temperature {
     background: linear-gradient(
         90deg,
         #0000ff 0%,
-        /* 파란색 - 매우 차가운 온도 */ #00ffff 20%,
-        /* 청록색 - 차가운 온도 */ #00ff00 40%,
-        /* 녹색 - 온화한 온도 */ #ffff00 60%,
-        /* 노란색 - 따뜻한 온도 */ #ff7f00 80%,
-        /* 주황색 - 더운 온도 */ #ff0000 100% /* 빨간색 - 매우 뜨거운 온도 */
+        #00ffff 20%,
+        #00ff00 40%,
+        #ffff00 60%,
+        #ff7f00 80%,
+        #ff0000 100%
     );
 }
+/* 
+.footer-text img {
+    filter: grayscale(100%);
+    transition: filter 0.3s ease-in-out;
+}
+
+footer:hover .footer-text > img {
+    filter: grayscale(0);
+}
+
+@media screen and (max-width: 581px) {
+    .btn-group {
+        position: fixed;
+        bottom: 2%;
+        right: 1rem;
+        z-index: 1000;
+    }
+
+    .btn-group button {
+        box-shadow: 2px 3px 0.3rem 0.3rem rgba(0, 0, 0, 0.1);
+    }
+
+    .search-container {
+        width: 100%;
+    }
+
+    .search-btn {
+        width: 100%;
+    }
+
+    .search-btn button {
+        width: 100%;
+    }
+
+    .source-code-btn {
+        order: -1;
+    }
+}
+
+
+@media screen and (max-width: 1010px) {
+    .mapbox-con {
+        flex-direction: column;
+    }
+
+    .mapbox-con > div:first-child {
+        height: 24rem;
+        flex: initial;
+    }
+} */

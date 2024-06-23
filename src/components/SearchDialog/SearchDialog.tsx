@@ -1,13 +1,25 @@
 "use client";
 
-import React from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { DialogTrigger } from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/button";
+import { Command, CommandInput, CommandList } from "@/components/ui/command";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+    useGlobalContext,
+    useGlobalContextUpdate,
+} from "@/context/global-context";
 import { commandIcon } from "@/utils/icon";
-import { Command, CommandInput } from "@/components/ui/command";
+import React from "react";
 
 function SearchDialog() {
+    const { geoCodedList, inputValue, handleInput } = useGlobalContext();
+    const setActiveCityCoords = useGlobalContextUpdate();
+
+    const [hoveredIndex, setHoveredIndex] = React.useState(0);
+
+    const getClickedCoords = (lat: number, lon: number) => {
+        setActiveCityCoords([lat, lon ]);
+    };
+
     return (
         <div className='search-btn'>
             <Dialog>
@@ -27,13 +39,61 @@ function SearchDialog() {
                 </DialogTrigger>
 
                 <DialogContent className='p-0'>
-                 <Command className="rounded-lg border shadow-md">
-                    <CommandInput placeholder="검색어 입력"/>
-                    <ul className="px-3 pb-2">
-                        <p className="p-2 text-sm text-muted-foreground">Suggestions</p>
-                    </ul>
-                 </Command>
-                    
+                    <Command className=' rounded-lg border shadow-md'>
+                        <CommandList>
+                            <CommandInput
+                                value={inputValue}
+                                onChangeCapture={handleInput}
+                                placeholder='Type a command or search...'
+                            />
+                            <ul className='px-3 pb-2'>
+                                <p className='p-2 text-sm text-muted-foreground'>
+                                    Suggestions
+                                </p>
+
+                                {geoCodedList.length === 0 && <p>No Results</p>}
+
+                                {!(geoCodedList.length === 0) && geoCodedList.map(
+                                    (
+                                        item: {
+                                            name: string;
+                                            country: string;
+                                            state?: string;
+                                            lat: number, 
+                                            lon: number,
+                                        },
+                                        index: number
+                                    ) => {
+                                        const { name, country, state } = item;
+                                        return (
+                                            <li
+                                                key={index}
+                                                onMouseEnter={() =>
+                                                    setHoveredIndex(index)
+                                                }
+                                                className={`py-3 px-2 text-sm  rounded-sm cursor-default
+                        ${hoveredIndex === index ? "bg-accent" : ""}
+                      `}
+                                                onClick={() => {
+                                                    getClickedCoords(
+                                                        item.lat,
+                                                        item.lon
+                                                    );
+                                                }}
+                                            >
+                                                <p className='text'>
+                                                    {name},
+                                                    {state &&
+                                                        " " + state + ", "}
+                                                    {" " + country}
+                                                </p>
+                                            </li>
+                                        );
+                                    }
+                                )}
+                            </ul>
+                        </CommandList>
+                    </Command>
                 </DialogContent>
             </Dialog>
         </div>

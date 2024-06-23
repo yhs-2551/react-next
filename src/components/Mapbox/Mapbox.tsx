@@ -7,8 +7,11 @@ import { useGlobalContext } from "@/context/global-context";
 
 // @ts-ignore
 function FlyToActiveCity({ activeCityCoords }) {
-    const map = useMap();
+    if (typeof window === "undefined") {
+        return;
+    }
 
+    const map = useMap();
     useEffect(() => {
         if (activeCityCoords) {
             const zoomLev = 13;
@@ -38,7 +41,7 @@ function Mapbox() {
         );
     }
 
-    const position = [activeCityCoords.lat, activeCityCoords.lon];
+    const position: any = [activeCityCoords.lat, activeCityCoords.lon];
 
     return (
         <div className='flex-1 basis-[50%] border rounded-lg'>
