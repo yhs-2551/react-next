@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+
+  /* layout.tsx 부분에 나중에 추가  */
+  /* font-size: .938rem;
+  font-weight: 500; */
+  /* background-color: var(--body-color);
+  color: var(--text-color);  */
+}
+
+ul {
+  list-style: none;
+}
+
+a {
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
