@@ -1,6 +1,9 @@
-import React from 'react';
-import ReactQuill, { Quill } from 'react-quill';
-import 'react-quill/dist/quill.snow.css'; // 스타일 포함
+import dynamic from "next/dynamic";
+import React from "react";
+
+import "react-quill/dist/quill.snow.css"; // 스타일 포함
+
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 interface QuillEditorProps {
     value: string;
@@ -8,13 +11,15 @@ interface QuillEditorProps {
 }
 
 export default function QuillEditor({ value, onChange }: QuillEditorProps) {
-
     return (
-        <ReactQuill
-            value={value}
-            onChange={onChange}
-            theme="snow"
-            placeholder="글 내용을 입력하세요."
-        />
+        <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+            <ReactQuill
+                style={{ flex: 1, minHeight: "400px" }}
+                value={value}
+                onChange={onChange}
+                theme="snow"
+  
+            />
+        </div>
     );
 }
