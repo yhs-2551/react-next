@@ -4,23 +4,45 @@ import React, { ChangeEvent, useState } from "react";
 import QuillEditor from "./QuillEditor";
 import PublishModal from "./PublishModal";
 
+import useAddPost from "../../../hooks/useAddPost";
+
 function BlogForm() {
     const [title, setTitle] = useState<string>("");
     const [content, setContent] = useState<string>("");
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
+    const addPostMutation = useAddPost();
 
     const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
         setTitle(e.target.value);
     };
 
     const handlePublishClick = () => {
-        setIsModalOpen(true);
+        setIsModalOpen(true);   
     };
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
     };
 
+   
+    const handlePublish = (isPublic: boolean) => {
+
+
+        console.log("실행");
+        
+        addPostMutation.mutate({
+            title,
+            content,
+            isPublic,
+            tags: [],
+            category: '',
+        }, {
+            onSuccess: () => {
+                handleCloseModal();
+            }
+        });
+    };
     return (
         <div className='h-screen flex flex-col'>
             <form
@@ -54,7 +76,7 @@ function BlogForm() {
                     발행
                 </button>
 
-                {isModalOpen && <PublishModal onClose={handleCloseModal} />}
+                {isModalOpen && <PublishModal onClose={handleCloseModal} onPublish={handlePublish}/>}
             </form>
         </div>
     );

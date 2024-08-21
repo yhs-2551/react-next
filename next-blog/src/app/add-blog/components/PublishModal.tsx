@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface PublishModalProps {
     onClose: () => void;
+    onPublish: (isPublic: boolean) => void;
 }
 
 interface Tag {
@@ -12,7 +13,7 @@ interface Tag {
 }
 
 
-function PublishModal({ onClose }: PublishModalProps) {
+function PublishModal({ onClose, onPublish }: PublishModalProps) {
     const [isPublic, setIsPublic] = useState<boolean>(true);
     const [tags, setTags] = useState<Tag[]>([]);
     const [tagInputValue, setTagInputValue] = useState<string>("");
@@ -20,6 +21,7 @@ function PublishModal({ onClose }: PublishModalProps) {
 
     const handlePublish = () => {
         // 서버로 데이터를 전송하는 로직 구현
+        onPublish(isPublic);
         onClose();
     };
 
@@ -68,6 +70,7 @@ function PublishModal({ onClose }: PublishModalProps) {
                         value={category}
                         onChange={handleCategoryChange}
                     >
+                        <option value="">카테고리 선택</option>
                         <option value='html'>HTML</option>
                         <option value='css'>CSS</option>
                         <option value='react'>React</option>
