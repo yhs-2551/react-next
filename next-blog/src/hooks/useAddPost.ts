@@ -5,9 +5,9 @@ import { useMutation, useQueryClient } from 'react-query';
 interface NewPost {
     title: string;
     content: string; 
-    isPublic: boolean
     tags: string[]; 
     category: string;
+    postStatus: string;
 }
 
 function useAddPost() {

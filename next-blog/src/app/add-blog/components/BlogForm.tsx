@@ -26,7 +26,7 @@ function BlogForm() {
     };
 
    
-    const handlePublish = (isPublic: boolean) => {
+    const handlePublish = (postStatus: string) => {
 
 
         console.log("실행");
@@ -34,7 +34,7 @@ function BlogForm() {
         addPostMutation.mutate({
             title,
             content,
-            isPublic,
+            postStatus,
             tags: [],
             category: '',
         }, {

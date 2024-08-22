@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface PublishModalProps {
     onClose: () => void;
-    onPublish: (isPublic: boolean) => void;
+    onPublish: (isPublic: string) => void;
 }
 
 interface Tag {
@@ -14,19 +14,19 @@ interface Tag {
 
 
 function PublishModal({ onClose, onPublish }: PublishModalProps) {
-    const [isPublic, setIsPublic] = useState<boolean>(true);
+    const [postStatus, setPostStatus] = useState<string>("PUBLIC");
     const [tags, setTags] = useState<Tag[]>([]);
     const [tagInputValue, setTagInputValue] = useState<string>("");
     const [category, setCategory] = useState<string>("");
 
     const handlePublish = () => {
         // 서버로 데이터를 전송하는 로직 구현
-        onPublish(isPublic);
+        onPublish(postStatus);
         onClose();
     };
 
     const handlePostStatusChange = (e: ChangeEvent<HTMLSelectElement>) => {
-        setIsPublic(e.target.value === "PUBLIC");
+        setPostStatus(e.target.value);
     };
 
     const handleSetTags = (e: ChangeEvent<HTMLInputElement>) => {
@@ -116,7 +116,7 @@ function PublishModal({ onClose, onPublish }: PublishModalProps) {
                     </label>
                     <select
                         className='w-full p-2 border border-gray-300 rounded-md'
-                        value={isPublic ? "PUBLIC" : "PRIVATE"}
+                        value={postStatus}
                         onChange={handlePostStatusChange}
                     >
                         <option value='PUBLIC'>PUBLIC</option>
