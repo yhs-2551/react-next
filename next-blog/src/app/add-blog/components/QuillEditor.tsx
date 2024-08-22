@@ -10,16 +10,32 @@ interface QuillEditorProps {
     onChange: (value: string) => void;
 }
 
+
+const stripHTML = (html: string) => {
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    return div.textContent || div.innerText || "";
+};
+
+
 export default function QuillEditor({ value, onChange }: QuillEditorProps) {
+
+    const handleChange = (html: string) => {
+        const textOnly = stripHTML(html);
+        onChange(textOnly);
+    };
+
     return (
-        <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+        <div
+            style={{ height: "100%", display: "flex", flexDirection: "column" }}
+        >
             <ReactQuill
                 style={{ flex: 1, minHeight: "400px" }}
                 value={value}
-                onChange={onChange}
-                theme="snow"
-  
+                onChange={handleChange}
+                theme='snow'
             />
         </div>
     );
 }
+
