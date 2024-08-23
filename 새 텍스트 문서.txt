@@ -1,0 +1,5 @@
+이 폴더는 review파일만 참고는 말 그대로 review 파일만 참고
+다른 nextjs weather app에 수정사항 변경하기. 
+
+git rebase로 맞춰놔서 위와같이 해야함. 그래야add 및 commit이 편하다. 완벽하게 수정 됐으면 review파일만 참고 폴더는 삭제해도 됌. 이 메모장도 삭제해도 됨
+커밋할때는 이 메모장과 이 폴더는 review 파일~~는 안해도 됨

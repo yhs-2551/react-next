@@ -2,14 +2,19 @@
 
 import React, { ChangeEvent, useState } from "react";
 import QuillEditor from "./QuillEditor";
-import PublishModal from "./PublishModal";
+import PublishModal from "./Modal/PublishModal";
 
 import useAddPost from "../../../hooks/useAddPost";
+import Modal from "./Modal/Modal";
 
 function BlogForm() {
     const [title, setTitle] = useState<string>("");
     const [content, setContent] = useState<string>("");
-    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const [isPublishModalOpen, setIsPublishModalOpen] =
+        useState<boolean>(false);
+    const [isSuccessModalOpen, setIsSuccessModalOpen] =
+        useState<boolean>(false);
+    const [isErrorModalOpen, setIsErrorModalOpen] = useState<boolean>(false);
 
     const addPostMutation = useAddPost();
 
@@ -18,30 +23,45 @@ function BlogForm() {
     };
 
     const handlePublishClick = () => {
-        setIsModalOpen(true);   
+        setIsPublishModalOpen(true);
     };
 
     const handleCloseModal = () => {
-        setIsModalOpen(false);
+        setIsPublishModalOpen(false);
     };
 
-   
+    const handleCloseSuccessModal = () => {
+        setIsSuccessModalOpen(false);
+    };
+
+    const handleCloseErrorModal = () => {
+        setIsErrorModalOpen(false);
+    };
+
     const handlePublish = (postStatus: string) => {
 
-
-        console.log("실행");
-        
-        addPostMutation.mutate({
-            title,
-            content,
-            postStatus,
-            tags: [],
-            category: '',
-        }, {
-            onSuccess: () => {
-                handleCloseModal();
+        addPostMutation.mutate(
+            {
+                title,
+                content,
+                postStatus,
+                tags: [],
+                category: "",
+            },
+            {
+                onSuccess: () => {
+                    console.log("실행ㅇㅇ");
+                    setIsPublishModalOpen(false);
+                    setIsSuccessModalOpen(true);
+                },
+                onError: (error) => {
+                    console.log("실행");
+                    console.error("Error:", error);  // 오류 로그 확인
+                    setIsPublishModalOpen(false);
+                    setIsErrorModalOpen(true);  // 실패 모달 열기
+                },
             }
-        });
+        );
     };
     return (
         <div className='h-screen flex flex-col'>
@@ -76,7 +96,27 @@ function BlogForm() {
                     발행
                 </button>
 
-                {isModalOpen && <PublishModal onClose={handleCloseModal} onPublish={handlePublish}/>}
+                {/* {isModalOpen && <PublishModal onClose={handleCloseModal} onPublish={handlePublish}/>} */}
+                {isPublishModalOpen && (
+                    <PublishModal
+                        isOpen={isPublishModalOpen}
+                        onClose={handleCloseModal}
+                        onPublish={handlePublish}
+                    />
+                )}
+
+                <Modal
+                    isOpen={isSuccessModalOpen}
+                    onClose={handleCloseSuccessModal}
+                    title='발행 성공'
+                    content='포스트가 성공적으로 요청되었습니다!'
+                />
+                <Modal
+                    isOpen={isErrorModalOpen}
+                    onClose={handleCloseErrorModal}
+                    title='발행 실패'
+                    content='포스트 요청이 실패했습니다. 다시 시도해주세요.'
+                />
             </form>
         </div>
     );

@@ -1,8 +1,10 @@
 import React, { ChangeEvent, useState } from "react";
 
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
+import Modal from "./Modal";
 
 interface PublishModalProps {
+    isOpen: boolean;
     onClose: () => void;
     onPublish: (isPublic: string) => void;
 }
@@ -12,8 +14,7 @@ interface Tag {
     value: string;
 }
 
-
-function PublishModal({ onClose, onPublish }: PublishModalProps) {
+function PublishModal({ isOpen, onClose, onPublish }: PublishModalProps) {
     const [postStatus, setPostStatus] = useState<string>("PUBLIC");
     const [tags, setTags] = useState<Tag[]>([]);
     const [tagInputValue, setTagInputValue] = useState<string>("");
@@ -37,11 +38,10 @@ function PublishModal({ onClose, onPublish }: PublishModalProps) {
         if (e.key === "Enter" || e.key === ",") {
             e.preventDefault();
             if (tagInputValue.trim()) {
-
                 const newTag: Tag = {
                     id: uuidv4(),
                     value: tagInputValue,
-                }
+                };
 
                 setTags([...tags, newTag]);
                 setTagInputValue("");
@@ -57,7 +57,6 @@ function PublishModal({ onClose, onPublish }: PublishModalProps) {
         setTags(tags.filter((tag) => tag.id !== uuidToRemove));
     };
 
-
     return (
         <div className='fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'>
             <div className='bg-white p-6 rounded-md shadow-md w-96'>
@@ -70,7 +69,7 @@ function PublishModal({ onClose, onPublish }: PublishModalProps) {
                         value={category}
                         onChange={handleCategoryChange}
                     >
-                        <option value="">카테고리 선택</option>
+                        <option value=''>카테고리 선택</option>
                         <option value='html'>HTML</option>
                         <option value='css'>CSS</option>
                         <option value='react'>React</option>
