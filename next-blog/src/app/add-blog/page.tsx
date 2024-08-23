@@ -1,5 +1,6 @@
 import React from "react";
 import BlogForm from "./components/BlogForm";
+import ClientWrapper from "@/providers/ClientWrapper";
 
 function AddBlogPage() {
     return (
@@ -8,7 +9,9 @@ function AddBlogPage() {
                 글 작성 페이지
             </h1>
             <main className='max-w-7xl mx-auto p-6 bg-white'>
-                <BlogForm />
+                <ClientWrapper>
+                    <BlogForm />
+                </ClientWrapper>
             </main>
         </>
     );
