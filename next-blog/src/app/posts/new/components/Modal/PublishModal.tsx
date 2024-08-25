@@ -125,13 +125,14 @@ function PublishModal({ isOpen, onClose, onPublish }: PublishModalProps) {
 
                 <div className='flex justify-end'>
                     <button
-                        className='px-4 py-2 bg-gray-400 text-white rounded-md mr-2'
+                        className='px-4 py-2 bg-white text-black rounded-lg mr-2 focus:outline-none hover:bg-red-500 hover:text-white active:bg-red-400 border
+                        border-gray-300'
                         onClick={onClose}
                     >
                         취소
                     </button>
                     <button
-                        className='px-4 py-2 bg-purple-600 text-white rounded-md'
+                        className='px-4 py-2 bg-black text-white rounded-md hover:bg-red-500 focus:outline-none active:bg-red-400'
                         onClick={handlePublish}
                     >
                         발행
