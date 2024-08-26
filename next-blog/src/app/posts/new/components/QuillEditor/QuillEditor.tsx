@@ -28,6 +28,7 @@ export default function QuillEditor({ value, onChange }: QuillEditorProps) {
         <>
             <ReactQuill value={value} onChange={handleChange} theme='bubble' />
             {/* <ReactQuill value={value} onChange={handleChange} theme='snow' /> */}
+     
         </>
     );
 }

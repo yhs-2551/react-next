@@ -9,8 +9,8 @@
 }
 
 body {
+  /* layout.tsx 부분에 나중에 변경  */
 
-  /* layout.tsx 부분에 나중에 추가  */
   /* font-size: .938rem;
   font-weight: 500; */
   /* background-color: var(--body-color);
@@ -29,4 +29,8 @@ img {
   display: block;
   max-width: 100%;
   height: auto;
+}
+
+.ql-editor {
+  padding: 8px !important;
 }

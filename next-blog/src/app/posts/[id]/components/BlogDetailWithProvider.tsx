@@ -7,6 +7,9 @@ import ClientWrapper from "@/providers/ClientWrapper";
 import { useRouter } from "next/navigation";
 import React from "react";
 
+import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
+
+
 interface Post {
     title: string;
     postStatus: "PUBLIC" | "PRIVATE";
@@ -48,7 +51,7 @@ function BlogDetail({
     });
 
     const handleEdit = () => {
-        alert("Edit functionality to be implemented");
+        router.push(`/posts/${postId}/edit`)
     };
 
     const handlePostStatus = () => {
@@ -95,7 +98,7 @@ function BlogDetail({
             </div>
 
             {/* Content */}
-            <div className='text-gray-700'>{post.content}</div>
+            <div className='text-gray-700'>{extractTextFromHtml(post.content)}</div>
         </div>
     );
 }

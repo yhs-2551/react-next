@@ -7,6 +7,7 @@ import { useGetPosts } from "@/customHooks/useGetPosts";
 
 import { v4 as uuidv4 } from "uuid";
 import ClientWrapper from "@/providers/ClientWrapper";
+import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
 
 interface Post {
     id: string;
@@ -41,7 +42,7 @@ function BlogList({ initialData }: { initialData: Post[] }) {
                     key={uuidv4()}
                     id={post.id}
                     title={post.title}
-                    content={post.content}
+                    content={extractTextFromHtml(post.content)}
                     createdAt={post.createdAt}
                     categoryName={post.categoryName}
                     postStatus={post.postStatus}
