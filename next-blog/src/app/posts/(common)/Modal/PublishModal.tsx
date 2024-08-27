@@ -60,7 +60,7 @@ function PublishModal({ isOpen, onClose, onPublish }: PublishModalProps) {
     return (
         <div className='fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'>
             <div className='bg-white p-6 rounded-md shadow-md w-96'>
-                <h2 className='text-xl font-bold mb-4'>발행 설정</h2>
+                <h2 className='text-2xl font-bold mb-4'>발행 설정</h2>
 
                 <div className='mb-4'>
                     <label className='block mb-2'>카테고리 선택</label>

@@ -66,7 +66,7 @@ function BlogDetail({
     return (
         <div className='container mx-auto p-6 max-w-4xl'>
             {/* Title */}
-            <h1 className='text-2xl font-bold mb-2'>{post.title}</h1>
+            <h1 className='text-3xl font-bold mb-2'>{post.title}</h1>
 
             {/* Category and Date */}
             <div className='flex items-center text-sm text-gray-500 mb-2'>

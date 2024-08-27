@@ -65,7 +65,7 @@ function PostItem({
                     <span>{formattedDate}</span>
                 </div>
 
-                {/* 내용 부분 - 클릭 가능하도록 수정 */}
+                {/* 내용 부분 - 클릭 가능하도록 수정 완료 */}
                 <p
                     className='text-gray-700 mb-2 cursor-pointer'
                     onClick={handleClick}
@@ -74,7 +74,7 @@ function PostItem({
                     {isContentLong ? "..." : ""}
                 </p>
 
-                {/* 버튼 부분 - 클릭 가능하도록 수정 */}
+                {/* 버튼 부분 - 클릭 가능하도록 수정 완료*/}
                 <div className='mt-2'>
                     <button
                         className='text-sm text-white bg-customButtonColor px-3 py-1 rounded cursor-pointer'
