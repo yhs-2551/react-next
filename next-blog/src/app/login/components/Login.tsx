@@ -4,16 +4,47 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
+import useLogin from "@/customHooks/useLogin";
+import Modal from "@/app/posts/(common)/Modal/Modal";
 
 function Login() {
     const router = useRouter();
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [showModal, setShowModal] = useState<boolean>(true);
+    const [isSuccessModalOpen, setIsSuccessModalOpen] =
+        useState<boolean>(false);
+    const [isErrorModalOpen, setIsErrorModalOpen] = useState<boolean>(false);
+
+    const loginMutation = useLogin();
 
     const handleLogin = () => {
-        // 로그인 로직 구현
-        console.log("로그인 시도:", { email, password });
+
+        loginMutation.mutate(
+            {
+                email,
+                password,
+            },
+            {
+                onSuccess: () => {
+                    setShowModal(false);
+                    setIsSuccessModalOpen(true);
+                },
+                onError: () => {
+                    setShowModal(false);
+                    setIsErrorModalOpen(true);
+                },
+            }
+        );
+    };
+
+    const handleCloseSuccessModal = () => {
+        setIsSuccessModalOpen(false);
+        router.push("/"); // 로그인 성공 후 홈으로 리다이렉트
+    };
+
+    const handleCloseErrorModal = () => {
+        setIsErrorModalOpen(false);
     };
 
     const handleCloseModal = () => {
@@ -38,12 +69,12 @@ function Login() {
                     >
                         {/* 왼쪽 부분 - 이미지와 텍스트 */}
                         <div className='flex flex-col items-center justify-center w-1/2 p-6 bg-gray-100 rounded-l-lg'>
-                            <Image
-                                src=""
+                            {/* <Image
+                                src='/profile.png'
                                 width={150}
                                 height={150}
-                                alt="환영 이미지"
-                            />
+                                alt='환영 이미지'
+                            /> */}
                             <h2 className='mt-4 text-xl font-semibold text-gray-800'>
                                 환영합니다!
                             </h2>
@@ -138,6 +169,22 @@ function Login() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* 성공 및 실패 모달 */}
+            <Modal
+                isOpen={isSuccessModalOpen}
+                onClose={handleCloseSuccessModal}
+                title='로그인 성공'
+                content='로그인에 성공했습니다!'
+            />
+
+            <Modal
+                isOpen={isErrorModalOpen}
+                onClose={handleCloseErrorModal}
+                title='로그인 실패'
+                content='로그인에 실패했습니다. 다시 시도해주세요.'
+            />
+            
         </div>
     );
 }
