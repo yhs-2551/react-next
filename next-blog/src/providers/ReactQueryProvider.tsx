@@ -7,8 +7,9 @@ import { QueryClientProvider } from "react-query";
 import { ReactQueryDevtools } from "react-query/devtools";
 
 import { queryClient } from "./ReactQueryPersistProvider";
-
 import dynamic from "next/dynamic";
+
+ 
 
 // dynamic을 사용하여 클라이언트 측에서만 컴포넌트를 로드
 const ReactQueryPersistProvider = dynamic(

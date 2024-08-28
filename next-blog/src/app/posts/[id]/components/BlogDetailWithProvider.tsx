@@ -4,10 +4,11 @@
 import useDeletePost from "@/customHooks/useDeletePost";
 import { useGetPost } from "@/customHooks/useGetPost";
 import ClientWrapper from "@/providers/ClientWrapper";
-import { useRouter } from "next/navigation";
+ 
 import React from "react";
 
 import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
+import { useRouter } from "next/navigation";
 
 
 interface Post {
