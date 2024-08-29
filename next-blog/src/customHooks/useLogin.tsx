@@ -1,4 +1,3 @@
-"use client";
 
 import { useRouter } from "next/navigation";
 
@@ -29,7 +28,7 @@ const loginUser = async (loginData: LoginRequest) => {
 };
 
 function useLogin() {
-    const router = useRouter();
+ 
 
     return useMutation(loginUser, {
         onSuccess: (data) => {

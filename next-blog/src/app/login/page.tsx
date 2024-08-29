@@ -1,13 +1,13 @@
-import ClientWrapper from "@/providers/ClientWrapper"
-import React from 'react'
-import Login from "./components/Login"
+import React from "react";
+import Login from "./components/Login";
+import ClientWrapper from "@/providers/ClientWrapper";
 
 function LoginPage() {
   return (
     <ClientWrapper>
-        <Login />
+      <Login />
     </ClientWrapper>
-  )
+  );
 }
 
-export default LoginPage
+export default LoginPage;

@@ -1,5 +1,4 @@
-"use client";
-
+ 
 import { useMutation, useQueryClient } from "react-query";
 
 interface NewPost {

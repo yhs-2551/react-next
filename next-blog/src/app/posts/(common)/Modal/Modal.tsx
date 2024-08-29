@@ -10,12 +10,6 @@ interface ModalProps {
 
 function Modal({ isOpen, onClose, title, content }: ModalProps) {
     const router = useRouter();
-
-    const handleClose = () => {
-        onClose();
-        router.push("/posts");
-    };
-
     if (!isOpen) return null;
 
     return (
@@ -26,7 +20,7 @@ function Modal({ isOpen, onClose, title, content }: ModalProps) {
                 <div className='flex justify-end mt-4'>
                     <button
                         className='px-4 py-2 bg-purple-600 text-white rounded-md'
-                        onClick={handleClose}
+                        onClick={onClose}
                     >
                         닫기
                     </button>

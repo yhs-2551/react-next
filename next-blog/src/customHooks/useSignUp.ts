@@ -1,5 +1,4 @@
-"use client"
-
+ 
 import { queryClient } from "@/providers/ReactQueryPersistProvider";
 import { useMutation } from "react-query"
 
