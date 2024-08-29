@@ -1,17 +1,16 @@
 import React, { ChangeEvent, useState } from "react";
 
 import { v4 as uuidv4 } from "uuid";
-import Modal from "./Modal";
-import { useMutation } from "react-query";
-import useAddPost from "@/customHooks/useAddPost";
-import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
-import { useRouter } from "next/navigation";
 
+import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
+ 
 interface PublishModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   content: string;
+  onPublish: (postStatus: string, tags: Tag[], category: string) => void;
+  errorMessage: string | null;
 }
 
 interface Tag {
@@ -19,47 +18,35 @@ interface Tag {
   value: string;
 }
 
-function PublishModal({ isOpen, onClose, title, content }: PublishModalProps) {
+function PublishModal({ isOpen, onClose, title, content, onPublish, errorMessage }: PublishModalProps) {
   const [postStatus, setPostStatus] = useState<string>("PUBLIC");
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagInputValue, setTagInputValue] = useState<string>("");
   const [category, setCategory] = useState<string>("");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [titleError, setTitleError] = useState<string | null>(null);
   const [contentError, setContentError] = useState<string | null>(null);
 
-  const addPostMutation = useAddPost();
-
-  const router = useRouter();
-
   const handlePublish = () => {
+    
     let hasError = false;
+
+  const textContent = extractTextFromHtml(content).trim();
 
     if (!title.trim()) {
       setTitleError("제목을 입력해주세요.");
       hasError = true;
-    } else {
-      setTitleError(null);
-    }
-
-    const textContent = extractTextFromHtml(content).trim();
-
-    if (!textContent) {
+    } else if (!textContent) {
       setContentError("내용을 입력해주세요.");
       hasError = true;
-    } else {
-      setContentError(null); // 서버 요청 에러 메시지 초기화
-    }
+    } 
 
-    // 위쪽에 에러가 있으면 서버 요청을 하지 않음
-
+    // 위쪽에 에러가 있으면 서버 요청을 하지 않음. 이유는 React Quill 에디터에서 내용을 입력하지 않아도 p태그와 br태그가 같이 들어가기 때문. 
     if (hasError) {
-      setErrorMessage(null);
       return;
     }
 
-    // 서버 요청 전 에러 메시지 상태 초기화
-    setErrorMessage(null);
+    onPublish(postStatus, tags, category);
+
   };
 
   const handlePostStatusChange = (e: ChangeEvent<HTMLSelectElement>) => {

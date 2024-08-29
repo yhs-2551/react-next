@@ -8,10 +8,16 @@ import QuillEditor from "./QuillEditor/QuillEditor";
 import useAddPost from "@/customHooks/useAddPost";
 import { useRouter } from "next/navigation";
 
+interface Tag {
+  id: string;
+  value: string;
+}
+
 function BlogForm() {
   const [title, setTitle] = useState<string>("");
   const [content, setContent] = useState<string>("");
   const [isPublishModalOpen, setIsPublishModalOpen] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 
   const addPostMutation = useAddPost();
@@ -27,17 +33,14 @@ function BlogForm() {
   };
 
   const handleCloseModal = () => {
+    setErrorMessage(null);
     setIsPublishModalOpen(false);
   };
 
-  const handlePublish = (postStatus: string, tags: string[], category: string) => {
+  const handlePublish = (postStatus: string, tags: Tag[], category: string) => {
     
     addPostMutation.mutate(
         {
-
-
-
-            
           title,
           content,
           postStatus,
@@ -47,17 +50,17 @@ function BlogForm() {
         {
           onSuccess: () => {
             console.log("Blog Form 성공 실행");
-            onClose();
+            setIsPublishModalOpen(false);
             router.push("/");
           },
           onError: (error: any) => {
             console.log("Blog Form 실패 실행");
             console.error("Error:", error); // 오류 로그 확인
-            setErrorMessage("글 작성이 실패했습니다. 다시 시도해주세요."); // 에러 메시지 설정
+            setErrorMessage("글 작성이 실패했습니다. 다시 시도해주세요.");
           },
         }
       );
-  }_
+  }
  
   return (
     <form onSubmit={(e) => e.preventDefault()} className="">
@@ -94,6 +97,8 @@ function BlogForm() {
           onClose={handleCloseModal}
           title={title}
           content={content}
+          onPublish={handlePublish}
+          errorMessage={errorMessage}
         />
       )}
     </form>

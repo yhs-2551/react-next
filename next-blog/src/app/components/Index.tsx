@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
  
-import Login from "../login/components/Login";
 import { useQuery } from "react-query";
 import { queryClient } from "@/providers/ReactQueryPersistProvider";
 
