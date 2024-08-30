@@ -16,6 +16,7 @@ const loginUser = async (loginData: LoginRequest) => {
         headers: {
             "Content-Type": "application/json",
         },
+        credentials: "include", // 이 코드가 있어야 쿠키에 세션 ID값을 저장한다.
         body: JSON.stringify(loginData),
     });
 

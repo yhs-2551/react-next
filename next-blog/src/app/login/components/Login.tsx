@@ -3,10 +3,11 @@
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import Image from "next/image";
-import useLogin from "@/customHooks/useLogin";
-import Modal from "@/app/posts/(common)/Modal/Modal";
+ 
+ 
+ 
 import { queryClient } from "@/providers/ReactQueryPersistProvider";
+import useLogin from "@/customHooks/useLogin";
 
 function Login() {
   const router = useRouter();

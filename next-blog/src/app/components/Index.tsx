@@ -1,18 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
- 
+
 import { useQuery } from "react-query";
-import { queryClient } from "@/providers/ReactQueryPersistProvider";
+
+import useLogout from "@/customHooks/useLogout";
 
 export default function Index() {
- 
   const router = useRouter();
+  const { mutate: logout, isLoading: isLoggingOut } = useLogout();
 
   const { data: isLoggedIn } = useQuery("isLoggedIn", {
     initialData: false,
   });
-
 
   const handleLoginClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
@@ -20,7 +20,7 @@ export default function Index() {
   };
 
   const handleLogoutClick = () => {
-    queryClient.setQueryData("isLoggedIn", false);
+    logout();
   };
 
   return (
@@ -30,8 +30,9 @@ export default function Index() {
           <button
             onClick={handleLogoutClick}
             className="cursor-pointer px-4 py-2 bg-black text-white rounded-md hover:bg-red-500 focus:outline-none active:bg-red-400"
+            disabled={isLoggingOut}
           >
-            로그아웃
+            {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
           </button>
         </>
       ) : (
