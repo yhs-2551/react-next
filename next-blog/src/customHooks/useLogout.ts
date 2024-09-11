@@ -1,11 +1,11 @@
-import { queryClient } from "@/providers/ReactQueryPersistProvider";
-
-import { useMutation } from "react-query";
+import { useMutation, useQueryClient } from "react-query";
 
 const logoutUser = async () => {
+
+
   const response = await fetch("http://localhost:8000/logout", {
     method: "POST",
-    credentials: "include" // 쿠키를 포함하여 요청 
+    credentials: "include" // 쿠키를 포함하여 요청. 브라우저의 쿠키에 있는 session id값을 삭제하기 위함
   })
 
   if (!response.ok) {
@@ -18,13 +18,16 @@ const logoutUser = async () => {
   try {
     return await response.json();
   }  catch (error) {
-    // 응답 본문이 없는 경우 빈 객체 반환. 즉, 응답헤더만 있을 경우
+    // 응답 본문이 없는 경우 빈 객체 반환. 즉, 응답헤더만 있을 경우. 대부분 로그아웃의 경우 여기에서 걸린다
     return {};
   }
   
 }
-
 function useLogout() {
+
+  const queryClient = useQueryClient();
+
+
   return useMutation(logoutUser, {
     onSuccess: () => {
       queryClient.setQueryData("isLoggedIn", false);

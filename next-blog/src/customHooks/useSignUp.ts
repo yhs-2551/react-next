@@ -1,6 +1,4 @@
- 
-import { queryClient } from "@/providers/ReactQueryPersistProvider";
-import { useMutation } from "react-query"
+import { useMutation, useQueryClient } from "react-query"
 
 interface SignupRequest {
   username: string;
@@ -11,8 +9,10 @@ interface SignupRequest {
 
  const useSignup = () => {
 
+  const queryClient = useQueryClient();
+
   return useMutation((newUser: SignupRequest) => 
-    fetch("http://localhost:8000/user", {
+    fetch("http://localhost:8000/api/user/signup", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

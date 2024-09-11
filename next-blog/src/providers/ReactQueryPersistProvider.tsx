@@ -10,7 +10,7 @@ import { persistQueryClient } from "react-query/persistQueryClient-experimental"
 import { createWebStoragePersistor } from "react-query/createWebStoragePersistor-experimental";
 import { QueryClient } from "react-query";
 
-export const queryClient = new QueryClient();
+const queryClient = new QueryClient();
 
 if (typeof window !== "undefined") {
   const localStoragePersistor = createWebStoragePersistor({

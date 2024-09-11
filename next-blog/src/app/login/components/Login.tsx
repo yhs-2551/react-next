@@ -4,13 +4,12 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
  
- 
- 
-import { queryClient } from "@/providers/ReactQueryPersistProvider";
 import useLogin from "@/customHooks/useLogin";
+import { useQueryClient } from "react-query";
 
 function Login() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [showModal, setShowModal] = useState<boolean>(true);
@@ -41,6 +40,10 @@ function Login() {
     setShowModal(false);
     setTimeout(() => router.push("/"), 300); // 애니메이션이 끝난 후 홈으로 리다이렉트
   };
+
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:8000/oauth2/authorization/google";
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black bg-opacity-30">
@@ -129,7 +132,8 @@ function Login() {
                 <button className="text-black">
                   <i className="fab fa-github fa-2x"></i>
                 </button>
-                <button className="text-blue-500">
+                <button className="text-blue-500" onClick={handleGoogleLogin}>
+                  구글로 로그인
                   <i className="fab fa-google fa-2x"></i>
                 </button>
                 <button className="text-blue-700">

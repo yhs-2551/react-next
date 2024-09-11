@@ -11,7 +11,7 @@ interface LoginRequest {
 const loginUser = async (loginData: LoginRequest) => {
     console.log("loginData >>> ", loginData);
 
-    const response = await fetch("http://localhost:8000/login", {
+    const response = await fetch("http://localhost:8000/api/user/login", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
