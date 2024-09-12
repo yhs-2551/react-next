@@ -10,18 +10,18 @@ import useCheckAccessToken from "@/customHooks/useCheckAccessToken";
 
 export default function Index() {
 
+
+  console.log("인덱스 실행");
   const router = useRouter();
  
 
   const { mutate: logout, isLoading: isLoggingOut } = useLogout();
 
-  const { data: isLoggedIn } = useQuery("isLoggedIn", {
-    initialData: false,
-  });
+  const { data: isLoggedIn } = useFetchAccessToken();
 
-  useFetchAccessToken();
+  // useFetchAccessToken();
 
-  useCheckAccessToken();
+  // useCheckAccessToken();
 
 
 

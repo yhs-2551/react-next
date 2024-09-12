@@ -15,6 +15,8 @@ const checkAccessTokenFn = async (queryClient: QueryClient) => {
         }
     );
 
+    console.log("useFetchCheckAccessToken", response);
+
     // 액세스 토큰이 유효하지 않을때 서버측 에러. 즉, isLoggedIn false
     if (!response.ok) {
         queryClient.setQueryData("isLoggedIn", false);

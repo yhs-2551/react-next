@@ -3,7 +3,9 @@
 import { QueryClient, useQuery, useQueryClient } from "react-query";
 
 const fetchAccessToken = async (queryClient: QueryClient) => {
-    console.log("실행행33");
+
+    console.log("FetchAccesstToken 실행");
+
     // 초기 로그인 시 브라우저 쿠키에 담긴 액세스 토큰을 서버에서 검증한 후, 다시 클라이언트측으로 응답 헤더를 통해 액세스 토큰 전송
     const response = await fetch(
         "http://localhost:8000/api/token/initial-token",
@@ -13,16 +15,17 @@ const fetchAccessToken = async (queryClient: QueryClient) => {
         }
     );
 
-    console.log("실3424행행33");
+    console.log("useFetchAccessTOekn", response);
 
     // 액세스 토큰을 브라우저 (HTTP ONLY)쿠키에서 찾을 수 없을때 서버측에서 오류 발생
     if (!response.ok) {
         console.log("실패 시행");
-        queryClient.setQueriesData("isLoggedIn", false);
+        queryClient.setQueryData("isLoggedIn", false);
         return false;
     }
 
     const accessToken = response.headers.get("Authorization")?.split(" ")[1];
+    console.log("액세스 토큰", accessToken)
     if (accessToken) {
         console.log("성공 시행");
         localStorage.setItem("access_token", accessToken);
@@ -33,16 +36,17 @@ const fetchAccessToken = async (queryClient: QueryClient) => {
     return false;
 };
 
-export const useFetchAccessToken = () => {
+const useFetchAccessToken = () => {
+    console.log("실행행33");
+
     const queryClient = useQueryClient();
 
     return useQuery(
         ["isLoggedIn"], // Query key
         () => fetchAccessToken(queryClient), // Query function (queryFn)
         {
-            retry: false, // 요청 실패 시 재시도 하지 않음
             refetchOnWindowFocus: false,
-            refetchOnReconnect: true,
+            refetchOnReconnect: false,
             refetchOnMount: true,
             onError: () => {
                 queryClient.setQueryData("isLoggedIn", false);
