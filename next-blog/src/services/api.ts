@@ -72,6 +72,8 @@ export const checkAccessToken = async (queryClient: QueryClient) => {
 
         // 액세스 토큰이 유효하지 않을때 서버측 에러. 즉, isLoggedIn false
         if (!response.ok) {
+            // 유효하지 않은 액세스 토큰이면 클라이언트측에서도 삭제함
+            localStorage.removeItem("access_token");
             // queryClient.setQueryData("isLoggedIn", false);
             return false;
         }
