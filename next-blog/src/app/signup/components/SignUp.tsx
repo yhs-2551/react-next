@@ -3,19 +3,22 @@
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-
-import useSignUp from "@/customHooks/useSignUp";
+import { signupUser } from "@/services/api";
 
 function SignUp() {
     const router = useRouter();
     const [username, setUsername] = useState<string>("");
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
-    const [showModal, setShowModal] = useState<boolean>(true);
-    const signUpMutation = useSignUp();
+    const [showModal, setShowModal] = useState<boolean>(true);;
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    const handleSignUp = () => {
+    const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
+
+        e.preventDefault();
+
+        const formData = { username, email, password };
+
         const fields = [
             { value: username, message: "제목을 입력해주세요." },
             { value: email, message: "이메일을 입력해주세요." },
@@ -28,25 +31,16 @@ function SignUp() {
             setErrorMessage(invalidField.message);
             return;
         }
+        try {
+            const response = await signupUser(formData);
+            console.log("회원가입 성공 SignUp Page", response);
+            setShowModal(false);
+            setTimeout(() => router.push("/"), 300); // 성공 시 홈으로 리다이렉트
 
-        signUpMutation.mutate(
-            {
-                username,
-                email,
-                password,
-            },
-            {
-                onSuccess: () => {
-                    console.log("회원가입 성공 SignUp Page");
-                    setShowModal(false);
-                    setTimeout(() => router.push("/"), 300); // 성공 시 홈으로 리다이렉트
-                },
-                onError: (error) => {
-                    console.log("회원가입 실패 SignUp Page: ", error);
-                    // 이메일이 있는 이메일이면 인라인 에러 메시지로 구현 필요
-                },
-            }
-        );
+        } catch (error: any) {
+            console.log("회원가입 실패 SignUp Page: ", error);
+            setErrorMessage(error.message);
+        }
     };
 
     const handleCloseModal = () => {
@@ -101,9 +95,8 @@ function SignUp() {
                                     이메일로 회원가입
                                 </p>
                                 <form
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        handleSignUp();
+                                    onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                                        handleSignUp(e);
                                     }}
                                 >
                                     <div className='mb-4'>

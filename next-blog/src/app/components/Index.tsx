@@ -1,42 +1,55 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-
-import { useQuery } from "react-query";
-
 import useLogout from "@/customHooks/useLogout";
-import useFetchAccessToken from "@/customHooks/useFetchAccessToken";
-import useCheckAccessToken from "@/customHooks/useCheckAccessToken";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { fetchAccessToken, logoutUser } from "@/services/api";
 
 export default function Index() {
     const router = useRouter();
 
-    const { mutate: logout, isLoading: isLoggingOut } = useLogout();
+    const accessToken = localStorage.getItem("access_token") ?? false;
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(!!accessToken); // 작성자 여부 상태
 
-    const { data: isLoggedInData, isLoading: isTokenLoading } = useFetchAccessToken();
+    // 로그인 안된 사용자(로컬 스토리지에 액세스 토큰이 없는 사용자)만 FetchAccessToken 요청을 보냄
 
-    const isLoggedIn = isLoggedInData ?? false; // isLoggedInData가 null 및 undefined면 false로 처리. 
+    useEffect(() => {
+        const initializeAuth = async () => {
+            if (accessToken) {
+                // 액세스 토큰이 있으면 로그인 상태로 설정
+                setIsLoggedIn(true);
+            } else {
+                // 액세스 토큰이 없으면 fetchAccessToken 호출
+                const accessTokenResponse = await fetchAccessToken();
+                setIsLoggedIn(accessTokenResponse);
+            }
+        };
 
-    const { data: isValidData, isLoading: isChecking } = useCheckAccessToken(isLoggedIn);
+        initializeAuth();
+    }, []); // 한 번만 실행
 
-    const isValid = isValidData ?? false;
-
-    console.log("isLoggedIn값" + isLoggedIn);
-    console.log("isValid값" + isValid);
+    // 로그인 된 사용자(로컬스토리지에 access token이 있는 사용자)만 useCheckAccessToken 쿼리를 보냄. 메인 페이지에서는 굳이 검증 안함
+    // const { data: isValidToken, isLoading: isChecking } =
+    //     useCheckAccessToken(storedAccessToken);
 
     const handleLoginClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         e.preventDefault();
         router.push("/login");
     };
 
-    const handleLogoutClick = () => {
-        logout();
+    const handleLogoutClick = async () => {
+        try {
+            await logoutUser();
+            setIsLoggedIn(false);
+            console.log("로그아웃 성공");
+        } catch (error: any) {
+            console.log("로그아웃 실패: ", error.message);
+        }
     };
 
     return (
         <div className='flex items-center justify-center min-h-screen bg-gray-100'>
-            {isLoggedIn && isValid ? (
+            {isLoggedIn ? (
                 <>
                     <button
                         onClick={handleLogoutClick}

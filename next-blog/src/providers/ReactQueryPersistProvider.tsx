@@ -2,6 +2,8 @@
 // 새로 고침 시 cacheTime으로 지정해 둔 브라우저의 메모리 캐시가 삭제되기 때문에 이를 위해 로컬 스토리지 캐시를 사용.
 // 확인은 브라우저 개발자 도구 -> application 탭 -> localstorage -> REACT_QUERY_OFFLINE_CACHE -> clientState -> queries -> state -> data에서 확인 가능.
 
+// 얘를 사용하려면  refetchOnWindowFocus: false, refetchOnReconnect: true, refetchOnMount: true,로 지정해야 한다.
+
 
 "use client";
 
