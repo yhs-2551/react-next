@@ -34,3 +34,7 @@ img {
 .ql-editor {
   padding: 8px !important;
 }
+
+.ql-container {
+  border: none !important;
+}

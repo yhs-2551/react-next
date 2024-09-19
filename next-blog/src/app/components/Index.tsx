@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import useLogout from "@/customHooks/useLogout";
 import { useEffect, useState } from "react";
 import { fetchAccessToken, logoutUser } from "@/services/api";
 
