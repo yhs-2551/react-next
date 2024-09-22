@@ -17,6 +17,9 @@ const config: Config = {
       colors: {
         customButtonColor: "#1EB49F",
         customFooterBackgroundColor: "#F5F5F5"
+      },
+      cursor: {
+        'nwse-resize': 'nwse-resize',  // 커서 추가
       }
     },
   },

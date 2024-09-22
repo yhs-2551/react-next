@@ -1,0 +1,27 @@
+.ql-editor {
+    padding: 8px !important;
+    position: relative !important;
+}
+
+.ql-container {
+    border: none !important;
+}
+
+.ql-container::after {
+    content: "";
+    display: block;
+    height: 40vh; /* 뷰포트 높이의 40% 만큼 추가 공간을 만듦 */
+}
+
+.ql-editor img {
+    cursor: pointer;
+}
+
+
+.image-actions__overlay {
+ display: none !important;
+  }
+
+/* .image-actions__toolbar-button {
+    display: none !important;
+} */

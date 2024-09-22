@@ -1,10 +1,5 @@
-import axios from "axios";
-import { useRouter } from "next/navigation";
 import {
-    Query,
-    QueryClient,
     QueryFunctionContext,
-    useQueryClient,
 } from "react-query";
 
 export const fetchPosts = async () => {

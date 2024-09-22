@@ -4,9 +4,6 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import useLogin from "@/customHooks/useLogin";
-import { useQueryClient } from "react-query";
-
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 import { loginUser } from "@/services/api";
