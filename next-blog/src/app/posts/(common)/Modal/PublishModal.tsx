@@ -8,10 +8,10 @@ import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
 interface PublishModalProps {
     isOpen: boolean;
     onClose: () => void;
-    title: string;
-    content: string;
+    titleRef: React.RefObject<string>;
+    contentRef: React.RefObject<string>;
     onPublish: (postStatus: string, tags: Tag[], category: string) => void;
-    errorMessage: string | null;
+    errorMessageRef: React.RefObject<string>;
 }
 
 interface Tag {
@@ -22,10 +22,10 @@ interface Tag {
 function PublishModal({
     isOpen,
     onClose,
-    title,
-    content,
+    titleRef,
+    contentRef,
     onPublish,
-    errorMessage,
+    errorMessageRef,
 }: PublishModalProps) {
     const [postStatus, setPostStatus] = useState<string>("PUBLIC");
     const [tags, setTags] = useState<Tag[]>([]);
@@ -37,7 +37,14 @@ function PublishModal({
     const handlePublish = () => {
         let hasError = false;
 
+        const title = titleRef.current || "";
+        const content = contentRef.current || "";
+        console.log("content >>" + content);
+
+        console.log("title >>" + title);
+
         const textContent = extractTextFromHtml(content).trim();
+
 
         if (!title.trim()) {
             setTitleError("제목을 입력해주세요.");
@@ -162,9 +169,9 @@ function PublishModal({
                             {contentError}
                         </p>
                     )}
-                    {errorMessage && (
+                    {errorMessageRef.current && (
                         <p className='text-sm text-red-500 mb-4'>
-                            {errorMessage}
+                            {errorMessageRef.current}
                         </p>
                     )}
 

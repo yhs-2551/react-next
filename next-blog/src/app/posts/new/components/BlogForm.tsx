@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ChangeEvent, useRef, useState } from "react";
+import React, { ChangeEvent, useRef } from "react";
 
 import PublishModal from "../../(common)/Modal/PublishModal";
 
@@ -16,26 +16,37 @@ interface Tag {
 }
 
 function BlogForm() {
-    const [title, setTitle] = useState<string>("");
-    const [content, setContent] = useState<string>("");
-    const [isPublishModalOpen, setIsPublishModalOpen] =
-        useState<boolean>(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+    const quillContentRef = useRef<() => string>(() => "");
+    const modalRef = useRef<HTMLDivElement | null>(null);
+    const contentRef = useRef<string>("");
+    const titleRef = useRef<string>("");
+    const errorMessageRef = useRef<string | null>(null);
     const addPostMutation = useAddPost();
     const router = useRouter();
 
     const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setTitle(e.target.value);
+        titleRef.current = e.target.value; //  // 최신 title 값 가져오기
+        
+        console.log(titleRef.current);
     };
 
     const handlePublishClick = () => {
-        setIsPublishModalOpen(true);
+
+        contentRef.current = quillContentRef.current(); // 최신 content 값 가져오기
+
+        console.log(contentRef.current);
+
+        if (modalRef.current) {
+            modalRef.current.style.display = "block";
+        }
     };
 
     const handleCloseModal = () => {
-        setErrorMessage(null);
-        setIsPublishModalOpen(false);
+        errorMessageRef.current = null;
+        if (modalRef.current) {
+            modalRef.current.style.display = "none";
+        }
     };
 
     const handlePublish = (
@@ -43,6 +54,13 @@ function BlogForm() {
         tags: Tag[],
         category: string
     ) => {
+
+        const content = contentRef.current;
+        const title = titleRef.current;   
+
+        console.log("컨텐츠 >>>>" + content);
+        console.log("컨텐츠 >>>>" + title);
+
         addPostMutation.mutate(
             {
                 title,
@@ -53,15 +71,20 @@ function BlogForm() {
             },
             {
                 onSuccess: () => {
+
                     console.log("Blog 작성 성공 실행");
-                    setIsPublishModalOpen(false);
+
+                    if (modalRef.current) {
+                        modalRef.current.style.display = "none";
+                    }
+
                     router.push("/posts");
                 },
                 onError: (error: any) => {
                     console.log("Blog 작성 실패 실행");
                     console.error("Error:", error); // 오류 로그 확인
                     if (!(error.response.status === 401)) {
-                        setErrorMessage(error.message); // useAddPost에서  throw new Error로 던진 에러 메시지가 error.message에서 사용 된다.
+                        errorMessageRef.current = error.message; // useAddPost에서  throw new Error로 던진 에러 메시지가 error.message에서 사용 된다.
                         // 토큰이 만료된 에러인 401 에러가 아니면 인라인 메시지로 띄워주고, 토큰 만료 에러는 useAddPost에서 Toast 알림으로 처리.
                     }
                 },
@@ -82,7 +105,6 @@ function BlogForm() {
                         <input
                             className='w-full p-2 focus:outline-none border-b'
                             type='text'
-                            value={title}
                             placeholder='제목을 입력하세요'
                             onChange={handleTitleChange}
                         />
@@ -91,8 +113,10 @@ function BlogForm() {
                     {/* mb-4 flex-1 */}
                     <div className="ql-custom-container relative">
                         <QuillEditor
-                            value={content}
-                            onChange={setContent}
+                            value={contentRef.current}
+                            getEditorContent={(getContent) => {
+                                quillContentRef.current = getContent;
+                            }}
                         />
                     </div>
                 </fieldset>
@@ -106,16 +130,16 @@ function BlogForm() {
                 </button>
 
                 {/* {isModalOpen && <PublishModal onClose={handleCloseModal} onPublish={handlePublish}/>} */}
-                {isPublishModalOpen && (
+                <div ref={modalRef} className="hidden">
                     <PublishModal
-                        isOpen={isPublishModalOpen}
+                        isOpen={true}
                         onClose={handleCloseModal}
-                        title={title}
-                        content={content}
+                        titleRef={titleRef}
+                        contentRef={contentRef}
                         onPublish={handlePublish}
-                        errorMessage={errorMessage}
+                        errorMessageRef={errorMessageRef}
                     />
-                )}
+                </div>
             </form>
         </>
     );

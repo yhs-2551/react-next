@@ -5,12 +5,11 @@ import React, {
     useEffect,
     useMemo,
     useRef,
-    useState,
 } from "react";
 
-import { v4 as uuidv4 } from "uuid";
-
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
+import { ToastContainer, toast } from 'react-toastify';
 
 import {
     faFile,
@@ -37,6 +36,7 @@ interface ForwardedQuillComponent extends ReactQuillProps {
     forwardedRef: React.Ref<ReactQuill>;
 }
 
+
 const ReactQuillDynamic = dynamic(
     async () => {
         const { default: RQ } = await import("react-quill");
@@ -51,7 +51,7 @@ const ReactQuillDynamic = dynamic(
 
 interface QuillEditorProps {
     value: string;
-    onChange: (value: string) => void;
+    getEditorContent: (getContent: () => string) => void;
 }
 
 interface DropdownMenuProps {
@@ -68,7 +68,7 @@ interface DropdownMenuProps {
 //React.memo를 통해 부모 컴포넌트가 재렌더링 되어도 자식 컴포넌트의 props값이 변하지 않으면 QuillEditor의 재렌더링을 막는다. 따라서 BlogForm에서 제목의 내용을 변경해도 QuillEditor에는 제목 관련 Props가 없기 때문에 재렌더링 되지 않는다.
 export default React.memo(
     React.forwardRef<ReactQuill, QuillEditorProps>(function QuillEditor(
-        { value, onChange },
+        { value, getEditorContent },
         ref
     ) {
         const quillRef = useRef<ReactQuill | null>(null); // ReactQuill에 대한 참조로 타입 지정
@@ -175,6 +175,7 @@ export default React.memo(
                 }
             }
         }, []);
+
 
         // 캡쳐 이미지 붙여넣었을때 처리
         useEffect(() => {
@@ -741,6 +742,29 @@ export default React.memo(
             };
         }, []);
 
+
+        useEffect(() => {
+            const quill = quillRef.current?.getEditor();
+    
+            if (quill) {
+                getEditorContent(() => {
+                    const html = quill.root.innerHTML;
+                    return DOMPurify.sanitize(html);
+                });
+            } else {
+                const intervalId = setInterval(() => {
+                    const quill = quillRef.current?.getEditor();
+                    if (quill) {
+                        getEditorContent(() => {
+                            const html = quill.root.innerHTML;
+                            return DOMPurify.sanitize(html);
+                        });
+                        clearInterval(intervalId);
+                    }
+                }, 500);
+            }
+        }, [getEditorContent]);
+
         // 에디터 내에서 이미지를 클릭할 때 오버레이 표시
         useEffect(() => {
             const quill = quillRef.current?.getEditor();
@@ -859,6 +883,7 @@ export default React.memo(
             }
         }, []);
 
+
         // 이미지 드랍다운 버튼이 클릭되면 드랍다운 위치값 설정 및 드랍다운 바깥쪽 영역 클릭 시 드랍다운 안보이게 하는 로직
 
         // 여기서 함수 재생성을 막아야 올바르게 작동함.
@@ -885,31 +910,57 @@ export default React.memo(
 
             input.click();
 
-            input.onchange = () => {
+            input.onchange = async () => {
                 const file = input.files ? input.files[0] : null;
 
                 if (file) {
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        // 나중에 서버측에서 반환환 이미지 URL을 사용해야 하며, 서버측에서 얻은 URL을 통해 Next.js <Image> 태그 src에 적용 예정
-                        const base64String = reader.result?.toString();
-                        const quill = quillRef.current?.getEditor();
+                    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+                    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-                        // saveSeleciton이 0인 경우 falsy 값이기 때문에 savedSelection으로 조건을 안잡고 아래 처럼 savedSelection != undefined로 조건을 잡음
+                    if (type === 'image' && file.size > MAX_IMAGE_SIZE) {
+                        toast.error('이미지 파일 크기가 5MB를 초과합니다.');
+                        return;
+                    } else if (type === 'file' && file.size > MAX_FILE_SIZE) {
+                        toast.error('파일 크기가 10MB를 초과합니다.');
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append("file", file);
+
+                    
+                    // fetch로 가져오면 캐시 문제가 발생할 수 있음  
+                    const response = await fetch("http://localhost:8000/api/posts/files/upload", {
+                        method: "POST",
+                        body: formData,
+                    });
+
+                    let data;
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        data = await response.json();
+                    } else {
+                        data = await response.text();
+                    }
+            
+                    const fileUrl = typeof data === "string" ? data : data.url;
+                    const quill = quillRef.current?.getEditor();
+            
+                    console.log("file Url >>>" + fileUrl);
+
+                     // saveSeleciton이 0인 경우 falsy 값이기 때문에 savedSelection으로 조건을 안잡고 아래 처럼 savedSelection != undefined로 조건을 잡음
                         if (
                             quill &&
-                            base64String &&
+                            fileUrl &&
                             savedSelection !== null &&
                             savedSelection !== undefined
                         ) {
                             if (type === "image") {
-                                const id = uuidv4();
-
                                 // 커서가 index 0일 때 처리 로직
                                 quill.insertEmbed(
                                     savedSelection,
                                     "image",
-                                    base64String,
+                                    fileUrl,
                                     Quill.sources.USER
                                 ); // 이미지 삽입
                                 quill.insertText(
@@ -919,11 +970,25 @@ export default React.memo(
                                 ); // 파일 뒤에 공백 추가
                                 // quill.setSelection(savedSelection + 1, 0, Quill.sources.SILENT);
                             } else if (type === "file") {
-                                quill.insertText(
-                                    savedSelection,
-                                    `${file.name} 첨부됨\n`
-                                );
-                                quill.insertText(savedSelection + 1, "\n\n"); // 파일 뒤에 공백 추가
+
+                               console.log("이떄 실행");
+
+                               const fileIconHtml = `
+                                 <a href="${fileUrl}" target="_blank">${file.name}</a>
+                             `;
+                             quill.clipboard.dangerouslyPasteHTML(savedSelection, fileIconHtml);
+
+                                console.log(fileUrl);
+
+                             setTimeout(() => {
+                                const quillEditor = document.querySelector('.ql-editor');
+                                const anchorTag = quillEditor?.querySelector('a[href="about:blank"]');
+                        
+                                if (anchorTag) {
+                                    anchorTag.setAttribute('href', fileUrl); // 올바른 href 값으로 교체
+                                }
+                            }, 0);
+
                                 // quill.setSelection(savedSelection + 1);
                             } else if (type === "video") {
                                 quill.insertText(
@@ -934,15 +999,17 @@ export default React.memo(
                                 // quill.setSelection(savedSelection + 1);
                             }
                         }
-                    };
-                    reader.readAsDataURL(file);
-                }
+                    }
+                
             };
         }, []);
 
         // handleAlign 함수 이미지를 클릭했을때 오버레이가 선택되면서, 이후에 툴바의 정렬 기능이 제대로 작동되게 하기 위함.
         // react quill의 정렬 툴바에서 왼쪽 정렬은 false값으로 설정해놨기 때문에 아래와 같이 추가적으로 처리함.
         const handleAlign = (value: false | "left" | "center" | "right") => {
+
+            console.log('실행요');
+
             const image = selectedImageRef.current; // 최신 이미지 참조
             const overlay = overlayRef.current; // 최신 오버레이 참조
 
@@ -1017,8 +1084,21 @@ export default React.memo(
                     container: ".ql-toolbar",
                     handlers: {
                         image: toggleDropdown,
-                        align: (value: false | ("center" | "right" | "left")) =>
-                            handleAlign(value),
+                        align: (value: false | "left" | "center" | "right") => {
+                            const quill = quillRef.current?.getEditor();
+                            if (quill) {
+                                const range = quill.getSelection();
+                                if (range) {
+                                    const [blot] = quill.getLeaf(range.index);
+                                    // 현재 선택된 블롯이 이미지인 경우 handleAlign() 호출
+                                    if (blot && blot.domNode && (blot.domNode as HTMLElement).tagName === 'IMG') {
+                                        handleAlign(value);
+                                    } else {
+                                        quill.format('align', value);
+                                    }
+                                }
+                            }
+                        },
                     },
                 },
             }),
@@ -1026,12 +1106,12 @@ export default React.memo(
         );
 
         // 얘를 useCallback으로 감싸지 않으면 이미지 삽입 후 글을 썼을 때 ql-editor 부분 전체가 재렌더링 됨.
-        const handleChange = useCallback(() => {
-            (html: string) => {
-                const sanitizedHtml = DOMPurify.sanitize(html); // HTML을 안전하게 정리
-                onChange(sanitizedHtml);
-            };
-        }, []);
+        // const handleChange = useCallback(() => {
+        //     return (html: string) => {
+        //         const sanitizedHtml = DOMPurify.sanitize(html); // HTML을 안전하게 정리
+        //         onChange(sanitizedHtml);
+        //     };
+        // }, []);
 
         const DropdownMenu: React.FC<DropdownMenuProps> = ({
             dropdownPosition,
@@ -1126,7 +1206,6 @@ export default React.memo(
                 <ReactQuillDynamic
                     forwardedRef={quillRef}
                     value={value}
-                    onChange={handleChange}
                     placeholder='Story...'
                     theme='snow'
                     modules={modules}
