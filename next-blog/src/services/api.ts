@@ -157,12 +157,24 @@ export const loginUser = async (loginData: {
             body: JSON.stringify(loginData),
         });
 
+        const accessToken = response.headers.get('Authorization')?.split(" ")[1];
+   
+      
+        if (accessToken) {
+            localStorage.setItem('access_token', accessToken);
+        }
+
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || "로그인에 실패했습니다.");
         }
 
-        return await response.json(); // 로그인 성공시 JSON 응답 반환
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            return await response.json(); // JSON 응답 반환
+        } else {
+            return await response.text(); // 문자열 응답 반환
+        }
     } catch (error) {
         console.error("로그인 실패:", error);
         throw error; // 상위 함수로 에러 전달

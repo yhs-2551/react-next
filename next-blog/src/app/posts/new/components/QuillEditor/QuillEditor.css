@@ -17,6 +17,58 @@
     cursor: pointer;
 }
 
+.ql-editor a {
+    text-decoration: none;
+}
+
+.file-container {
+    border: 1px solid #ddd;
+    padding: 10px;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 50%; /* 에디터의 50% 너비 */
+    height: 60px; /* 원하는 높이 설정 */
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.file-container::before {
+    content: '\f15b'; /* Font Awesome file icon */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    position: absolute;
+    left: 1.2rem;
+    font-size: 1.5rem; /* 아이콘 크기 조정 */
+}
+
+
+.file-container::after {
+    content: '\f019';  
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;;
+    position: absolute;
+    right: 1.2rem;
+    font-size: 1.5rem; 
+} 
+
+
+
+
+.file-container:hover {
+    opacity: .8;  
+}
+
+.ql-editor .file-container a {
+    display: block;
+    width: 100%;
+    margin-left: 3rem;
+    text-decoration: none;
+    color: #333; /* 기본 텍스트 색상 */
+    font-size: 1rem;
+    cursor: pointer;
+}
 
 /* .image-actions__overlay {
  display: none !important;

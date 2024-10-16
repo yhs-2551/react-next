@@ -1,24 +1,14 @@
 import dynamic from "next/dynamic";
 
-import React, {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer, toast } from "react-toastify";
 
-import {
-    faFile,
-    faImage,
-    faVideo,
-    faAlignCenter,
-    faAlignLeft,
-    faAlignRight,
-} from "@fortawesome/free-solid-svg-icons";
+import { uploadFile } from "@/app/posts/(common)/utils/uploadFile"
+
+import { faFile, faImage, faVideo, faAlignCenter, faAlignLeft, faAlignRight } from "@fortawesome/free-solid-svg-icons";
 
 import DOMPurify from "dompurify";
 
@@ -31,27 +21,33 @@ import "@/app/posts/new/components/QuillEditor/QuillEditor.css";
 import type ReactQuill from "react-quill";
 import { ReactQuillProps } from "react-quill";
 
-import Quill from "quill";
+import Quill, { Range } from "quill";
 interface ForwardedQuillComponent extends ReactQuillProps {
     forwardedRef: React.Ref<ReactQuill>;
 }
 
-
 const ReactQuillDynamic = dynamic(
     async () => {
         const { default: RQ } = await import("react-quill");
-        return ({ forwardedRef, ...props }: ForwardedQuillComponent) => (
-            <RQ ref={forwardedRef} {...props} />
-        );
+        return ({ forwardedRef, ...props }: ForwardedQuillComponent) => <RQ ref={forwardedRef} {...props} />;
     },
     {
         ssr: false,
     }
 );
 
+interface FileMetadata {
+    fileName: string;
+    fileType: string;
+    fileUrl: string;
+    fileSize: number;
+}
+
 interface QuillEditorProps {
     value: string;
     getEditorContent: (getContent: () => string) => void;
+    fileRef: React.MutableRefObject<FileMetadata[]>;
+    uploadedImagesUrlRef: React.MutableRefObject<string[]>;
 }
 
 interface DropdownMenuProps {
@@ -67,10 +63,10 @@ interface DropdownMenuProps {
 
 //React.memo를 통해 부모 컴포넌트가 재렌더링 되어도 자식 컴포넌트의 props값이 변하지 않으면 QuillEditor의 재렌더링을 막는다. 따라서 BlogForm에서 제목의 내용을 변경해도 QuillEditor에는 제목 관련 Props가 없기 때문에 재렌더링 되지 않는다.
 export default React.memo(
-    React.forwardRef<ReactQuill, QuillEditorProps>(function QuillEditor(
-        { value, getEditorContent },
-        ref
-    ) {
+    React.forwardRef<ReactQuill, QuillEditorProps>(function QuillEditor({ value, getEditorContent, fileRef, uploadedImagesUrlRef }, ref) {
+        const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
         const quillRef = useRef<ReactQuill | null>(null); // ReactQuill에 대한 참조로 타입 지정
 
         const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -85,9 +81,7 @@ export default React.memo(
 
         const imgRectRef = useRef<DOMRect | null>(null);
 
-        const alignmentRef = useRef<
-            ("left" | "center" | "right") | false | null
-        >(null);
+        const alignmentRef = useRef<("left" | "center" | "right") | false | null>(null);
 
         const dropdownPosition = { top: -9999, left: -9999 };
 
@@ -98,36 +92,32 @@ export default React.memo(
 
             // 툴바가 DOM에 있는지 확인하고, 없다면 생성 후 header에 추가
             if (!toolbarElement) {
-                const toolbar = document.createElement("div");
-                toolbar.className = "ql-toolbar ql-snow";
-                document.querySelector("header")?.appendChild(toolbar);
+                const container = document.querySelector(".ql-toolbar-container");
 
-                // 커스텀 툴바 설정
-                const toolbarConfig = [
-                    [{ header: [1, 2, 3, 4, false] }],
-                    ["bold", "italic", "underline"],
-                    [
-                        { list: "ordered" },
-                        { list: "bullet" },
-                        { indent: "-1" },
-                        { indent: "+1" },
-                    ],
-                    ["link", "image", "code-block"],
-                    [{ align: [] }],
-                    [{ color: [] }, { background: [] }],
-                    ["clean"],
-                ];
+                if (container) {
+                    container?.classList.add("ql-toolbar", "ql-snow");
 
-                // 툴바 HTML 동적 생성
-                const createToolbarHTML = (config: any) => {
-                    return config
-                        .map((group: any) => {
-                            if (Array.isArray(group)) {
-                                return group
-                                    .map((item) => {
-                                        if (typeof item === "object") {
-                                            if (item.header) {
-                                                return `
+                    // 커스텀 툴바 설정
+                    const toolbarConfig = [
+                        [{ header: [1, 2, 3, 4, false] }],
+                        ["bold", "italic", "underline"],
+                        [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+                        ["link", "image", "code-block"],
+                        [{ align: [] }],
+                        [{ color: [] }, { background: [] }],
+                        ["clean"],
+                    ];
+
+                    // 툴바 HTML 동적 생성
+                    const createToolbarHTML = (config: any) => {
+                        return config
+                            .map((group: any) => {
+                                if (Array.isArray(group)) {
+                                    return group
+                                        .map((item) => {
+                                            if (typeof item === "object") {
+                                                if (item.header) {
+                                                    return `
                         <select class="ql-header">
                           <option value="1">Heading 1</option>
                           <option value="2">Heading 2</option>
@@ -137,32 +127,33 @@ export default React.memo(
                           <option value="6">Heading 6</option>
                           <option value="">Normal</option>
                         </select>`;
-                                            } else if (item.list) {
-                                                return `<button class="ql-list" value="${item.list}"></button>`;
-                                            } else if (item.indent) {
-                                                return `<button class="ql-indent" value="${item.indent}"></button>`;
-                                            } else if (item.align) {
-                                                return `
+                                                } else if (item.list) {
+                                                    return `<button class="ql-list" value="${item.list}"></button>`;
+                                                } else if (item.indent) {
+                                                    return `<button class="ql-indent" value="${item.indent}"></button>`;
+                                                } else if (item.align) {
+                                                    return `
                                                   <select class="ql-align">
                                                     <option selected></option>
                                                     <option value="center"></option>
                                                     <option value="right"></option>
                                                     <option value="justify"></option>
                                                   </select>`;
+                                                }
+                                            } else {
+                                                return `<button class="ql-${item}"></button>`;
                                             }
-                                        } else {
-                                            return `<button class="ql-${item}"></button>`;
-                                        }
-                                    })
-                                    .join("");
-                            }
-                            return "";
-                        })
-                        .join("");
-                };
+                                        })
+                                        .join("");
+                                }
+                                return "";
+                            })
+                            .join("");
+                    };
 
-                // 툴바에 생성된 HTML 삽입
-                toolbar.innerHTML = createToolbarHTML(toolbarConfig);
+                    // 툴바에 생성된 HTML 삽입
+                    container.innerHTML = createToolbarHTML(toolbarConfig);
+                }
             }
 
             const quill = quillRef.current?.getEditor();
@@ -176,11 +167,13 @@ export default React.memo(
             }
         }, []);
 
-
         // 캡쳐 이미지 붙여넣었을때 처리
         useEffect(() => {
-            const addPasteEventListener = (quill: Quill) => {
+            const addPasteEventListener: (quill: Quill) => () => void = (quill: Quill) => {
                 const handlePaste = (e: ClipboardEvent) => {
+
+                    console.log("실행");
+
                     const clipboardData = e.clipboardData;
 
                     if (clipboardData) {
@@ -190,21 +183,21 @@ export default React.memo(
                         for (let i = 0; i < pastedData.length; i++) {
                             const item = pastedData[i];
 
+                            console.log("object >>>>>>>>>>>>>>", item);
+                            console.log("item.type >>>>>>>>>>>>>>", item.type);
+
+
+
                             if (item.type.startsWith("image/")) {
-                                setTimeout(() => {
-                                    // 이미지가 삽입된 후 커서를 다음 줄로 이동
-                                    const index = quill.getSelection()?.index;
-                                    if (index) {
-                                        quill.insertText(
-                                            index + 1,
-                                            "\n",
-                                            Quill.sources.USER
-                                        );
-                                        // quill.setSelection(index + 1, 0, Quill.sources.SILENT);
-                                    }
-                                }, 100); // 비동기로 실행하여 붙여넣기 후 처리. 0으로 지정하면 안먹히기 때문에 100으로 지정. 잘 안되면 더 큰값으로 지정해야함.
+                                const file: File | null = item.getAsFile();
+                                console.log("file >>>>>>>>>>>>>>", file);
+
+                                if (file) {
+                                    handleImagePaste(quill, file);
+                                }
                                 break;
-                            }
+                            }  
+                            
                         }
                     }
                 };
@@ -233,8 +226,7 @@ export default React.memo(
                     }, 500);
                 }
             };
-
-            const cleanup = initializeQuill();
+      const cleanup = initializeQuill();
 
             // 컴포넌트 언마운트 시 이벤트 리스너 제거
             return () => {
@@ -243,6 +235,40 @@ export default React.memo(
                 }
             };
         }, []);
+
+   
+
+
+        const handleImagePaste: (quill: Quill, file: File) => Promise<void> = async (quill: Quill, file: File) => {
+            // 이미지 파일을 서버에 업로드
+            const fileUrl = await uploadFile(file);
+            
+            const currentUploadedImages: string[] = uploadedImagesUrlRef.current;
+            uploadedImagesUrlRef.current = [...currentUploadedImages, fileUrl];
+
+            if (fileRef && fileRef.current) {
+                fileRef.current.push({
+                    fileName: file.name,
+                    fileType: file.type,
+                    fileUrl,
+                    fileSize: file.size,
+                });
+            }
+
+            const range: Range | null = quill.getSelection();
+
+            if (range) {
+                const [leaf] = quill.getLeaf(range.index);
+                if (leaf && leaf.domNode && (leaf.domNode as HTMLElement).tagName === "IMG") {
+                    (leaf.domNode as HTMLImageElement).src = fileUrl;
+
+                    setTimeout(() => {
+                        quill.insertText(range.index + 1, "\n", Quill.sources.USER);
+                        quill.setSelection(range.index + 2, Quill.sources.SILENT);
+                    }, 100); // 100ms 지연 후 실행
+                }
+            }
+        };
 
         // 오버레이 드래그 진행 시 가로세로 비율 유지하면서 조정
         const handleResizeFunction = (initialImgRect?: DOMRect | null) => {
@@ -257,10 +283,7 @@ export default React.memo(
             // requestAnimationFrame을 위한 참조
             let animationFrameId: number;
 
-            const handleResizeStart = (
-                event: MouseEvent,
-                handlerType: string
-            ) => {
+            const handleResizeStart = (event: MouseEvent, handlerType: string) => {
                 if (!imgRect || !selectedImageRef.current) return;
 
                 startX = event.clientX;
@@ -277,100 +300,60 @@ export default React.memo(
                     let newWidth = startWidth;
                     let newHeight = startHeight;
 
-                    const container = document.querySelector(
-                        ".ql-custom-container"
-                    );
+                    const container = document.querySelector(".ql-custom-container");
                     const containerRect = container?.getBoundingClientRect();
 
                     if (!containerRect) return;
 
                     // 핸들러에 따라 오버레이 크기 변경
-                    if (
-                        handlerType === "bottom-right" ||
-                        handlerType === "top-right"
-                    ) {
+                    if (handlerType === "bottom-right" || handlerType === "top-right") {
                         newWidth = startWidth + (moveEvent.clientX - startX);
                         newHeight = newWidth / aspectRatio;
 
-                        if (
-                            (alignmentRef.current === "left" &&
-                                containerRect) ||
-                            !alignmentRef.current
-                        ) {
+                        if ((alignmentRef.current === "left" && containerRect) || !alignmentRef.current) {
                             // 초기에 정렬이 안된 상태일때 기본값으로 왼쪽 정렬 설정.
                             alignmentRef.current = "left";
 
-                            if (
-                                newWidth + selectedImageRef.current.offsetLeft >
-                                containerRect.width
-                            ) {
-                                newWidth =
-                                    containerRect.width -
-                                    selectedImageRef.current.offsetLeft -
-                                    8;
+                            if (newWidth + selectedImageRef.current.offsetLeft > containerRect.width) {
+                                newWidth = containerRect.width - selectedImageRef.current.offsetLeft - 8;
                                 newHeight = newWidth / aspectRatio;
                             }
                         } else if (alignmentRef.current === "center") {
-                            const centerOffset =
-                                (containerRect.width - newWidth) / 2;
+                            const centerOffset = (containerRect.width - newWidth) / 2;
                             if (centerOffset + newWidth > containerRect.width) {
                                 newWidth = containerRect.width - 16;
                                 newHeight = newWidth / aspectRatio;
                             }
-                        } else if (
-                            alignmentRef.current === "right" &&
-                            containerRect
-                        ) {
-                            const imageRightEdge =
-                                selectedImageRef.current.offsetLeft +
-                                selectedImageRef.current.offsetWidth;
+                        } else if (alignmentRef.current === "right" && containerRect) {
+                            const imageRightEdge = selectedImageRef.current.offsetLeft + selectedImageRef.current.offsetWidth;
                             if (newWidth > imageRightEdge) {
                                 newWidth = imageRightEdge - 8;
                                 newHeight = newWidth / aspectRatio;
                             }
                         }
-                    } else if (
-                        handlerType === "bottom-left" ||
-                        handlerType === "top-left"
-                    ) {
+                    } else if (handlerType === "bottom-left" || handlerType === "top-left") {
                         newWidth = startWidth - (moveEvent.clientX - startX);
                         newHeight = newWidth / aspectRatio;
 
-                        if (
-                            (alignmentRef.current === "left" &&
-                                containerRect) ||
-                            !alignmentRef.current
-                        ) {
+                        if ((alignmentRef.current === "left" && containerRect) || !alignmentRef.current) {
                             // 초기에 정렬이 안된 상태일때 기본값으로 왼쪽 정렬 설정.
                             alignmentRef.current = "left";
 
                             // 왼쪽 정렬 상태에서 오른쪽 부분이 컨테이너를 벗어나지 않도록 제한
-                            if (
-                                newWidth + selectedImageRef.current.offsetLeft >
-                                containerRect.width
-                            ) {
-                                newWidth =
-                                    containerRect.width -
-                                    selectedImageRef.current.offsetLeft -
-                                    8;
+                            if (newWidth + selectedImageRef.current.offsetLeft > containerRect.width) {
+                                newWidth = containerRect.width - selectedImageRef.current.offsetLeft - 8;
                                 newHeight = newWidth / aspectRatio;
                             }
                         }
                         // 중앙 정렬 상태에서 드래그할 때는 중앙에 맞추기
                         else if (alignmentRef.current === "center") {
-                            const centerOffset =
-                                (containerRect.width - newWidth) / 2;
+                            const centerOffset = (containerRect.width - newWidth) / 2;
                             if (centerOffset < 0) {
                                 newWidth = containerRect.width - 16; // 전체 크기를 컨테이너 너비로 고정
                                 newHeight = newWidth / aspectRatio;
                             }
-                        } else if (
-                            alignmentRef.current === "right" &&
-                            containerRect
-                        ) {
-                            const imageRightEdge =
-                                selectedImageRef.current.offsetLeft +
-                                selectedImageRef.current.offsetWidth; // 이미지 오른쪽 끝 좌표 계산
+                        } else if (alignmentRef.current === "right" && containerRect) {
+                            const imageRightEdge = selectedImageRef.current.offsetLeft + selectedImageRef.current.offsetWidth; // 이미지 오른쪽 끝 좌표 계산
 
                             // 왼쪽 핸들러로 드래그 시, 컨테이너의 왼쪽 끝을 넘지 않도록 제한
                             if (newWidth > imageRightEdge) {
@@ -387,19 +370,14 @@ export default React.memo(
                             overlay.style.width = `${newWidth}px`;
                             overlay.style.height = `${newHeight}px`;
 
-                            if (
-                                alignmentRef.current === "center" &&
-                                containerRect
-                            ) {
-                                const centerOffset =
-                                    (containerRect.width - newWidth) / 2;
+                            if (alignmentRef.current === "center" && containerRect) {
+                                const centerOffset = (containerRect.width - newWidth) / 2;
                                 overlay.style.left = `${centerOffset}px`;
                                 selectedImageRef.current.style.left = `${centerOffset}px`;
                             } else if (alignmentRef.current === "left") {
                                 overlay.style.left = `${selectedImageRef.current.offsetLeft}px`;
                             } else if (alignmentRef.current === "right") {
-                                const rightEdge =
-                                    containerRect.width - newWidth;
+                                const rightEdge = containerRect.width - newWidth;
                                 overlay.style.left = `${rightEdge - 8}px`;
                                 selectedImageRef.current.style.left = `${rightEdge}px`;
                             }
@@ -412,8 +390,7 @@ export default React.memo(
                             }
                         };
 
-                        animationFrameId =
-                            requestAnimationFrame(updateImageSize);
+                        animationFrameId = requestAnimationFrame(updateImageSize);
                     }
                 };
 
@@ -422,15 +399,12 @@ export default React.memo(
 
                     const overlay = overlayRef.current;
                     if (overlay && selectedImageRef.current) {
-                        selectedImageRef.current.style.width =
-                            overlay.style.width;
-                        selectedImageRef.current.style.height =
-                            overlay.style.height;
+                        selectedImageRef.current.style.width = overlay.style.width;
+                        selectedImageRef.current.style.height = overlay.style.height;
                         selectedImageRef.current.style.opacity = "1";
 
                         // 드래그 한번 조정 후에 조정된 img의 Rect값으로 재 적용.
-                        imgRect =
-                            selectedImageRef.current?.getBoundingClientRect();
+                        imgRect = selectedImageRef.current?.getBoundingClientRect();
                     }
 
                     window.removeEventListener("mousemove", handleResize);
@@ -441,10 +415,7 @@ export default React.memo(
                 window.addEventListener("mouseup", handleResizeEnd);
             };
 
-            const handleMouseDown = (
-                event: MouseEvent,
-                handlerType: string
-            ) => {
+            const handleMouseDown = (event: MouseEvent, handlerType: string) => {
                 const overlayRect = overlayRef.current?.getBoundingClientRect();
                 const tolerance = 5;
 
@@ -467,81 +438,45 @@ export default React.memo(
             let topRightHandler: HTMLDivElement | null = null;
 
             if (overlay) {
-                bottomRightHandler = overlay.querySelector(
-                    ".bottom-right"
-                ) as HTMLDivElement;
-                bottomLeftHandler = overlay.querySelector(
-                    ".bottom-left"
-                ) as HTMLDivElement;
-                topLeftHandler = overlay.querySelector(
-                    ".top-left"
-                ) as HTMLDivElement;
-                topRightHandler = overlay.querySelector(
-                    ".top-right"
-                ) as HTMLDivElement;
+                bottomRightHandler = overlay.querySelector(".bottom-right") as HTMLDivElement;
+                bottomLeftHandler = overlay.querySelector(".bottom-left") as HTMLDivElement;
+                topLeftHandler = overlay.querySelector(".top-left") as HTMLDivElement;
+                topRightHandler = overlay.querySelector(".top-right") as HTMLDivElement;
 
-                const handleMouseDownBottomRight = (event: MouseEvent) =>
-                    handleMouseDown(event, "bottom-right");
-                const handleMouseDownBottomLeft = (event: MouseEvent) =>
-                    handleMouseDown(event, "bottom-left");
-                const handleMouseDownTopLeft = (event: MouseEvent) =>
-                    handleMouseDown(event, "top-left");
-                const handleMouseDownTopRight = (event: MouseEvent) =>
-                    handleMouseDown(event, "top-right");
+                const handleMouseDownBottomRight = (event: MouseEvent) => handleMouseDown(event, "bottom-right");
+                const handleMouseDownBottomLeft = (event: MouseEvent) => handleMouseDown(event, "bottom-left");
+                const handleMouseDownTopLeft = (event: MouseEvent) => handleMouseDown(event, "top-left");
+                const handleMouseDownTopRight = (event: MouseEvent) => handleMouseDown(event, "top-right");
 
                 if (bottomRightHandler) {
-                    bottomRightHandler.addEventListener(
-                        "mousedown",
-                        handleMouseDownBottomRight
-                    );
+                    bottomRightHandler.addEventListener("mousedown", handleMouseDownBottomRight);
                 }
 
                 if (bottomLeftHandler) {
-                    bottomLeftHandler.addEventListener(
-                        "mousedown",
-                        handleMouseDownBottomLeft
-                    );
+                    bottomLeftHandler.addEventListener("mousedown", handleMouseDownBottomLeft);
                 }
 
                 if (topLeftHandler) {
-                    topLeftHandler.addEventListener(
-                        "mousedown",
-                        handleMouseDownTopLeft
-                    );
+                    topLeftHandler.addEventListener("mousedown", handleMouseDownTopLeft);
                 }
 
                 if (topRightHandler) {
-                    topRightHandler.addEventListener(
-                        "mousedown",
-                        handleMouseDownTopRight
-                    );
+                    topRightHandler.addEventListener("mousedown", handleMouseDownTopRight);
                 }
 
                 // 클린업 함수: 이벤트 핸들러 제거
                 return () => {
                     if (bottomRightHandler) {
-                        bottomRightHandler.removeEventListener(
-                            "mousedown",
-                            handleMouseDownBottomRight
-                        );
+                        bottomRightHandler.removeEventListener("mousedown", handleMouseDownBottomRight);
                     }
                     if (bottomLeftHandler) {
-                        bottomLeftHandler.removeEventListener(
-                            "mousedown",
-                            handleMouseDownBottomLeft
-                        );
+                        bottomLeftHandler.removeEventListener("mousedown", handleMouseDownBottomLeft);
                     }
                     if (topLeftHandler) {
-                        topLeftHandler.removeEventListener(
-                            "mousedown",
-                            handleMouseDownTopLeft
-                        );
+                        topLeftHandler.removeEventListener("mousedown", handleMouseDownTopLeft);
                     }
                     if (topRightHandler) {
-                        topRightHandler.removeEventListener(
-                            "mousedown",
-                            handleMouseDownTopRight
-                        );
+                        topRightHandler.removeEventListener("mousedown", handleMouseDownTopRight);
                     }
                 };
             }
@@ -553,10 +488,8 @@ export default React.memo(
         };
 
         // 익명 함수() => {}를 통해 이벤트 리스너를 등록하고, 삭제하는 경우 함수 참조가 일치하지 않아 제대로 이벤트 제거가 안됨. 따라서 아래와 같이 전역적으로 뺀다.
-        const scrollHandler = () =>
-            updateOverlayOnScrollResize(imgRectRef.current);
-        const resizeHandler = () =>
-            updateOverlayOnScrollResize(imgRectRef.current);
+        const scrollHandler = () => updateOverlayOnScrollResize(imgRectRef.current);
+        const resizeHandler = () => updateOverlayOnScrollResize(imgRectRef.current);
 
         // 오버레이 외부 클릭 시 오버레이 숨김 처리
         const handleOverlayOutsideClick = (event: MouseEvent) => {
@@ -567,15 +500,10 @@ export default React.memo(
                 ".ql-align, .ql-bold, .ql-list, .ql-header, .ql-italic, .ql-indent, .ql-link, .ql-clean, .ql-underline"
             );
 
-            const isToolbarButtonClicked = Array.from(toolbarElements).some(
-                (el) => el.contains(event.target as Node)
-            ); // 툴바 버튼 클릭 감지
+            const isToolbarButtonClicked = Array.from(toolbarElements).some((el) => el.contains(event.target as Node)); // 툴바 버튼 클릭 감지
 
             if (overlay && selectedImageRef.current) {
-                if (
-                    !selectedImageRef.current.contains(event.target as Node) &&
-                    !isToolbarButtonClicked
-                ) {
+                if (!selectedImageRef.current.contains(event.target as Node) && !isToolbarButtonClicked) {
                     // 이미지 영역과 툴바 버튼이 아닌 영역을 클릭했을 때만 실행
                     overlay.style.display = "none";
 
@@ -585,23 +513,16 @@ export default React.memo(
                         document.addEventListener("resize", resizeHandler);
                     }
 
-                    document.removeEventListener(
-                        "mousedown",
-                        handleOverlayOutsideClick
-                    );
+                    document.removeEventListener("mousedown", handleOverlayOutsideClick);
 
                     if (overlayRef.current) {
-                        overlayRef.current.removeEventListener(
-                            "mousedown",
-                            handleOverlayClick
-                        );
+                        overlayRef.current.removeEventListener("mousedown", handleOverlayClick);
                     }
 
                     // 오버레이의 각 모서리 크기 조정하는 부분 mousedown 이벤트 제거.
                     resizeMouseDownCleanUp?.();
 
-                    const parentContainer: HTMLElement | null =
-                        selectedImageRef.current.parentElement;
+                    const parentContainer: HTMLElement | null = selectedImageRef.current.parentElement;
 
                     if (parentContainer) {
                         parentContainer.style.marginBottom = "0"; // 오버레이 삭제 시 추가한 마진 초기화
@@ -615,10 +536,7 @@ export default React.memo(
             document.addEventListener("mousedown", handleOverlayOutsideClick);
 
             if (overlayRef.current) {
-                overlayRef.current.addEventListener(
-                    "mousedown",
-                    handleOverlayClick
-                );
+                overlayRef.current.addEventListener("mousedown", handleOverlayClick);
             }
         };
 
@@ -627,9 +545,7 @@ export default React.memo(
             if (!imgRect) return;
 
             requestAnimationFrame(() => {
-                const parentContainer = document.querySelector(
-                    ".ql-custom-container"
-                ) as HTMLDivElement;
+                const parentContainer = document.querySelector(".ql-custom-container") as HTMLDivElement;
 
                 if (!parentContainer) return;
 
@@ -640,21 +556,13 @@ export default React.memo(
                     overlay.style.width = `${imgRect.width}px`;
                     overlay.style.height = `${imgRect.height}px`;
 
-                    overlay.style.left = `${
-                        imgRect.left -
-                        parentRect.left +
-                        parentContainer.scrollLeft
-                    }px`;
-                    overlay.style.top = `${
-                        imgRect.top - parentRect.top + parentContainer.scrollTop
-                    }px`;
+                    overlay.style.left = `${imgRect.left - parentRect.left + parentContainer.scrollLeft}px`;
+                    overlay.style.top = `${imgRect.top - parentRect.top + parentContainer.scrollTop}px`;
                 }
             });
         };
 
-        let resizeMouseDownCleanUp:
-            | ((initialRect?: DOMRect) => void)
-            | undefined;
+        let resizeMouseDownCleanUp: ((initialRect?: DOMRect) => void) | undefined;
 
         // 이미지 크기 및 위치를 가져와서 오버레이 초기 설정
         const handleImageClick = useCallback((event: MouseEvent) => {
@@ -664,11 +572,7 @@ export default React.memo(
             if ((event.target as HTMLElement).tagName === "IMG") {
                 imgEl = event.target as HTMLImageElement;
 
-                const storedAlignment = imgEl.getAttribute("data-alignment") as
-                    | "left"
-                    | "center"
-                    | "right"
-                    | null;
+                const storedAlignment = imgEl.getAttribute("data-alignment") as "left" | "center" | "right" | null;
 
                 if (storedAlignment) {
                     alignmentRef.current = storedAlignment;
@@ -682,37 +586,23 @@ export default React.memo(
                 const clickY = event.clientY;
 
                 // 클릭한 좌표가 이미지 영역 내부인지 확인
-                if (
-                    clickX >= imgRect.left &&
-                    clickX <= imgRect.right &&
-                    clickY >= imgRect.top &&
-                    clickY <= imgRect.bottom
-                ) {
+                if (clickX >= imgRect.left && clickX <= imgRect.right && clickY >= imgRect.top && clickY <= imgRect.bottom) {
                     const overlay = overlayRef.current;
                     if (overlay) {
                         overlay.style.width = `${imgRect.width}px`;
                         overlay.style.height = `${imgRect.height}px`;
-                        overlay.style.left = `${
-                            imgRect.left + window.scrollX
-                        }px`;
+                        overlay.style.left = `${imgRect.left + window.scrollX}px`;
                         overlay.style.top = `${imgRect.top + window.scrollY}px`;
                         overlay.style.display = "block"; // 오버레이 표시
 
                         if ((overlay.style.display = "block")) {
                             // 이벤트 리스너 제거
-                            document.removeEventListener(
-                                "scroll",
-                                scrollHandler
-                            );
-                            document.removeEventListener(
-                                "resize",
-                                resizeHandler
-                            );
+                            document.removeEventListener("scroll", scrollHandler);
+                            document.removeEventListener("resize", resizeHandler);
                         }
 
                         // overlay의 부모 즉 figure의 부모인 div로 잡으면 에디터 전체 내용이 선택되어서, 맨아래쪽에 margin이 생겨서 해당 방식은 불가능.
-                        const parentContainer: HTMLElement | null =
-                            imgEl.parentElement;
+                        const parentContainer: HTMLElement | null = imgEl.parentElement;
 
                         if (parentContainer) {
                             parentContainer.style.marginBottom = "3.5rem"; // 이미지 클릭 후, 오버레이 생성 시 다른 요소와의 거리를 위해 아래쪽 공간 확보
@@ -742,10 +632,9 @@ export default React.memo(
             };
         }, []);
 
-
         useEffect(() => {
             const quill = quillRef.current?.getEditor();
-    
+
             if (quill) {
                 getEditorContent(() => {
                     const html = quill.root.innerHTML;
@@ -787,10 +676,7 @@ export default React.memo(
                         const addImageClickListener = () => {
                             const images = quill.root.querySelectorAll("img"); // 에디터 내 모든 이미지 선택
                             images.forEach((img) => {
-                                img.removeEventListener(
-                                    "click",
-                                    handleImageClick
-                                ); // 중복 방지
+                                img.removeEventListener("click", handleImageClick); // 중복 방지
                                 img.addEventListener("click", handleImageClick); // 이미지에 클릭 이벤트 추가
                             });
                         };
@@ -814,9 +700,7 @@ export default React.memo(
         // 드롭다운 위치 설정 함수
         const setPosition = () => {
             const imageButtonElement = document.querySelector(".ql-image");
-            const parentContainer = document.querySelector(
-                ".ql-custom-container"
-            );
+            const parentContainer = document.querySelector(".ql-custom-container");
 
             if (imageButtonElement && dropdownRef.current && parentContainer) {
                 const rect = imageButtonElement.getBoundingClientRect();
@@ -824,15 +708,8 @@ export default React.memo(
                 const dropdownWidth = dropdownRef.current.offsetWidth;
                 const buttonWidth = rect.width;
 
-                dropdownRef.current.style.top = `${
-                    rect.bottom - parentRect.top
-                }px`;
-                dropdownRef.current.style.left = `${
-                    rect.left -
-                    parentRect.left +
-                    buttonWidth / 2 -
-                    dropdownWidth / 2
-                }px`;
+                dropdownRef.current.style.top = `${rect.bottom - parentRect.top}px`;
+                dropdownRef.current.style.left = `${rect.left - parentRect.left + buttonWidth / 2 - dropdownWidth / 2}px`;
             }
         };
 
@@ -842,9 +719,7 @@ export default React.memo(
                     dropdownVisibleRef.current &&
                     dropdownRef.current &&
                     !dropdownRef.current.contains(event.target as Node) &&
-                    !document
-                        .querySelector(".ql-image")
-                        ?.contains(event.target as Node)
+                    !document.querySelector(".ql-image")?.contains(event.target as Node)
                 ) {
                     dropdownVisibleRef.current = false;
 
@@ -853,10 +728,7 @@ export default React.memo(
                     }
 
                     // 외부 클릭 핸들러 제거 (드롭다운이 닫히면 더 이상 감지할 필요가 없으므로)
-                    document.removeEventListener(
-                        "mousedown",
-                        handleOutsideClick
-                    );
+                    document.removeEventListener("mousedown", handleOutsideClick);
                 }
             };
 
@@ -871,9 +743,7 @@ export default React.memo(
             dropdownVisibleRef.current = !dropdownVisibleRef.current;
 
             if (dropdownRef.current) {
-                dropdownRef.current.style.display = dropdownVisibleRef.current
-                    ? "block"
-                    : "none";
+                dropdownRef.current.style.display = dropdownVisibleRef.current ? "block" : "none";
             }
 
             // 드롭다운이 보이는 경우에만 위치 설정
@@ -882,9 +752,6 @@ export default React.memo(
                 handleDropdownOutsideClick();
             }
         }, []);
-
-
-        // 이미지 드랍다운 버튼이 클릭되면 드랍다운 위치값 설정 및 드랍다운 바깥쪽 영역 클릭 시 드랍다운 안보이게 하는 로직
 
         // 여기서 함수 재생성을 막아야 올바르게 작동함.
         const handleFileSelection = useCallback((type: string) => {
@@ -896,119 +763,147 @@ export default React.memo(
             }
 
             const input = document.createElement("input");
-
-            if (type === "image") {
-                input.setAttribute("type", "file");
-                input.setAttribute("accept", "image/*");
-            } else if (type === "file") {
-                input.setAttribute("type", "file");
-                input.setAttribute("accept", "application/pdf,text/*");
-            } else if (type === "video") {
-                input.setAttribute("type", "file");
-                input.setAttribute("accept", "video/*");
-            }
+            setInputAttributes(input, type);
 
             input.click();
 
             input.onchange = async () => {
                 const file = input.files ? input.files[0] : null;
+                if (file && validateFileSize(file, type)) {
+                    const fileUrl = await uploadFile(file);
 
-                if (file) {
-                    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-                    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+                    const currentUploadedImages: string[] = uploadedImagesUrlRef.current;
+                    uploadedImagesUrlRef.current = [...currentUploadedImages, fileUrl];
 
-                    if (type === 'image' && file.size > MAX_IMAGE_SIZE) {
-                        toast.error('이미지 파일 크기가 5MB를 초과합니다.');
-                        return;
-                    } else if (type === 'file' && file.size > MAX_FILE_SIZE) {
-                        toast.error('파일 크기가 10MB를 초과합니다.');
-                        return;
-                    }
-
-                    const formData = new FormData();
-                    formData.append("file", file);
-
-                    
-                    // fetch로 가져오면 캐시 문제가 발생할 수 있음  
-                    const response = await fetch("http://localhost:8000/api/posts/files/upload", {
-                        method: "POST",
-                        body: formData,
-                    });
-
-                    let data;
-                    const contentType = response.headers.get("content-type");
-                    if (contentType && contentType.includes("application/json")) {
-                        data = await response.json();
-                    } else {
-                        data = await response.text();
-                    }
-            
-                    const fileUrl = typeof data === "string" ? data : data.url;
-                    const quill = quillRef.current?.getEditor();
-            
-                    console.log("file Url >>>" + fileUrl);
-
-                     // saveSeleciton이 0인 경우 falsy 값이기 때문에 savedSelection으로 조건을 안잡고 아래 처럼 savedSelection != undefined로 조건을 잡음
-                        if (
-                            quill &&
-                            fileUrl &&
-                            savedSelection !== null &&
-                            savedSelection !== undefined
-                        ) {
-                            if (type === "image") {
-                                // 커서가 index 0일 때 처리 로직
-                                quill.insertEmbed(
-                                    savedSelection,
-                                    "image",
-                                    fileUrl,
-                                    Quill.sources.USER
-                                ); // 이미지 삽입
-                                quill.insertText(
-                                    savedSelection + 1,
-                                    "\n",
-                                    Quill.sources.USER
-                                ); // 파일 뒤에 공백 추가
-                                // quill.setSelection(savedSelection + 1, 0, Quill.sources.SILENT);
-                            } else if (type === "file") {
-
-                               console.log("이떄 실행");
-
-                               const fileIconHtml = `
-                                 <a href="${fileUrl}" target="_blank">${file.name}</a>
-                             `;
-                             quill.clipboard.dangerouslyPasteHTML(savedSelection, fileIconHtml);
-
-                                console.log(fileUrl);
-
-                             setTimeout(() => {
-                                const quillEditor = document.querySelector('.ql-editor');
-                                const anchorTag = quillEditor?.querySelector('a[href="about:blank"]');
-                        
-                                if (anchorTag) {
-                                    anchorTag.setAttribute('href', fileUrl); // 올바른 href 값으로 교체
-                                }
-                            }, 0);
-
-                                // quill.setSelection(savedSelection + 1);
-                            } else if (type === "video") {
-                                quill.insertText(
-                                    savedSelection,
-                                    `${file.name} 동영상 첨부됨\n`
-                                );
-                                quill.insertText(savedSelection + 1, "\n\n"); // 동영상 뒤에 공백 추가
-                                // quill.setSelection(savedSelection + 1);
-                            }
-                        }
-                    }
-                
+                    insertFileToEditor(file, fileUrl, type);
+                }
             };
         }, []);
+
+        const setInputAttributes = (input: HTMLInputElement, type: string): void => {
+            input.setAttribute("type", "file");
+            if (type === "image") {
+                input.setAttribute("accept", "image/*");
+            } else if (type === "file") {
+                input.setAttribute("accept", "application/pdf,text/*");
+            } else if (type === "video") {
+                input.setAttribute("accept", "video/*");
+            }
+        };
+
+        const validateFileSize = (file: File, type: string): boolean => {
+            if (type === "image" && file.size > MAX_IMAGE_SIZE) {
+                toast.error("이미지 파일 크기가 5MB를 초과합니다.");
+                return false;
+            } else if (type === "file" && file.size > MAX_FILE_SIZE) {
+                toast.error("파일 크기가 10MB를 초과합니다.");
+                return false;
+            }
+            return true;
+        };
+        
+
+
+        const insertFileToEditor = (file: File, fileUrl: string, type: string): void => {
+            const quill = quillRef.current?.getEditor();
+
+            // saveSeleciton이 0인 경우 falsy 값이기 때문에 savedSelection으로 조건을 안잡고 아래 처럼 savedSelection != undefined로 조건을 잡음
+            if (quill && fileUrl && savedSelection !== null && savedSelection !== undefined) {
+                const currentSelection = savedSelection; // 로컬 변수에 저장
+
+                if (type === "image") {
+                    // 커서가 index 0일 때 처리 로직
+                    quill.insertEmbed(currentSelection, "image", fileUrl, Quill.sources.USER); // 이미지 삽입
+
+                    setTimeout(() => {
+                        quill.insertText(currentSelection + 1, "\n", Quill.sources.USER);
+                        quill.setSelection(currentSelection + 2, Quill.sources.SILENT);
+                    }, 100); // 100ms 지연 후 실행
+                } else if (type === "file") {
+                    console.log("file.name >>>>" + file.name);
+
+                    const fileIconHtml = `
+                 <a href="${fileUrl}">첨부된 파일: ${file.name}. 여기를 클릭하여 다운로드 하세요.</a>
+             `;
+                    quill.clipboard.dangerouslyPasteHTML(savedSelection, fileIconHtml);
+
+                    setupFileDownloadLink(fileUrl, file.name);
+
+                    setTimeout(() => {
+                        // 현재 라인의 다음 라인으로 커서를 이동
+                        const [line, offset] = quill.getLine(currentSelection);
+
+                        if (line) {
+                            const nextLineIndex = quill.getIndex(line) + line.length();
+
+                            // 줄 바꿈을 추가하여 새로운 블록 요소 생성
+                            quill.insertText(nextLineIndex, "\n", Quill.sources.USER);
+
+                            // 새로운 블록 요소로 커서를 이동
+                            quill.setSelection(nextLineIndex + 1, Quill.sources.SILENT);
+                        }
+                    }, 100); // 100ms 지연 후 실행
+                } else if (type === "video") {
+                    // 나중에 추가 예정
+                }
+
+                if (fileRef && fileRef.current) {
+                    fileRef.current.push({
+                        fileName: file.name,
+                        fileType: file.type,
+                        fileUrl,
+                        fileSize: file.size,
+                    });
+                }
+            }
+        };
+
+        const setupFileDownloadLink = (fileUrl: string, fileName: string): void => {
+            const quillEditor = document.querySelector(".ql-editor");
+            const anchorTag = quillEditor?.querySelector(`a[href="${fileUrl}"]`) as HTMLAnchorElement;
+
+            if (anchorTag) {
+                anchorTag.setAttribute("href", fileUrl); // 올바른 href 값으로 교체
+                anchorTag.style.cursor = "pointer"; // 인라인 스타일로 커서 스타일 적용
+                anchorTag.style.textDecoration = "none";
+
+                const hideTooltip = () => {
+                    const qlToolTip = document.querySelector(".ql-tooltip") as HTMLDivElement;
+                    if (qlToolTip) {
+                        qlToolTip.style.display = "none"; // 툴팁 숨김
+                    }
+                };
+
+                anchorTag.addEventListener("click", (event: MouseEvent) => {
+                    event.preventDefault();
+                    hideTooltip();
+
+                    fetch(fileUrl)
+                        .then((response) => response.blob())
+                        .then((blob) => {
+                            const blobUrl = window.URL.createObjectURL(blob); // Object URL 생성
+
+                            const link = document.createElement("a");
+                            link.href = blobUrl;
+                            // 한글 깨지는 현상 해결. URL 인코딩된 파일명을 올바른 한글 텍스트로 변환한다.
+                            link.download = decodeURIComponent(fileName);
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+
+                            window.URL.revokeObjectURL(blobUrl); // Object URL 해제
+                        })
+                        .catch(console.error);
+                });
+
+                anchorTag.addEventListener("contextmenu", hideTooltip); // 우클릭 시 툴팁 숨김
+            }
+        };
 
         // handleAlign 함수 이미지를 클릭했을때 오버레이가 선택되면서, 이후에 툴바의 정렬 기능이 제대로 작동되게 하기 위함.
         // react quill의 정렬 툴바에서 왼쪽 정렬은 false값으로 설정해놨기 때문에 아래와 같이 추가적으로 처리함.
         const handleAlign = (value: false | "left" | "center" | "right") => {
-
-            console.log('실행요');
+            console.log("실행요");
 
             const image = selectedImageRef.current; // 최신 이미지 참조
             const overlay = overlayRef.current; // 최신 오버레이 참조
@@ -1044,11 +939,8 @@ export default React.memo(
                     const imgRect = image.getBoundingClientRect();
 
                     if (imgRect) {
-                        const parentContainer = document.querySelector(
-                            ".ql-custom-container"
-                        ) as HTMLDivElement;
-                        const parentRect =
-                            parentContainer?.getBoundingClientRect();
+                        const parentContainer = document.querySelector(".ql-custom-container") as HTMLDivElement;
+                        const parentRect = parentContainer?.getBoundingClientRect();
 
                         if (overlay && parentRect) {
                             // 이미지가 컨테이너의 오른쪽을 넘지 않도록 제한
@@ -1056,16 +948,8 @@ export default React.memo(
                             overlay.style.width = `${imgRect.width}px`;
                             overlay.style.height = `${imgRect.height}px`;
 
-                            overlay.style.left = `${
-                                imgRect.left -
-                                parentRect.left +
-                                parentContainer.scrollLeft
-                            }px`;
-                            overlay.style.top = `${
-                                imgRect.top -
-                                parentRect.top +
-                                parentContainer.scrollTop
-                            }px`;
+                            overlay.style.left = `${imgRect.left - parentRect.left + parentContainer.scrollLeft}px`;
+                            overlay.style.top = `${imgRect.top - parentRect.top + parentContainer.scrollTop}px`;
                         }
 
                         // 핸들러 리사이즈 기능 호출. 정렬 이후 핸들러를 사용하기 위해 필요
@@ -1091,10 +975,11 @@ export default React.memo(
                                 if (range) {
                                     const [blot] = quill.getLeaf(range.index);
                                     // 현재 선택된 블롯이 이미지인 경우 handleAlign() 호출
-                                    if (blot && blot.domNode && (blot.domNode as HTMLElement).tagName === 'IMG') {
+                                    if (blot && blot.domNode && (blot.domNode as HTMLElement).tagName === "IMG") {
                                         handleAlign(value);
                                     } else {
-                                        quill.format('align', value);
+                                        // 그렇지 않은 경우에 quill의 기본 정렬 기능 호출
+                                        quill.format("align", value);
                                     }
                                 }
                             }
@@ -1105,19 +990,7 @@ export default React.memo(
             []
         );
 
-        // 얘를 useCallback으로 감싸지 않으면 이미지 삽입 후 글을 썼을 때 ql-editor 부분 전체가 재렌더링 됨.
-        // const handleChange = useCallback(() => {
-        //     return (html: string) => {
-        //         const sanitizedHtml = DOMPurify.sanitize(html); // HTML을 안전하게 정리
-        //         onChange(sanitizedHtml);
-        //     };
-        // }, []);
-
-        const DropdownMenu: React.FC<DropdownMenuProps> = ({
-            dropdownPosition,
-            handleFileSelection,
-            dropdownRef,
-        }) => (
+        const DropdownMenu: React.FC<DropdownMenuProps> = ({ dropdownPosition, handleFileSelection, dropdownRef }) => (
             <div
                 ref={dropdownRef}
                 className='absolute z-10 bg-white border border-gray-300 shadow-md'
@@ -1127,37 +1000,16 @@ export default React.memo(
                 }}
             >
                 <ul>
-                    <li
-                        className='py-2 px-4 hover:bg-gray-100 cursor-pointer'
-                        onClick={() => handleFileSelection("image")}
-                    >
-                        <FontAwesomeIcon
-                            className='inline-block w-4 h-4 mr-2'
-                            icon={faImage}
-                            style={{ color: "#a3a3a3" }}
-                        />
+                    <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("image")}>
+                        <FontAwesomeIcon className='inline-block w-4 h-4 mr-2' icon={faImage} style={{ color: "#a3a3a3" }} />
                         사진
                     </li>
-                    <li
-                        className='py-2 px-4 hover:bg-gray-100 cursor-pointer'
-                        onClick={() => handleFileSelection("file")}
-                    >
-                        <FontAwesomeIcon
-                            className='inline-block w-4 h-4 mr-2'
-                            icon={faFile}
-                            style={{ color: "#a3a3a3" }}
-                        />
+                    <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("file")}>
+                        <FontAwesomeIcon className='inline-block w-4 h-4 mr-2' icon={faFile} style={{ color: "#a3a3a3" }} />
                         파일
                     </li>
-                    <li
-                        className='py-2 px-4 hover:bg-gray-100 cursor-pointer'
-                        onClick={() => handleFileSelection("video")}
-                    >
-                        <FontAwesomeIcon
-                            className='inline-block w-4 h-4 mr-2'
-                            icon={faVideo}
-                            style={{ color: "#a3a3a3" }}
-                        />
+                    <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("video")}>
+                        <FontAwesomeIcon className='inline-block w-4 h-4 mr-2' icon={faVideo} style={{ color: "#a3a3a3" }} />
                         동영상
                     </li>
                 </ul>
@@ -1168,10 +1020,7 @@ export default React.memo(
             <>
                 {/* 오버레이  */}
 
-                <figure
-                    ref={overlayRef}
-                    className='absolute border-2 border-black/50 pointer-events-auto z-10 hidden'
-                >
+                <figure ref={overlayRef} className='absolute border-2 border-black/50 pointer-events-auto z-10 hidden'>
                     {/* 네 구석에 있는 리사이즈 핸들러 */}
                     <div className='absolute w-2.5 h-2.5 bg-white border border-black rounded-full top-[-5px] left-[-5px] top-left cursor-nwse-resize pointer-events-auto' />
                     <div className='absolute w-2.5 h-2.5 bg-white border border-black rounded-full top-[-5px] right-[-5px] top-right cursor-nesw-resize pointer-events-auto' />
@@ -1193,11 +1042,7 @@ export default React.memo(
 
                     {/* 이미지 설명 입력 필드 */}
                     <figcaption className='absolute w-full text-center bottom-[-2.2rem]'>
-                        <input
-                            type='text'
-                            className='w-full text-center outline-none'
-                            placeholder='이미지를 설명해 보세요'
-                        />
+                        <input type='text' className='w-full text-center outline-none' placeholder='이미지를 설명해 보세요' />
                     </figcaption>
                 </figure>
 
@@ -1206,20 +1051,13 @@ export default React.memo(
                 <ReactQuillDynamic
                     forwardedRef={quillRef}
                     value={value}
-                    placeholder='Story...'
                     theme='snow'
                     modules={modules}
                     // formats={formats}
                 />
                 {/* <ReactQuill value={value} onChange={handleChange} theme='bubble' /> */}
                 {/* 드롭다운 메뉴 */}
-                {
-                    <DropdownMenu
-                        dropdownPosition={dropdownPosition}
-                        handleFileSelection={handleFileSelection}
-                        dropdownRef={dropdownRef}
-                    />
-                }
+                {<DropdownMenu dropdownPosition={dropdownPosition} handleFileSelection={handleFileSelection} dropdownRef={dropdownRef} />}
             </>
         );
     })

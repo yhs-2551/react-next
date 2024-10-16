@@ -1,50 +1,64 @@
+import { refreshToken } from "@/app/posts/(common)/utils/refreshToken";
 import { useRouter } from "next/navigation";
 
 import { useMutation, useQueryClient } from "react-query";
 
 import { toast } from "react-toastify";
 
+interface FileMetadata {
+    fileName: string;
+    fileType: string;
+    fileUrl: string;
+    fileSize: number;
+}
+
 interface NewPost {
+    category: string;
     title: string;
     content: string;
     tags: string[];
-    categoryName: string;
-    postStatus: string;
+    files: FileMetadata[];
+    postStatus: "PUBLIC" | "PRIVATE";
+    commentsEnabled: "ALLOW" | "DISALLOW",
+    featuredImage: FileMetadata | null,
 }
 
 function useAddPost() {
     const queryClient = useQueryClient();
-    const accessToken = localStorage.getItem("access_token");
-    const router = useRouter();
+    const accessToken = localStorage.getItem("access_token") ?? false;
 
     return useMutation(
         async (newPost: NewPost) => {
-            const response = await fetch("http://localhost:8000/api/posts", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`, // Authorization 헤더에 토큰 포함
-                },
-                body: JSON.stringify(newPost),
-            });
+
+            console.log("newPost >>>", newPost);
+          
+            const makeRequest: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
+                return await fetch("http://localhost:8000/api/posts", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`, // Authorization 헤더에 토큰 포함
+                    },
+                    body: JSON.stringify(newPost),
+                });
+            };
+
+            let response = await makeRequest(accessToken);
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    localStorage.removeItem("access_token");
-
-                    toast.error("Your session has expired.", {
-                        position: "top-center",
-                        autoClose: 3000,
-                        onClose: () => router.push("/login"),
-                    })
-                
-                    throw new Error(
-                        "Unauthorized: Your session has expired. You need to log in to write new post."
-                    );
-                } else {
-                    throw new Error("Failed to write new post please retry again.");
+                   
+                    const newAccessToken = await refreshToken();
+                    if (newAccessToken) {
+                        response = await makeRequest(newAccessToken);
+                    }
                 }
             }
+
+            if (!response.ok) {
+                throw new Error("Failed to write new post please retry again.");
+            }
+
             return await response.json();
         },
         {

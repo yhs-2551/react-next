@@ -23,8 +23,7 @@ function Login() {
         const formData = { email, password };
 
         try {
-            const response = await loginUser(formData);
-            console.log("로그인 성공: ", response);
+            await loginUser(formData);
             setShowModal(false);
             setTimeout(() => router.push("/"), 300); // 애니메이션이 끝난 후 홈으로 리다이렉트
         } catch (error: any) {

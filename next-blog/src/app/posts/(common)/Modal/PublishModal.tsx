@@ -1,36 +1,31 @@
-import React, { ChangeEvent, useState } from "react";
-
-import { v4 as uuidv4 } from "uuid";
+import React, { ChangeEvent, useRef, useState } from "react";
 
 import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
+import { uploadFile } from "../utils/uploadFile";
+import { refreshToken } from "../utils/refreshToken";
 
+interface FileMetadata {
+    fileName: string;
+    fileType: string;
+    fileUrl: string;
+    fileSize: number;
+}
 
 interface PublishModalProps {
     isOpen: boolean;
     onClose: () => void;
     titleRef: React.RefObject<string>;
     contentRef: React.RefObject<string>;
-    onPublish: (postStatus: string, tags: Tag[], category: string) => void;
+    onPublish: (postStatus: "PUBLIC" | "PRIVATE", commentsEnabled: "ALLOW" | "DISALLOW", featuredImage: FileMetadata | null) => void;
     errorMessageRef: React.RefObject<string>;
 }
 
-interface Tag {
-    id: string;
-    value: string;
-}
+function PublishModal({ isOpen, onClose, titleRef, contentRef, onPublish, errorMessageRef }: PublishModalProps) {
+    const [commentsEnabled, setCommentsEnabled] = useState<"ALLOW" | "DISALLOW">("ALLOW");
+    const [featuredImage, setFeaturedImage] = useState<FileMetadata | null>(null);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-function PublishModal({
-    isOpen,
-    onClose,
-    titleRef,
-    contentRef,
-    onPublish,
-    errorMessageRef,
-}: PublishModalProps) {
-    const [postStatus, setPostStatus] = useState<string>("PUBLIC");
-    const [tags, setTags] = useState<Tag[]>([]);
-    const [tagInputValue, setTagInputValue] = useState<string>("");
-    const [category, setCategory] = useState<string>("");
+    const [postStatus, setPostStatus] = useState<"PUBLIC" | "PRIVATE">("PUBLIC");
     const [titleError, setTitleError] = useState<string | null>(null);
     const [contentError, setContentError] = useState<string | null>(null);
 
@@ -45,6 +40,7 @@ function PublishModal({
 
         const textContent = extractTextFromHtml(content).trim();
 
+        console.log("textContent >>" + textContent);
 
         if (!title.trim()) {
             setTitleError("제목을 입력해주세요.");
@@ -58,140 +54,139 @@ function PublishModal({
         if (hasError) {
             return;
         }
-
-        onPublish(postStatus, tags, category);
+        onPublish(postStatus, commentsEnabled, featuredImage);
     };
 
     const handlePostStatusChange = (e: ChangeEvent<HTMLSelectElement>) => {
-        setPostStatus(e.target.value);
+        const value = e.target.value as "PUBLIC" | "PRIVATE";
+        setPostStatus(value);
     };
 
-    const handleSetTags = (e: ChangeEvent<HTMLInputElement>) => {
-        setTagInputValue(e.target.value);
+    const handleCommentsEnabledChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value as "ALLOW" | "DISALLOW";
+        setCommentsEnabled(value);
     };
 
-    const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter" || e.key === ",") {
-            e.preventDefault();
-            if (tagInputValue.trim()) {
-                const newTag: Tag = {
-                    id: uuidv4(),
-                    value: tagInputValue,
-                };
-
-                setTags([...tags, newTag]);
-                setTagInputValue("");
-            }
+    const handleImageSelectClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
         }
     };
 
-    const handleCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
-        setCategory(e.target.value);
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const imageUrl = await uploadFile(file, "featured");
+            setFeaturedImage({
+                fileName: file.name,
+                fileType: file.type,
+                fileUrl: imageUrl,
+                fileSize: file.size,
+            });
+        }
     };
 
-    const removeTag = (uuidToRemove: string) => {
-        setTags(tags.filter((tag) => tag.id !== uuidToRemove));
+    const handleImageRemove = async () => {
+        setFeaturedImage(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ""; // 파일 입력 초기화
+        }
+
+        const deleteFile: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
+            return await fetch("http://localhost:8000/api/posts/file/delete-temp-featured-file", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({ url: featuredImage, featured: "featured" }),
+            });
+        };
+
+        const accessToken: string | false = localStorage.getItem("access_token") ?? false;
+        let response = await deleteFile(accessToken);
+
+        if (!response.ok && response.status === 401) {
+            const newAccessToken = await refreshToken();
+
+            console.log("newAccessToken >>" + newAccessToken);
+
+            if (newAccessToken) {
+                response = await deleteFile(newAccessToken);
+            }
+        }
+
+        if (!response.ok) {
+            throw new Error("Failed to delete temporary featured file, please retry again.");
+        }
     };
 
     return (
-            <div className='fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'>
-                <div className='bg-white p-6 rounded-md shadow-md w-96'>
-                    <h2 className='text-2xl font-bold mb-4'>발행 설정</h2>
+        <div className='fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'>
+            <div className='bg-white p-6 rounded-md shadow-md w-96'>
+                <h2 className='text-2xl font-bold mb-4'>발행</h2>
 
-                    <div className='mb-4'>
-                        <label className='block mb-2'>카테고리 선택</label>
-                        <select
-                            className='w-full p-2 border border-gray-300 rounded-md'
-                            value={category}
-                            onChange={handleCategoryChange}
-                        >
-                            <option value=''>카테고리 선택</option>
-                            <option value='html'>HTML</option>
-                            <option value='css'>CSS</option>
-                            <option value='react'>React</option>
-                            <option value='next.js'>Next.js</option>
-                            <option value='spring'>Spring</option>
-                            <option value='spring boot'>Spring Boot</option>
-                        </select>
-                    </div>
+                <div className='mb-4'>
+                    <label className='block mb-2' htmlFor=''>
+                        공개 여부
+                    </label>
+                    <select className='w-full p-2 border border-gray-300 rounded-md' value={postStatus} onChange={handlePostStatusChange}>
+                        <option value='PUBLIC'>공개</option>
+                        <option value='PRIVATE'>비공개</option>
+                    </select>
+                </div>
 
-                    <div className='mb-4'>
-                        <label className='block mb-2'>태그 입력</label>
-                        <input
-                            className='w-full p-2 border border-gray-300 rounded-md'
-                            type='text'
-                            placeholder='태그 입력 (,및 엔터 입력으로 분리)'
-                            value={tagInputValue}
-                            onChange={handleSetTags}
-                            onKeyDown={handleTagKeyDown}
-                        />
+                <div className='mb-4'>
+                    <label className='block mb-2' htmlFor=''>
+                        댓글 허용 여부
+                    </label>
+                    <select className='w-full p-2 border border-gray-300 rounded-md' value={commentsEnabled} onChange={handleCommentsEnabledChange}>
+                        <option value='ALLOW'>허용</option>
+                        <option value='DISALLOW'>비허용</option>
+                    </select>
+                </div>
 
-                        <div className='mt-2'>
-                            {tags.map((tag) => (
-                                <span
-                                    key={tag.id}
-                                    className='inline-block bg-gray-200 text-gray-800 text-sm font-semibold mr-2 px-3 py-1 rounded-full'
-                                >
-                                    {tag.value}
-                                    <button
-                                        type='button'
-                                        onClick={() => removeTag(tag.id)}
-                                        className='ml-2 text-gray-500 hover:text-gray-700'
-                                    >
-                                        &times;
-                                    </button>
-                                </span>
-                            ))}
+                <div className='mb-4 h-40 border border-gray-300 rounded-md relative bg-gray-100 flex justify-center items-center'>
+                    {featuredImage ? (
+                        <div className='relative w-full h-full'>
+                            <img src={featuredImage.fileUrl} alt='Selected' className='w-full h-full object-cover rounded-md' />
+                            <button
+                                onClick={handleImageRemove}
+                                className='absolute top-0 right-0 p-1 bg-black text-white z-10 rounded-sm w-6 h-6 flex items-center justify-center'
+                            >
+                                &#8722;
+                            </button>
                         </div>
-                    </div>
-
-                    <div className='mb-4'>
-                        <label className='block mb-2' htmlFor=''>
-                            공개 여부
-                        </label>
-                        <select
-                            className='w-full p-2 border border-gray-300 rounded-md'
-                            value={postStatus}
-                            onChange={handlePostStatusChange}
-                        >
-                            <option value='PUBLIC'>PUBLIC</option>
-                            <option value='PRIVATE'>PRIVATE</option>
-                        </select>
-                    </div>
-
-                    {titleError && (
-                        <p className='text-sm text-red-500 mt-2'>
-                            {titleError}
-                        </p>
+                    ) : (
+                        <button className='text-gray-400 flex flex-col items-center justify-center w-full h-full' onClick={handleImageSelectClick}>
+                            <span className='text-2xl'>+</span>
+                            <span className='text-sm'>대표 이미지 추가</span>
+                        </button>
                     )}
-                    {contentError && (
-                        <p className='text-sm text-red-500 mt-2'>
-                            {contentError}
-                        </p>
-                    )}
-                    {errorMessageRef.current && (
-                        <p className='text-sm text-red-500 mb-4'>
-                            {errorMessageRef.current}
-                        </p>
-                    )}
+                    <input type='file' ref={fileInputRef} style={{ display: "none" }} onChange={handleImageChange} />
+                </div>
 
-                    <div className='flex justify-end'>
-                        <button
-                            className='px-4 py-2 bg-white text-black rounded-lg mr-2 focus:outline-none hover:bg-red-500 hover:text-white active:bg-red-400 border
+                {titleError && <p className='text-sm text-red-500 mt-2'>{titleError}</p>}
+                {contentError && <p className='text-sm text-red-500 mt-2'>{contentError}</p>}
+                {errorMessageRef.current && <p className='text-sm text-red-500 mb-4'>{errorMessageRef.current}</p>}
+
+                <div className='flex justify-end'>
+                    <button
+                        className='px-4 py-2 bg-white text-black rounded-lg mr-2 focus:outline-none hover:bg-red-500 hover:text-white active:bg-red-400 border
                         border-gray-300'
-                            onClick={onClose}
-                        >
-                            취소
-                        </button>
-                        <button
-                            className='px-4 py-2 bg-black text-white rounded-md hover:bg-red-500 focus:outline-none active:bg-red-400'
-                            onClick={handlePublish}
-                        >
-                            발행
-                        </button>
-                    </div>
+                        onClick={onClose}
+                    >
+                        취소
+                    </button>
+                    <button
+                        className='px-4 py-2 bg-black text-white rounded-md hover:bg-red-500 focus:outline-none active:bg-red-400'
+                        onClick={handlePublish}
+                    >
+                        공개 발행
+                    </button>
                 </div>
             </div>
+        </div>
     );
 }
 

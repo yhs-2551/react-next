@@ -13,6 +13,8 @@ export default async function PostDetailPage({
     });
 
     const post = await res.json();
+
+    console.log("response data >>>", post);
     
     return <BlogDetailWithProvider initialData={post} postId={params.id} />;
 }

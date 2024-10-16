@@ -69,7 +69,7 @@ function BlogList({ initialData }: { initialData: PostWithId[] }) {
                         createdAt={post.createdAt}
                         categoryName={post.categoryName}
                         postStatus={post.postStatus}
-                    />
+                        thumbnailUrl={post.files && post.files.length > 0 ? post.files[0].fileUrl : "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-thumnail.jfif"}                    />
                 ))}
                 <button onClick={handleNewPost}>임시로 만든 글쓰기</button>
             </div>
@@ -78,6 +78,8 @@ function BlogList({ initialData }: { initialData: PostWithId[] }) {
 }
 
 function BlogListWithProvider({ initialData }: { initialData: PostWithId[] }) {
+
+
     return (
         <ClientWrapper>
             <BlogList initialData={initialData} />

@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
 * {
   box-sizing: border-box;
   padding: 0;
@@ -29,3 +31,10 @@ img {
   max-width: 100%;
   height: auto;
 }
+
+/* toast  */
+
+/* Toast 알림 크기 줄이기 */
+/* .Toastify__toast {
+  font-size: .8rem;  
+} */

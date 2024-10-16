@@ -1,0 +1,4 @@
+/* 초기 첨부된 파일 a태그에 css color 유지를 위함  */
+a[href*="amazonaws.com"] {
+    color: #06c; /* 텍스트 색상 */
+}
