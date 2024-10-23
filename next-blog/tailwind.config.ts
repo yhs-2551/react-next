@@ -16,11 +16,19 @@ const config: Config = {
       },
       colors: {
         customButtonColor: "#1EB49F",
-        customFooterBackgroundColor: "#F5F5F5"
+        customFooterBackgroundColor: "#F5F5F5",
+        tagColor: "#929292",
+        customGray: "#333",
       },
       cursor: {
-        'nwse-resize': 'nwse-resize',  // 커서 추가
+        "nwse-resize": "nwse-resize",  // 커서 추가
+
       }
+    },
+  },
+  variants: {
+    extend: {
+      textColor: ['hover'],
     },
   },
   plugins: [],

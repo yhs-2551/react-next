@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 
 interface PostProps {
-    id: string;
+    postId: string;
     title: string;
     postStatus: "PUBLIC" | "PRIVATE";
     categoryName: string | null;
@@ -12,12 +12,12 @@ interface PostProps {
     thumbnailUrl?: string;
 }
 
-function PostItem({ id, title, postStatus, categoryName, createdAt, content, thumbnailUrl }: PostProps) {
+function PostItem({ postId, title, postStatus, categoryName, createdAt, content, thumbnailUrl }: PostProps) {
     const router = useRouter();
 
-    const handleClick = () => {
-        router.push(`/posts/${id}`);
-    };
+    // const handleClick = () => {
+    //     router.push(`/posts/${postId}`);
+    // };
 
     const formattedDate = new Date(createdAt).toLocaleString("ko-KR", {
         year: "numeric",
@@ -30,8 +30,6 @@ function PostItem({ id, title, postStatus, categoryName, createdAt, content, thu
 
     const textContentWithoutImages = extractTextWithoutImages(content);
 
-    console.log("content", content);
-    console.log("textContentWithoutImages", textContentWithoutImages);
     const isContentLong = textContentWithoutImages.length > 100; // content가 100글자 이상인지 체크
 
     return (
@@ -39,15 +37,15 @@ function PostItem({ id, title, postStatus, categoryName, createdAt, content, thu
 
             {/* 썸넹일 부분  */}
             {thumbnailUrl && (
-                <div className='w-1/4 mr-4 cursor-pointer' onClick={handleClick}>
-                    <img src={thumbnailUrl} alt='Post Thumbnail' className='w-full h-auto object-cover rounded' />
+                <div className='w-[12rem] mr-6 cursor-pointer'onClick={() => router.push(`/posts/${postId}`)}>
+                    <img src={thumbnailUrl} alt='Post Thumbnail' className='w-full h-[12rem] object-cover rounded' />
                 </div>
             )}
 
             {/* 텍스트 부분 */}
-            <div className='flex-grow flex flex-col'>
+            <div className='flex flex-col justify-center'>
                 <div className='flex items-center mb-2'>
-                    <h3 className='text-xl font-semibold cursor-pointer' onClick={handleClick}>
+                    <h3 className='text-xl font-semibold cursor-pointer' onClick={() => router.push(`/posts/${postId}`)}>
                         {title}
                     </h3>
                     {/* 공개/비공개 상태 표시 */}
@@ -62,7 +60,7 @@ function PostItem({ id, title, postStatus, categoryName, createdAt, content, thu
 
                 {/* 내용 부분 - 클릭 가능하도록 수정 완료 */}
                 {textContentWithoutImages && (
-                    <p className='text-gray-700 mb-2 cursor-pointer' onClick={handleClick}>
+                    <p className='text-gray-700 mb-2 cursor-pointer' onClick={() => router.push(`/posts/${postId}`)}>
                         {textContentWithoutImages.substring(0, 100)}
                         {isContentLong ? "..." : ""}
                     </p>
@@ -70,7 +68,7 @@ function PostItem({ id, title, postStatus, categoryName, createdAt, content, thu
 
                 {/* 버튼 부분 - 클릭 가능하도록 수정 완료*/}
                 <div className='mt-2'>
-                    <button className='text-sm text-white bg-customButtonColor px-3 py-1 rounded cursor-pointer' onClick={handleClick}>
+                    <button className='text-sm text-white bg-customButtonColor px-3 py-1 rounded cursor-pointer' onClick={() => router.push(`/posts/${postId}`)}>
                         Read More
                     </button>
                 </div>

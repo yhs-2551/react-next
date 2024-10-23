@@ -1,59 +1,59 @@
-import React, { ChangeEvent, useRef, useState } from "react";
+import React, { ChangeEvent, useEffect, useRef, useState } from "react";
 
-import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
+import { toast } from "react-toastify";
 import { uploadFile } from "../utils/uploadFile";
-import { refreshToken } from "../utils/refreshToken";
+import type { FileMetadata } from "@/common/types/PostTypes";
 
-interface FileMetadata {
-    fileName: string;
-    fileType: string;
-    fileUrl: string;
-    fileSize: number;
-}
-
+ 
 interface PublishModalProps {
-    isOpen: boolean;
+    // isOpen: boolean;
     onClose: () => void;
-    titleRef: React.RefObject<string>;
-    contentRef: React.RefObject<string>;
+    // titleRef: React.RefObject<string>;
+    // contentRef: React.RefObject<string>;
     onPublish: (postStatus: "PUBLIC" | "PRIVATE", commentsEnabled: "ALLOW" | "DISALLOW", featuredImage: FileMetadata | null) => void;
     errorMessageRef: React.RefObject<string>;
+    totalFileRef: React.MutableRefObject<FileMetadata[]>;
+    deletedImageUrlsInFutureRef: React.MutableRefObject<string[]>;
 }
 
-function PublishModal({ isOpen, onClose, titleRef, contentRef, onPublish, errorMessageRef }: PublishModalProps) {
+function PublishModal({ onClose, onPublish, errorMessageRef, totalFileRef, deletedImageUrlsInFutureRef }: PublishModalProps) {
     const [commentsEnabled, setCommentsEnabled] = useState<"ALLOW" | "DISALLOW">("ALLOW");
     const [featuredImage, setFeaturedImage] = useState<FileMetadata | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+    const MAX_TOTAL_SIZE_MB = 20;
+
+    // let isPublishClick: boolean = false;
+
+    console.log("totalFileRef.current >>>", totalFileRef.current);
+    console.log("featuredImage >>>", featuredImage);
+
     const [postStatus, setPostStatus] = useState<"PUBLIC" | "PRIVATE">("PUBLIC");
-    const [titleError, setTitleError] = useState<string | null>(null);
-    const [contentError, setContentError] = useState<string | null>(null);
 
     const handlePublish = () => {
-        let hasError = false;
+        if ((totalFileRef.current && !(totalFileRef.current.length === 0)) || featuredImage) {
+            const totalFileSize = totalFileRef.current.reduce((acc, file) => acc + file.fileSize, 0);
+            const featuredImageSize = featuredImage?.fileSize;
+            let totalSizeInMB: number = 0;
+            if (featuredImageSize && totalFileSize) {
+                // 대표 이미지와 첨부 파일 모두 있을 때
+                totalSizeInMB = (totalFileSize + featuredImageSize) / (1024 * 1024);
+            } else if (totalFileSize) {
+                // 첨부 파일만 있을 때
+                totalSizeInMB = totalFileSize / (1024 * 1024);
+            } else if (featuredImageSize) {
+                // 대표 이미지만 있을 때
+                totalSizeInMB = featuredImageSize / (1024 * 1024);
+            }
+            console.log("totalFileSize >>>", totalSizeInMB);
 
-        const title = titleRef.current || "";
-        const content = contentRef.current || "";
-        console.log("content >>" + content);
-
-        console.log("title >>" + title);
-
-        const textContent = extractTextFromHtml(content).trim();
-
-        console.log("textContent >>" + textContent);
-
-        if (!title.trim()) {
-            setTitleError("제목을 입력해주세요.");
-            hasError = true;
-        } else if (!textContent) {
-            setContentError("내용을 입력해주세요.");
-            hasError = true;
+            if (totalSizeInMB > MAX_TOTAL_SIZE_MB) {
+                toast.error(`최대 ${MAX_TOTAL_SIZE_MB}MB까지 업로드할 수 있습니다.`);
+                return;
+            }
         }
 
-        // 위쪽에 에러가 있으면 서버 요청을 하지 않음. 이유는 React Quill 에디터에서 내용을 입력하지 않아도 p태그와 br태그가 같이 들어가기 때문.
-        if (hasError) {
-            return;
-        }
+        // isPublishClick = true;
         onPublish(postStatus, commentsEnabled, featuredImage);
     };
 
@@ -92,34 +92,41 @@ function PublishModal({ isOpen, onClose, titleRef, contentRef, onPublish, errorM
             fileInputRef.current.value = ""; // 파일 입력 초기화
         }
 
-        const deleteFile: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
-            return await fetch("http://localhost:8000/api/posts/file/delete-temp-featured-file", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({ url: featuredImage, featured: "featured" }),
-            });
-        };
+        deletedImageUrlsInFutureRef.current = [...deletedImageUrlsInFutureRef.current, featuredImage?.fileUrl ?? ""];
 
-        const accessToken: string | false = localStorage.getItem("access_token") ?? false;
-        let response = await deleteFile(accessToken);
+        console.log("deletedImageUrlsInFutureRef >>>", deletedImageUrlsInFutureRef.current);
+        // const deleteFile: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
+        //     return await fetch("http://localhost:8000/api/posts/file/delete-temp-featured-file", {
+        //         method: "POST",
+        //         headers: {
+        //             "Content-Type": "application/json",
+        //             Authorization: `Bearer ${token}`,
+        //         },
+        //         body: JSON.stringify({ url: featuredImage?.fileUrl, featured: "featured" }),
+        //     });
+        // };
 
-        if (!response.ok && response.status === 401) {
-            const newAccessToken = await refreshToken();
+        // const accessToken: string | false = localStorage.getItem("access_token") ?? false;
+        // let response = await deleteFile(accessToken);
 
-            console.log("newAccessToken >>" + newAccessToken);
+        // if (!response.ok && response.status === 401) {
+        //     const newAccessToken = await refreshToken();
 
-            if (newAccessToken) {
-                response = await deleteFile(newAccessToken);
-            }
-        }
+        //     console.log("newAccessToken >>" + newAccessToken);
 
-        if (!response.ok) {
-            throw new Error("Failed to delete temporary featured file, please retry again.");
-        }
+        //     if (newAccessToken) {
+        //         response = await deleteFile(newAccessToken);
+        //     }
+        // }
+
+        // if (!response.ok) {
+        //     throw new Error("Failed to delete temporary featured file, please retry again.");
+        // }
+
+
     };
+
+ 
 
     return (
         <div className='fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'>
@@ -128,7 +135,7 @@ function PublishModal({ isOpen, onClose, titleRef, contentRef, onPublish, errorM
 
                 <div className='mb-4'>
                     <label className='block mb-2' htmlFor=''>
-                        공개 여부
+                        게시글 공개
                     </label>
                     <select className='w-full p-2 border border-gray-300 rounded-md' value={postStatus} onChange={handlePostStatusChange}>
                         <option value='PUBLIC'>공개</option>
@@ -138,7 +145,7 @@ function PublishModal({ isOpen, onClose, titleRef, contentRef, onPublish, errorM
 
                 <div className='mb-4'>
                     <label className='block mb-2' htmlFor=''>
-                        댓글 허용 여부
+                        댓글 허용
                     </label>
                     <select className='w-full p-2 border border-gray-300 rounded-md' value={commentsEnabled} onChange={handleCommentsEnabledChange}>
                         <option value='ALLOW'>허용</option>
@@ -166,8 +173,6 @@ function PublishModal({ isOpen, onClose, titleRef, contentRef, onPublish, errorM
                     <input type='file' ref={fileInputRef} style={{ display: "none" }} onChange={handleImageChange} />
                 </div>
 
-                {titleError && <p className='text-sm text-red-500 mt-2'>{titleError}</p>}
-                {contentError && <p className='text-sm text-red-500 mt-2'>{contentError}</p>}
                 {errorMessageRef.current && <p className='text-sm text-red-500 mb-4'>{errorMessageRef.current}</p>}
 
                 <div className='flex justify-end'>
@@ -179,10 +184,10 @@ function PublishModal({ isOpen, onClose, titleRef, contentRef, onPublish, errorM
                         취소
                     </button>
                     <button
-                        className='px-4 py-2 bg-black text-white rounded-md hover:bg-red-500 focus:outline-none active:bg-red-400'
+                        className='w-[7rem] px-4 py-2 bg-black text-white rounded-md hover:bg-red-500 focus:outline-none active:bg-red-400'
                         onClick={handlePublish}
                     >
-                        공개 발행
+                        {postStatus === "PUBLIC" ? "공개 발행" : "비공개 저장"}
                     </button>
                 </div>
             </div>

@@ -7,6 +7,7 @@ export const extractTextFromHtml = (html: string) => {
     const hasImages = doc.querySelectorAll("img").length > 0;
     const hasLinks = doc.querySelectorAll("a").length > 0;
 
+    // 글 내용이 비어있고 이미지나 링크가 포함된 경우에도 당연히 내용이 있다고 판단.
     if (textContent.trim() === "" && (hasImages || hasLinks)) {
         return html;
     }

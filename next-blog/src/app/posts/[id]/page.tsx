@@ -14,7 +14,7 @@ export default async function PostDetailPage({
 
     const post = await res.json();
 
-    console.log("response data >>>", post);
+    console.log("블로그 디테일 서버 컴포넌트 실행 >>>>>>>>>>>> ");
     
     return <BlogDetailWithProvider initialData={post} postId={params.id} />;
 }

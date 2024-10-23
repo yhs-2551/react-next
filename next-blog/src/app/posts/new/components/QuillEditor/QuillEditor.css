@@ -3,6 +3,15 @@
     position: relative !important;
 }
 
+.ql-toolbar {
+    border: none !important;
+    visibility: hidden;
+}
+
+.ql-toolbar.visible {
+    visibility: visible;
+} 
+
 .ql-container {
     border: none !important;
 }
@@ -18,8 +27,24 @@
 }
 
 .ql-editor a {
-    text-decoration: none;
+    text-decoration: none !important;
 }
+
+/* 
+.file-container {
+    border: 1px solid #ddd !important;
+    background-color: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40% !important;
+    height: 3.5rem !important;
+    cursor: pointer !important;
+    margin: 0 auto !important;
+    font-size: 0.9rem !important;
+    color: #333 !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15) !important;
+} */
 
 .file-container {
     border: 1px solid #ddd;
@@ -28,47 +53,52 @@
     display: flex;
     align-items: center;
     position: relative;
-    width: 50%; /* 에디터의 50% 너비 */
-    height: 60px; /* 원하는 높이 설정 */
+    width: 50%;
+    height: 60px;
+    font-size: 0.9rem;
+    color: #333;
     cursor: pointer;
-    transition: background-color 0.3s;
+    margin: 0 auto !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    transition: opacity 0.3s;
 }
 
 .file-container::before {
-    content: '\f15b'; /* Font Awesome file icon */
-    font-family: 'Font Awesome 5 Free';
+    content: "\f15b";
+    font-family: "Font Awesome 5 Free";
     font-weight: 900;
     position: absolute;
     left: 1.2rem;
-    font-size: 1.5rem; /* 아이콘 크기 조정 */
+    font-size: 1.5rem;
 }
-
 
 .file-container::after {
-    content: '\f019';  
-    font-family: 'Font Awesome 5 Free';
-    font-weight: 900;;
+    content: "\f019";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
     position: absolute;
     right: 1.2rem;
-    font-size: 1.5rem; 
-} 
-
-
-
-
-.file-container:hover {
-    opacity: .8;  
+    font-size: 1.5rem;
 }
 
-.ql-editor .file-container a {
+.file-container:hover {
+    opacity: 0.8;
+}
+
+.file-container__item {
     display: block;
     width: 100%;
     margin-left: 3rem;
-    text-decoration: none;
-    color: #333; /* 기본 텍스트 색상 */
-    font-size: 1rem;
+    color: inherit !important;
     cursor: pointer;
 }
+
+/* .file-container__item {
+    cursor: pointer;  
+    text-decoration: none;
+    text-align: center;
+    color: inherit;
+} */
 
 /* .image-actions__overlay {
  display: none !important;

@@ -1,29 +1,28 @@
+// 중복된 태그명 있을 경우 toast 알림창 띄어주기
+
 "use client";
 
 import React, { ChangeEvent, useEffect, useRef } from "react";
 
 import { v4 as uuidv4 } from "uuid";
 
+import { toast, ToastContainer } from "react-toastify";
+
 import PublishModal from "../../(common)/Modal/PublishModal";
 
 import QuillEditor from "./QuillEditor/QuillEditor";
 import useAddPost from "@/customHooks/useAddPost";
 import { useRouter } from "next/navigation";
-import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { refreshToken } from "../../(common)/utils/refreshToken";
+import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
+import type { FileMetadata } from "@/common/types/PostTypes";
 
 interface Tag {
     id: string;
     value: string;
 }
 
-interface FileMetadata {
-    fileName: string;
-    fileType: string;
-    fileUrl: string;
-    fileSize: number;
-}
+// const CustomEditor = dynamic( () => import( '@/app/posts/new/components/CKEditor/CustomCKEditor' ), { ssr: false } );
 
 function BlogForm() {
     const quillContentRef = useRef<() => string>(() => "");
@@ -31,8 +30,16 @@ function BlogForm() {
     const modalRef = useRef<HTMLDivElement | null>(null);
 
     const contentRef = useRef<string>("");
-    const titleRef = useRef<string>("");
+
+    // const titleRef = useRef<string>(""); 과 같이 사용할 수 있지만 수정 페이지와 일관성을 위해 아래와 같이 사용
+    const titleInputRef = useRef<HTMLInputElement | null>(null);
+
+    // 최종 발행 시 서버로 전송할 파일 Ref
     const fileRef = useRef<FileMetadata[]>([]);
+    // 사용자가 뒤로가기 및 새로고침 등의 페이지를 나갈 때 클라우드 스토리지에 임시로 저장된 전체 파일을 삭제하기 위한 Ref
+    const totalUploadedImagesUrlRef: React.MutableRefObject<string[]> = useRef<string[]>([]);
+
+    const deletedImageUrlsInFutureRef: React.MutableRefObject<string[]> = useRef<string[]>([]);
 
     const categoryRef = useRef<HTMLSelectElement>(null);
     const tags = useRef<Tag[]>([]);
@@ -40,24 +47,48 @@ function BlogForm() {
     const tagContainerRef = useRef<HTMLDivElement>(null);
 
     const errorMessageRef = useRef<string | null>(null);
-
     const addPostMutation = useAddPost();
     const router = useRouter();
 
-    const uploadedImagesUrlRef: React.MutableRefObject<string[]> = useRef<string[]>([]);
-
-    let isSaved = false;
+    // let isSaved = false;
 
     const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
-        titleRef.current = e.target.value; //  // 최신 title 값 가져오기
-
-        console.log(titleRef.current);
+        if (titleInputRef.current) {
+            titleInputRef.current.value = e.target.value;
+        }
     };
 
-    const handlePublishClick = () => {
+    const handleComplete = () => {
         contentRef.current = quillContentRef.current(); // 최신 content 값 가져오기
+        const title = titleInputRef.current?.value || "";
+        const content = contentRef.current || "";
 
-        console.log(contentRef.current);
+        let hasError = false;
+
+        const textContent = extractTextFromHtml(content).trim();
+
+        console.log("textContent >>" + textContent);
+
+        if (!title.trim()) {
+            toast.error(
+                <span>
+                    <span style={{ fontSize: "1.1rem" }}>!</span>&nbsp;&nbsp;&nbsp;&nbsp;제목을 입력해주세요.
+                </span>
+            );
+            hasError = true;
+        } else if (!textContent) {
+            toast.error(
+                <span>
+                    <span style={{ fontSize: "1.1rem" }}>!</span>&nbsp;&nbsp;&nbsp;&nbsp;내용을 입력해주세요.
+                </span>
+            );
+            hasError = true;
+        }
+
+        // 위쪽에 에러가 있으면 서버 요청을 하지 않음. 이유는 React Quill 에디터에서 내용을 입력하지 않아도 p태그와 br태그가 같이 들어가기 때문.
+        if (hasError) {
+            return;
+        }
 
         if (modalRef.current) {
             modalRef.current.style.display = "block";
@@ -76,8 +107,12 @@ function BlogForm() {
         commentsEnabled: "ALLOW" | "DISALLOW",
         featuredImage: FileMetadata | null
     ) => {
+        // 최종 발행 시점에는 title및 content 값이 무조건 있어야 함.
+        let title = "";
+        if (titleInputRef.current) {
+            title = titleInputRef.current.value;
+        }
         const content = contentRef.current;
-        const title = titleRef.current;
         const category = categoryRef.current?.value || "";
 
         console.log("타이틀 >>>>" + title);
@@ -91,22 +126,42 @@ function BlogForm() {
                 title,
                 content,
                 category,
-                tags: tags.current.map((tag) => tag.value), // 태그 값만 전달
+                tags: tags.current?.map((tag) => tag.value), // 태그 값만 전달
                 files: fileRef.current,
+                deleteTempImageUrls: deletedImageUrlsInFutureRef.current,
                 postStatus,
                 commentsEnabled,
                 featuredImage,
             },
             {
-                onSuccess: () => {
+                onSuccess: async () => {
                     console.log("Blog 작성 성공 실행");
 
                     if (modalRef.current) {
                         modalRef.current.style.display = "none";
                     }
 
-                    isSaved = true;
                     router.push("/posts");
+                    // 글 작성 성공하고 글 목록 페이지로 이동 후에 글 목록 페이지 page.tsx에 서버 컴포넌트 재실행.
+                    router.refresh();
+
+                    // isSaved = true;
+
+                    // console.log("실행");
+
+                    // const accessToken: string | false = localStorage.getItem("access_token") ?? false;
+                    // let response = await deleteTempAllFiles(accessToken, deletedImageUrlsInFutureRef.current);
+                    // if (!response.ok && response.status === 401) {
+                    //     const newAccessToken = await refreshToken();
+
+                    //     if (newAccessToken) {
+                    //         response = await deleteTempAllFiles(newAccessToken, deletedImageUrlsInFutureRef.current);
+                    //     }
+                    // }
+
+                    // if (!response.ok) {
+                    //     throw new Error("Failed to delete all temporary files, please retry again.");
+                    // }
                 },
                 onError: (error: any) => {
                     console.log("Blog 작성 실패 실행");
@@ -120,47 +175,49 @@ function BlogForm() {
         );
     };
 
-    useEffect(() => {
-        const deleteTempAllFiles = async (token: string | boolean) => {
-            return await fetch("http://localhost:8000/api/posts/files/delete-temp-files", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ urls: uploadedImagesUrlRef.current }),
-            });
-        };
+    // 나중에 임시저장 할때 처리
+    // useEffect(() => {
 
-        const handleBeforeUnload: (e: BeforeUnloadEvent) => Promise<void> = async (e: BeforeUnloadEvent): Promise<void> => {
-            e.preventDefault();
-            if (isSaved) {
-                return;
-            } else {
-                console.log("실행");
+    //     const handleBeforeUnload: (e: BeforeUnloadEvent) => Promise<void> = async (e: BeforeUnloadEvent): Promise<void> => {
+    //         e.preventDefault();
 
-                const accessToken: string | false = localStorage.getItem("access_token") ?? false;
-                let response = await deleteTempAllFiles(accessToken);
-                if (!response.ok && response.status === 401) {
-                    const newAccessToken = await refreshToken();
+    //         if (isSaved) return;
 
-                    if (newAccessToken) {
-                        response = await deleteTempAllFiles(newAccessToken);
-                    }
-                }
+    //             console.log("실행");
 
-                if (!response.ok) {
-                    throw new Error("Failed to delete all temporary files, please retry again.");
-                }
-            }
-        };
+    //             const accessToken: string | false = localStorage.getItem("access_token") ?? false;
+    //             let response = await deleteTempAllFiles(accessToken, totalUploadedImagesUrlRef.current);
+    //             if (!response.ok && response.status === 401) {
+    //                 const newAccessToken = await refreshToken();
 
-        window.addEventListener("beforeunload", handleBeforeUnload);
+    //                 if (newAccessToken) {
+    //                     response = await deleteTempAllFiles(newAccessToken, totalUploadedImagesUrlRef.current);
+    //                 }
+    //             }
 
-        return () => {
-            window.removeEventListener("beforeunload", handleBeforeUnload);
-        };
-    }, []);
+    //             if (!response.ok) {
+    //                 throw new Error("Failed to delete all temporary files, please retry again.");
+    //             }
+
+    //     };
+
+    //     window.addEventListener("beforeunload", handleBeforeUnload);
+
+    //     return () => {
+    //         window.removeEventListener("beforeunload", handleBeforeUnload);
+    //     };
+    // }, []);
+
+    // const deleteTempAllFiles = async (token: string | boolean, deleteTempAllFileUrl: string[]) => {
+    //     return await fetch("http://localhost:8000/api/posts/files/delete-temp-files", {
+    //         method: "POST",
+    //         headers: {
+    //             "Content-Type": "application/json",
+    //             Authorization: `Bearer ${token}`,
+    //         },
+    //         body: JSON.stringify({ urls: deleteTempAllFileUrl }),
+    //     });
+    // };
 
     const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" || e.key === ",") {
@@ -220,9 +277,10 @@ function BlogForm() {
         }
     };
 
+
     return (
         <>
-            <ToastContainer />
+            <ToastContainer position='top-center' />
 
             <form onSubmit={(e) => e.preventDefault()} className=''>
                 <fieldset className=''>
@@ -242,6 +300,7 @@ function BlogForm() {
 
                     <div className='mb-4 '>
                         <input
+                            ref={titleInputRef}
                             className='w-full p-2 focus:outline-none border-b'
                             type='text'
                             placeholder='제목을 입력하세요'
@@ -249,17 +308,21 @@ function BlogForm() {
                         />
                     </div>
 
+
                     {/* mb-4 flex-1 */}
-                    <div className='ql-custom-container relative'>
+                    <div className='ql-custom-container relative min-h-[500px]'>
                         <QuillEditor
                             value={contentRef.current}
                             fileRef={fileRef}
+                            totalUploadedImagesUrlRef={totalUploadedImagesUrlRef}
+                            deletedImageUrlsInFutureRef={deletedImageUrlsInFutureRef}
                             getEditorContent={(getContent) => {
                                 quillContentRef.current = getContent;
                             }}
-                            uploadedImagesUrlRef={uploadedImagesUrlRef}
                         />
                     </div>
+
+                    {/* <CustomEditor /> */}
 
                     <div className='mb-4'>
                         <input
@@ -276,7 +339,7 @@ function BlogForm() {
                 <button
                     type='submit'
                     className='absolute bottom-0 right-20 px-4 py-2 bg-black text-white rounded-md hover:bg-red-500 focus:outline-none active:bg-red-400'
-                    onClick={handlePublishClick}
+                    onClick={handleComplete}
                 >
                     완료
                 </button>
@@ -284,12 +347,14 @@ function BlogForm() {
                 {/* {isModalOpen && <PublishModal onClose={handleCloseModal} onPublish={handlePublish}/>} */}
                 <div ref={modalRef} className='hidden'>
                     <PublishModal
-                        isOpen={true}
+                        // isOpen={true}
                         onClose={handleCloseModal}
-                        titleRef={titleRef}
-                        contentRef={contentRef}
+                        // titleRef={titleRef}
+                        // contentRef={contentRef}
                         onPublish={handlePublish}
                         errorMessageRef={errorMessageRef}
+                        totalFileRef={fileRef}
+                        deletedImageUrlsInFutureRef={deletedImageUrlsInFutureRef}
                     />
                 </div>
             </form>

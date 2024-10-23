@@ -9,7 +9,7 @@ export const uploadFile = async (file: File, featured?: string): Promise<string>
     }
 
     const upload = async (token: string | boolean) => {
-        return await fetch("http://localhost:8000/api/posts/files/upload", {
+        return await fetch("http://localhost:8000/api/posts/temp/files/upload", {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${token}`,

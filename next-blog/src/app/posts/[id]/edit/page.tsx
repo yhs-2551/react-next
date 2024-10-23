@@ -9,7 +9,7 @@ export default async function PostEditPage({ params }: { params: { id: string } 
 
     const post = await res.json();
 
-    console.log("POST >>>>>>>>>>>>", post);
+    console.log("블로그 수정 서버 컴포넌트 실행 POST >>>>>>>>>>>>");
 
     return (
         <div className="container max-w-4xl mt-6 mx-auto bg-white">

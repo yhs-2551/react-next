@@ -8,7 +8,8 @@ export default async function PostsPage() {
     });
 
     const posts = await res.json();
-    
+
+    console.log("블로그 글 목록 페이지 실행 >>>>>>>>>>>");
 
     return <BlogListWithProvider initialData={posts} />;
 }

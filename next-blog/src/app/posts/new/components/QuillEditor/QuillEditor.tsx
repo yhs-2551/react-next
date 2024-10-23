@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from "uuid";
+
 import dynamic from "next/dynamic";
 
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
@@ -6,7 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import { ToastContainer, toast } from "react-toastify";
 
-import { uploadFile } from "@/app/posts/(common)/utils/uploadFile"
+import { uploadFile } from "@/app/posts/(common)/utils/uploadFile";
 
 import { faFile, faImage, faVideo, faAlignCenter, faAlignLeft, faAlignRight } from "@fortawesome/free-solid-svg-icons";
 
@@ -18,37 +20,33 @@ import "react-quill/dist/quill.snow.css"; // Snow 테마 CSS 파일
 
 import "@/app/posts/new/components/QuillEditor/QuillEditor.css";
 
-import type ReactQuill from "react-quill";
+import ReactQuill from "react-quill";
 import { ReactQuillProps } from "react-quill";
 
 import Quill, { Range } from "quill";
+import type { FileMetadata } from "@/common/types/PostTypes";
+ 
 interface ForwardedQuillComponent extends ReactQuillProps {
     forwardedRef: React.Ref<ReactQuill>;
 }
 
-const ReactQuillDynamic = dynamic(
-    async () => {
-        const { default: RQ } = await import("react-quill");
-        return ({ forwardedRef, ...props }: ForwardedQuillComponent) => <RQ ref={forwardedRef} {...props} />;
-    },
-    {
-        ssr: false,
-    }
-);
-
-interface FileMetadata {
-    fileName: string;
-    fileType: string;
-    fileUrl: string;
-    fileSize: number;
-}
+// const ReactQuillDynamic = dynamic(
+//     async () => {
+//         const { default: RQ } = await import("react-quill");
+//         return ({ forwardedRef, ...props }: ForwardedQuillComponent) => <RQ ref={forwardedRef} {...props} />;
+//     },
+//     {
+//         ssr: false,
+//     }
+// );
+ 
 
 interface QuillEditorProps {
     value: string;
-    getEditorContent: (getContent: () => string) => void;
     fileRef: React.MutableRefObject<FileMetadata[]>;
-    uploadedImagesUrlRef: React.MutableRefObject<string[]>;
-}
+    totalUploadedImagesUrlRef: React.MutableRefObject<string[]>;
+    deletedImageUrlsInFutureRef: React.MutableRefObject<string[]>;
+    getEditorContent: (getContent: () => string) => void;}
 
 interface DropdownMenuProps {
     dropdownPosition: {
@@ -63,7 +61,10 @@ interface DropdownMenuProps {
 
 //React.memo를 통해 부모 컴포넌트가 재렌더링 되어도 자식 컴포넌트의 props값이 변하지 않으면 QuillEditor의 재렌더링을 막는다. 따라서 BlogForm에서 제목의 내용을 변경해도 QuillEditor에는 제목 관련 Props가 없기 때문에 재렌더링 되지 않는다.
 export default React.memo(
-    React.forwardRef<ReactQuill, QuillEditorProps>(function QuillEditor({ value, getEditorContent, fileRef, uploadedImagesUrlRef }, ref) {
+    React.forwardRef<ReactQuill, QuillEditorProps>(function QuillEditor(
+        { value, fileRef, totalUploadedImagesUrlRef, deletedImageUrlsInFutureRef, getEditorContent },
+        ref
+    ) {
         const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
         const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -87,91 +88,133 @@ export default React.memo(
 
         let savedSelection: number | undefined = undefined; // 사용자가 토글 누르기 전 커서 위치 저장을 위한 변수. state로 할 시 비동기로 예상치 못한 결과를 가져와서 일반 변수로 선언.
 
-        useEffect(() => {
-            const toolbarElement = document.querySelector(".ql-toolbar");
+        
 
-            // 툴바가 DOM에 있는지 확인하고, 없다면 생성 후 header에 추가
-            if (!toolbarElement) {
-                const container = document.querySelector(".ql-toolbar-container");
+        // const router = useRouter();
 
-                if (container) {
-                    container?.classList.add("ql-toolbar", "ql-snow");
+        // useEffect(() => {
+            
+        //         console.log("실행입니다");
 
-                    // 커스텀 툴바 설정
-                    const toolbarConfig = [
-                        [{ header: [1, 2, 3, 4, false] }],
-                        ["bold", "italic", "underline"],
-                        [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
-                        ["link", "image", "code-block"],
-                        [{ align: [] }],
-                        [{ color: [] }, { background: [] }],
-                        ["clean"],
-                    ];
+        //         const toolbarElement = document.querySelector(".ql-toolbar");
 
-                    // 툴바 HTML 동적 생성
-                    const createToolbarHTML = (config: any) => {
-                        return config
-                            .map((group: any) => {
-                                if (Array.isArray(group)) {
-                                    return group
-                                        .map((item) => {
-                                            if (typeof item === "object") {
-                                                if (item.header) {
-                                                    return `
-                        <select class="ql-header">
-                          <option value="1">Heading 1</option>
-                          <option value="2">Heading 2</option>
-                          <option value="3">Heading 3</option>
-                          <option value="4">Heading 4</option>
-                          <option value="5">Heading 5</option>
-                          <option value="6">Heading 6</option>
-                          <option value="">Normal</option>
-                        </select>`;
-                                                } else if (item.list) {
-                                                    return `<button class="ql-list" value="${item.list}"></button>`;
-                                                } else if (item.indent) {
-                                                    return `<button class="ql-indent" value="${item.indent}"></button>`;
-                                                } else if (item.align) {
-                                                    return `
-                                                  <select class="ql-align">
-                                                    <option selected></option>
-                                                    <option value="center"></option>
-                                                    <option value="right"></option>
-                                                    <option value="justify"></option>
-                                                  </select>`;
-                                                }
-                                            } else {
-                                                return `<button class="ql-${item}"></button>`;
-                                            }
-                                        })
-                                        .join("");
-                                }
-                                return "";
-                            })
-                            .join("");
-                    };
+        //         // 툴바가 DOM에 있는지 확인하고, 없다면 생성 후 header에 추가.  이 코드 없으면 툴바가 이상해짐 
+        //         if (!toolbarElement) {
+                    
+        //             const container = document.querySelector(".ql-toolbar-container");
+    
+        //             if (container) {
 
-                    // 툴바에 생성된 HTML 삽입
-                    container.innerHTML = createToolbarHTML(toolbarConfig);
-                }
-            }
+        //                 // container?.classList.add("ql-toolbar", "ql-snow");
+    
+        //                 // 커스텀 툴바 설정 quill에게 아래 설정들을 사용한다고 알림.
+        //                 const toolbarConfig = [
+        //                     [{ header: [1, 2, 3, 4, false] }],
+        //                     [{ font: [] }], // 폰트 패밀리 설정
+        //                     [{ size: ["small", "large", "huge", false] }],
+        //                     [{ align: [] }],
+        //                     ["link", "image", "code-block"],
+        //                     [{ color: [] }, { background: [] }],
+        //                     ["bold", "italic", "underline"],
+        //                     [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+        //                     ["clean"],
+        //                 ];
+    
+        //                 // 실제로 화면에 보여주기 위한 툴바 HTML 동적 생성
+        //                 // 아래쪽에 option value left가 없고 selected인데 그래서 왼쪽 정렬 클릭하면 false로 뜨는건가.
+        //                 const createToolbarHTML = (config: any) => {
+        //                     return config
+        //                         .map((group: any) => {
+        //                             if (Array.isArray(group)) {
+        //                                 return group
+        //                                     .map((item) => {
+        //                                         if (typeof item === "object") {
+        //                                             if (item.header) {
+        //                                                 return `
+        //                                                     <select class="ql-header">
+        //                                                         <option value="1">Heading 1</option>
+        //                                                         <option value="2">Heading 2</option>
+        //                                                         <option value="3">Heading 3</option>
+        //                                                         <option value="4">Heading 4</option>
+        //                                                         <option value="">Normal</option>
+        //                                                     </select>`;
+        //                                             } else if (item.list) {
+        //                                                 return `<button class="ql-list" value="${item.list}"></button>`;
+        //                                             } else if (item.indent) {
+        //                                                 return `<button class="ql-indent" value="${item.indent}"></button>`;
+        //                                             } else if (item.align) {
+        //                                                 return `
+        //                                                     <select class="ql-align">
+        //                                                         <option selected></option>
+        //                                                         <option value="center"></option>
+        //                                                         <option value="right"></option>
+        //                                                         <option value="justify"></option>
+        //                                                     </select>`;
+        //                                             } else if (item.color) {
+        //                                                 return `<select class="ql-color"></select>`;
+        //                                             } else if (item.background) {
+        //                                                 return `<select class="ql-background"></select>`;
+        //                                             } else if (item.font) {
+        //                                                 return `
+        //                                                     <select class="ql-font">
+        //                                                         <option selected></option>
+        //                                                         <option value="serif">Serif</option>
+        //                                                         <option value="monospace">Monospace</option>
+        //                                                     </select>`;
+        //                                             } else if (item.size) {
+        //                                                 return `
+        //                                                     <select class="ql-size">
+        //                                                         <option value="small"></option>
+        //                                                         <option selected></option>
+        //                                                         <option value="large"></option>
+        //                                                         <option value="huge"></option>
+        //                                                     </select>`;
+        //                                             }
+        //                                         } else {
+        //                                             // item type이 객체가 아닐때 실행 즉, bold, italic, undeline 과 같은 문자열일때 실행. ex: ql-bold, ql-italic, ql-underline
+        //                                             return `<button class="ql-${item}"></button>`;
+        //                                         }
+        //                                     })
+        //                                     .join("");
+        //                             }
+        //                             return "";
+        //                         })
+        //                         .join("");
+        //                 };
+    
 
-            const quill = quillRef.current?.getEditor();
-            if (quill) {
-                const toolbarModule = quill.getModule("toolbar") as {
-                    container: any;
-                }; // 타입 단언
-                if (toolbarModule) {
-                    toolbarModule.container = toolbarElement || ".ql-toolbar"; // 커스텀 툴바 할당
-                }
-            }
-        }, []);
+        //                 // 아래와 같이 툴바 HTML을 생성하고, 생성된 HTML을 툴바 컨테이너에 삽입하면 reading of null 에러가 발생함.
+        //                 // container.innerHTML = createToolbarHTML(toolbarConfig);
+
+        //                 const toolbarHTML = createToolbarHTML(toolbarConfig);
+
+        //                 // 툴바에 생성된 HTML 삽입
+        //                     container.innerHTML = toolbarHTML;
+
+                    
+        //                       // const quill = quillRef.current?.getEditor();
+        //     // if (quill) {
+        //     //     const toolbarModule = quill.getModule("toolbar") as {
+        //     //         container: any;
+        //     //     }; // 타입 단언
+        //     //     if (toolbarModule) {
+        //     //         toolbarModule.container = toolbarElement || ".ql-toolbar"; // 커스텀 툴바 할당
+        //     //     }
+        //     // }
+
+
+        //             }
+        //         }
+
+       
+        // }, []);
+
+       
 
         // 캡쳐 이미지 붙여넣었을때 처리
         useEffect(() => {
             const addPasteEventListener: (quill: Quill) => () => void = (quill: Quill) => {
                 const handlePaste = (e: ClipboardEvent) => {
-
                     console.log("실행");
 
                     const clipboardData = e.clipboardData;
@@ -186,8 +229,6 @@ export default React.memo(
                             console.log("object >>>>>>>>>>>>>>", item);
                             console.log("item.type >>>>>>>>>>>>>>", item.type);
 
-
-
                             if (item.type.startsWith("image/")) {
                                 const file: File | null = item.getAsFile();
                                 console.log("file >>>>>>>>>>>>>>", file);
@@ -196,8 +237,7 @@ export default React.memo(
                                     handleImagePaste(quill, file);
                                 }
                                 break;
-                            }  
-                            
+                            }
                         }
                     }
                 };
@@ -211,40 +251,46 @@ export default React.memo(
                 };
             };
 
-            const initializeQuill = () => {
-                const quill = quillRef.current?.getEditor();
-                if (quill) {
-                    // quill이 준비되었을 때 붙여넣기 이벤트 리스너 추가
-                    return addPasteEventListener(quill);
-                } else {
+        
                     // quill이 준비되지 않았으면 500ms 후 다시 시도
-                    setTimeout(() => {
                         const quillInstance = quillRef.current?.getEditor();
                         if (quillInstance) {
-                            return addPasteEventListener(quillInstance);
+                    
+                                const toolbarElement = document.querySelector('.ql-toolbar') as HTMLDivElement;
+                                const customContainer = document.querySelector('.ql-toolbar-container') as HTMLDivElement;
+
+                                if (toolbarElement && customContainer) {
+                                    
+                                    customContainer.appendChild(toolbarElement);
+                                    toolbarElement.classList.add('visible');
+                                    console.log("실행입니다", toolbarElement);
+                                }
+                        
+                                // clearInterval(intervalId);
+                                return addPasteEventListener(quillInstance);
+                          
                         }
-                    }, 500);
-                }
-            };
-      const cleanup = initializeQuill();
+                  
+                
+         
+            // const cleanup = initializeQuill();
 
             // 컴포넌트 언마운트 시 이벤트 리스너 제거
-            return () => {
-                if (cleanup) {
-                    cleanup();
-                }
-            };
+            // return () => {
+            //     if (cleanup) {
+            //         cleanup();
+            //     }
+            // };
         }, []);
-
-   
-
 
         const handleImagePaste: (quill: Quill, file: File) => Promise<void> = async (quill: Quill, file: File) => {
             // 이미지 파일을 서버에 업로드
             const fileUrl = await uploadFile(file);
-            
-            const currentUploadedImages: string[] = uploadedImagesUrlRef.current;
-            uploadedImagesUrlRef.current = [...currentUploadedImages, fileUrl];
+
+            console.log("fileUrl 붙여넣기>>>", fileUrl);
+
+            const currentUploadedImages: string[] = totalUploadedImagesUrlRef.current;
+            totalUploadedImagesUrlRef.current = [...currentUploadedImages, fileUrl];
 
             if (fileRef && fileRef.current) {
                 fileRef.current.push({
@@ -654,45 +700,137 @@ export default React.memo(
             }
         }, [getEditorContent]);
 
-        // 에디터 내에서 이미지를 클릭할 때 오버레이 표시
+        // 에디터 내에서 이미지를 클릭할 때 오버레이 표시, delete키를 눌렀을 때 이미지 삭제, 
+        // qi editor 내부에서 이미지 삭제 시 서버에 요청할 이미지 목록 관리
         useEffect(() => {
-            const quill = quillRef.current?.getEditor();
 
-            if (quill) {
-                const addImageClickListener = () => {
-                    const images = quill.root.querySelectorAll("img"); // 에디터 내 모든 이미지 선택
-                    images.forEach((img) => {
+            let observer: MutationObserver | null = null;
+
+            const handleKeyDown = (event: KeyboardEvent) => {
+
+                if (event.key === "Delete" && selectedImageRef.current) {
+                    const img: HTMLImageElement = selectedImageRef.current;
+                    const figure = document.querySelector("figure");
+
+                    img.parentElement?.remove();
+                    selectedImageRef.current = null; 
+                    if (figure) {
+                        figure.style.display = "none"; // figure.remove()를 하면 DOM에서도 아예 삭제되어서 안된다.
+                    }
+                    
+                }
+            };
+
+            const intervalId = setInterval(() => {
+                const quill = quillRef.current?.getEditor();
+                if (quill) {
+                    // quillEditor가 준비되면 클릭 이벤트 리스너 추가
+                    const addImageClickListener = (img: HTMLImageElement) => {
                         img.removeEventListener("click", handleImageClick); // 중복 방지
                         img.addEventListener("click", handleImageClick); // 이미지에 클릭 이벤트 추가
+                    };
+
+                     observer = new MutationObserver((mutations) => {
+                        mutations.forEach((mutation) => {
+                            if (mutation.type === "childList") {
+                                mutation.addedNodes.forEach((node) => {
+                                    if (node.nodeName === "IMG") {
+                                        addImageClickListener(node as HTMLImageElement);
+                                    } else if (node.nodeType === Node.ELEMENT_NODE) {
+                                        const images = (node as HTMLElement).querySelectorAll("img");
+                                        images.forEach((img) => addImageClickListener(img));
+                                    }
+                                });
+                            }
+                        });
                     });
-                };
 
-                quill.on("text-change", addImageClickListener); // 이미지 삽입 후에도 추가 리스너 설정
-            } else {
-                const intervalId = setInterval(() => {
-                    const quill = quillRef.current?.getEditor();
-                    if (quill) {
-                        // quillEditor가 준비되면 클릭 이벤트 리스너 추가
-                        const addImageClickListener = () => {
-                            const images = quill.root.querySelectorAll("img"); // 에디터 내 모든 이미지 선택
-                            images.forEach((img) => {
-                                img.removeEventListener("click", handleImageClick); // 중복 방지
-                                img.addEventListener("click", handleImageClick); // 이미지에 클릭 이벤트 추가
+                    observer.observe(quill.root, {
+                        childList: true,
+                        subtree: true,
+                    });
+
+
+                    // 에디터 내 삭제를 감지하여 최종적으로 서버측에 요청될 이미지 및 파일 관리, 및 AWS3에 임시 저장된 불필요한 이미지 및 파일 삭제 관리 로직
+                    quill.on("text-change", (delta, oldDelta, source) => {
+                        console.log("oldDelta>>", oldDelta);
+                        console.log("delta", delta);
+
+                        if (source === "user") {
+                            delta.ops.forEach((op, index) => {
+                                if (!op.delete) return;
+
+                                const images = quill.root.querySelectorAll("img");
+                                const links = quill.root.querySelectorAll("a[data-file]");
+                                const currentImageUrls = new Set();
+
+                                // 남아있는 전체 이미지 선택
+                                images.forEach((img) => {
+                                    const imageSrc = img.getAttribute("src");
+                                    if (imageSrc) {
+                                        currentImageUrls.add(imageSrc);
+                                    }
+                                });
+
+                                // 남아있는 전체 파일 선택
+                                links.forEach((link) => {
+                                    const parentElement = link.parentElement;
+
+                                    // 파일을 esc키로 지울 때 p태그까지 한번에 지우는 로직. 이게 없으면 p태그 안에 ::before, ::after 슈도 엘리먼트만 삭제 됨
+                                    if (parentElement && parentElement.tagName.toLowerCase() === "p") {
+                                        parentElement.remove();
+                                    }
+
+                                    const fileHref = link.getAttribute("href");
+                                    if (fileHref) {
+                                        currentImageUrls.add(fileHref);
+                                    }
+                                });
+
+                                console.log("업데이트전 이미지 목록:", totalUploadedImagesUrlRef.current);
+                                console.log("currnetIds >>>:", currentImageUrls);
+
+                                const currentImageUrlsArr = totalUploadedImagesUrlRef.current.filter((totalUploadedImagesUrl) =>
+                                    currentImageUrls.has(totalUploadedImagesUrl)
+                                );
+
+                                // 글 작성 중 삭제된 이미지 목록
+                                if (currentImageUrlsArr.length !== totalUploadedImagesUrlRef.current.length && fileRef && fileRef.current) {
+                                    // 최종 발행 시 적용할 이미지 목록
+                                    fileRef.current = fileRef.current.filter((fileMetadata) => currentImageUrlsArr.includes(fileMetadata.fileUrl));
+
+                                    // 최종 발행 시 클라우드 저장소에서 추가적으로 삭제할 이미지 목록
+                                    deletedImageUrlsInFutureRef.current = [
+                                        ...deletedImageUrlsInFutureRef.current,
+                                        //totalUploadedImagesUrlRef.current.filter를 통해 얻은 string[]값을 ...을 통해 string 만 빼내옴
+                                        ...totalUploadedImagesUrlRef.current.filter(
+                                            (totalUploadedImagesUrl) => !currentImageUrls.has(totalUploadedImagesUrl)
+                                        ),
+                                    ];
+
+                                    console.log("updatedImageUrlsRef >>>", fileRef.current);
+                                    console.log("deletedImageUrlsInFutureRef >>>", deletedImageUrlsInFutureRef.current);
+                                }
                             });
-                        };
+                        }
+                    });
 
-                        quill.on("text-change", addImageClickListener);
+                    // quillEditor가 준비되면 interval 중지
+                    clearInterval(intervalId);
+                    quill.root.addEventListener("keydown", handleKeyDown);
 
-                        // quillEditor가 준비되면 interval 중지
-                        clearInterval(intervalId);
-                    }
-                }, 500); // 500ms마다 quillEditor가 준비되었는지 확인
-            }
+                    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+                 
+                }
+            }, 500); // 500ms마다 quillEditor가 준비되었는지 확인
 
-            // 컴포넌트 언마운트 시 이벤트 리스너 제거
             return () => {
+                const quill = quillRef.current?.getEditor();
                 if (quill) {
-                    quill.root.removeEventListener("click", handleImageClick);
+                    quill.root.removeEventListener("keydown", handleKeyDown);
+                }
+                if (observer) {
+                    observer.disconnect();
                 }
             };
         }, []);
@@ -772,8 +910,8 @@ export default React.memo(
                 if (file && validateFileSize(file, type)) {
                     const fileUrl = await uploadFile(file);
 
-                    const currentUploadedImages: string[] = uploadedImagesUrlRef.current;
-                    uploadedImagesUrlRef.current = [...currentUploadedImages, fileUrl];
+                    const currentUploadedImages: string[] = totalUploadedImagesUrlRef.current;
+                    totalUploadedImagesUrlRef.current = [...currentUploadedImages, fileUrl];
 
                     insertFileToEditor(file, fileUrl, type);
                 }
@@ -801,8 +939,6 @@ export default React.memo(
             }
             return true;
         };
-        
-
 
         const insertFileToEditor = (file: File, fileUrl: string, type: string): void => {
             const quill = quillRef.current?.getEditor();
@@ -813,19 +949,24 @@ export default React.memo(
 
                 if (type === "image") {
                     // 커서가 index 0일 때 처리 로직
+
                     quill.insertEmbed(currentSelection, "image", fileUrl, Quill.sources.USER); // 이미지 삽입
+
+                    // const addedImage = quill.root.querySelector(`img[src="${fileUrl}"]`);
+                    // if (addedImage) {
+                    //     addedImage.setAttribute("data-id", uuidv4());
+                    // }
 
                     setTimeout(() => {
                         quill.insertText(currentSelection + 1, "\n", Quill.sources.USER);
                         quill.setSelection(currentSelection + 2, Quill.sources.SILENT);
                     }, 100); // 100ms 지연 후 실행
                 } else if (type === "file") {
-                    console.log("file.name >>>>" + file.name);
+                    
+                    const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2); 
 
-                    const fileIconHtml = `
-                 <a href="${fileUrl}">첨부된 파일: ${file.name}. 여기를 클릭하여 다운로드 하세요.</a>
-             `;
-                    quill.clipboard.dangerouslyPasteHTML(savedSelection, fileIconHtml);
+                    const fileIconHtml = `<a href="${fileUrl}">${file.name} - ${fileSizeInMB}MB </a>`;
+                    quill.clipboard.dangerouslyPasteHTML(savedSelection, fileIconHtml, Quill.sources.USER);
 
                     setupFileDownloadLink(fileUrl, file.name);
 
@@ -854,6 +995,8 @@ export default React.memo(
                         fileUrl,
                         fileSize: file.size,
                     });
+
+                    console.log("updatedImagedadasdUrlsRef >>>", fileRef.current);
                 }
             }
         };
@@ -864,8 +1007,16 @@ export default React.memo(
 
             if (anchorTag) {
                 anchorTag.setAttribute("href", fileUrl); // 올바른 href 값으로 교체
-                anchorTag.style.cursor = "pointer"; // 인라인 스타일로 커서 스타일 적용
-                anchorTag.style.textDecoration = "none";
+                anchorTag.setAttribute("data-file", "");
+                anchorTag.classList.add("file-container__item");
+
+
+                const parentElement = anchorTag.parentElement;
+                if (parentElement && parentElement.tagName.toLowerCase() === "p") {
+
+                    parentElement.classList.add("file-container"); // .file-container 클래스 추가
+
+                }
 
                 const hideTooltip = () => {
                     const qlToolTip = document.querySelector(".ql-tooltip") as HTMLDivElement;
@@ -896,7 +1047,8 @@ export default React.memo(
                         .catch(console.error);
                 });
 
-                anchorTag.addEventListener("contextmenu", hideTooltip); // 우클릭 시 툴팁 숨김
+                // 우클릭 시 툴팁 숨김
+                parentElement?.addEventListener("contextmenu", hideTooltip);
             }
         };
 
@@ -961,11 +1113,23 @@ export default React.memo(
             }
         };
 
+        const toolbarConfig = [
+            [{ header: [1, 2, 3, 4, false] }],
+            [{ font: [] }],
+            [{ size: ["small", "large", "huge", false] }],
+            [{ align: [] }],
+            ["link", "image", "code-block"],
+            [{ color: [] }, { background: [] }],
+            ["bold", "italic", "underline"],
+            [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+            ["clean"],
+        ];
+
         // 여기서 useMemo를 하거나 toggleDropdown 부분에 useCallback을 해야함 아니면 handleFileSelection 함수에 까지.
         const modules = useMemo(
             () => ({
                 toolbar: {
-                    container: ".ql-toolbar",
+                    container: toolbarConfig,
                     handlers: {
                         image: toggleDropdown,
                         align: (value: false | "left" | "center" | "right") => {
@@ -989,6 +1153,13 @@ export default React.memo(
             }),
             []
         );
+
+        // const formats = [
+        //     'header', 'font', 'size', 'align',
+        //     'bold', 'italic', 'underline', 'strike', 'blockquote',
+        //     'list', 'bullet', 'indent',
+        //     'link', 'image', 'video', 'color', 'background'
+        // ];
 
         const DropdownMenu: React.FC<DropdownMenuProps> = ({ dropdownPosition, handleFileSelection, dropdownRef }) => (
             <div
@@ -1020,6 +1191,7 @@ export default React.memo(
             <>
                 {/* 오버레이  */}
 
+
                 <figure ref={overlayRef} className='absolute border-2 border-black/50 pointer-events-auto z-10 hidden'>
                     {/* 네 구석에 있는 리사이즈 핸들러 */}
                     <div className='absolute w-2.5 h-2.5 bg-white border border-black rounded-full top-[-5px] left-[-5px] top-left cursor-nwse-resize pointer-events-auto' />
@@ -1048,8 +1220,10 @@ export default React.memo(
 
                 {/* 여기까지 오버레이  */}
 
-                <ReactQuillDynamic
-                    forwardedRef={quillRef}
+
+
+                <ReactQuill
+                    ref={quillRef}
                     value={value}
                     theme='snow'
                     modules={modules}

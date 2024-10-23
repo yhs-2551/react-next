@@ -1,58 +1,56 @@
-import {
-    QueryFunctionContext,
-} from "react-query";
+// import {
+//     QueryFunctionContext,
+// } from "react-query";
 
-export const fetchPosts = async () => {
-    const response = await fetch("http://localhost:8000/api/posts", {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    });
+// export const fetchPosts = async () => {
 
-    if (!response.ok) {
-        throw new Error("Failed to fetch posts");
-    }
+//     console.log("데이터 가져오는 리액트 쿼리 실행");
 
-    const data = await response.json();
-    return data;
-};
+//     const response = await fetch("http://localhost:8000/api/posts", {
+//         method: "GET",
+//         headers: {
+//             "Content-Type": "application/json",
+//         },
+//     });
 
-export const fetchPost = async ({ queryKey }: QueryFunctionContext) => {
-    const [, id] = queryKey;
-    
-    const response = await fetch(`http://localhost:8000/api/posts/${id}`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    });
+//     if (!response.ok) {
+//         throw new Error("Failed to fetch posts");
+//     }
 
-    if (!response.ok) {
-        throw new Error(`Failed to fetch post with id ${id}`);
-    }
+//     return await response.json();
+// };
 
-    const data = await response.json();
-    return data;
-};
+// export const fetchPost = async ({ queryKey }: QueryFunctionContext) => {
+//     const [, id] = queryKey;
+
+//     const response = await fetch(`http://localhost:8000/api/posts/${id}`, {
+//         method: "GET",
+//         headers: {
+//             "Content-Type": "application/json"
+//         }
+//     });
+
+//     if (!response.ok) {
+//         throw new Error(`Failed to fetch post with id ${id}`);
+//     }
+
+//     const data = await response.json();
+//     return data;
+// };
+
 export const fetchAccessToken = async () => {
     // 초기 로그인 시 브라우저 쿠키에 담긴 액세스 토큰을 서버에서 검증한 후, 다시 클라이언트측으로 응답 헤더를 통해 액세스 토큰 전송
-    const response = await fetch(
-        "http://localhost:8000/api/token/initial-token",
-        {
-            method: "GET",
-            credentials: "include",
-        }
-    );
+    const response = await fetch("http://localhost:8000/api/token/initial-token", {
+        method: "GET",
+        credentials: "include",
+    });
 
     // 액세스 토큰을 브라우저 (HTTP ONLY)쿠키에서 찾을 수 없을때 서버측에서 오류 발생
     if (!response.ok) {
         return false;
     }
 
-    const responseAccessToken = response.headers
-        .get("Authorization")
-        ?.split(" ")[1];
+    const responseAccessToken = response.headers.get("Authorization")?.split(" ")[1];
 
     if (!responseAccessToken) {
         return false;
@@ -73,19 +71,15 @@ export const checkAccessToken = async () => {
 
     try {
         if (accessToken) {
-            const response = await fetch(
-                "http://localhost:8000/api/token/check-access-token",
-                {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                    },
-                }
-            );
+            const response = await fetch("http://localhost:8000/api/token/check-access-token", {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            });
 
             // 액세스 토큰이 유효하지 않을때 서버측 에러. 즉, isLoggedIn false
             if (!response.ok) {
-                localStorage.removeItem("access_token");
                 return false;
             }
 
@@ -98,30 +92,21 @@ export const checkAccessToken = async () => {
 };
 
 export const fetchIsAuthor = async (postId: string) => {
-    console.log("fetchISAUTHOR 실행" + fetchIsAuthor);
-
     const accessToken = localStorage.getItem("access_token");
 
-    const response = await fetch(
-        `http://localhost:8000/api/token/${postId}/verify-author`,
-        {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
-            },
-        }
-    );
+    const response = await fetch(`http://localhost:8000/api/token/${postId}/verify-author`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+    });
 
     const data = await response.json();
     return data.isAuthor; // 서버에서 isAuthor 값을 반환받아 true or false값을 반환
 };
 
-export const signupUser = async (newUser: {
-    username: string;
-    email: string;
-    password: string;
-}) => {
+export const signupUser = async (newUser: { username: string; email: string; password: string }) => {
     try {
         const response = await fetch("http://localhost:8000/api/user/signup", {
             method: "POST",
@@ -143,10 +128,7 @@ export const signupUser = async (newUser: {
     }
 };
 
-export const loginUser = async (loginData: {
-    email: string;
-    password: string;
-}) => {
+export const loginUser = async (loginData: { email: string; password: string }) => {
     try {
         const response = await fetch("http://localhost:8000/api/user/login", {
             method: "POST",
@@ -157,11 +139,10 @@ export const loginUser = async (loginData: {
             body: JSON.stringify(loginData),
         });
 
-        const accessToken = response.headers.get('Authorization')?.split(" ")[1];
-   
-      
+        const accessToken = response.headers.get("Authorization")?.split(" ")[1];
+
         if (accessToken) {
-            localStorage.setItem('access_token', accessToken);
+            localStorage.setItem("access_token", accessToken);
         }
 
         if (!response.ok) {

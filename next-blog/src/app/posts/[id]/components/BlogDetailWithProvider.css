@@ -1,4 +1,6 @@
-/* 초기 첨부된 파일 a태그에 css color 유지를 위함  */
-a[href*="amazonaws.com"] {
-    color: #06c; /* 텍스트 색상 */
+.container::after {
+    content: "";
+    display: block;
+    height: 40vh; /* 뷰포트 높이의 40% 만큼 추가 공간을 만듦 */
 }
+ 

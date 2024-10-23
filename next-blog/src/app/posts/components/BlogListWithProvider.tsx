@@ -3,30 +3,22 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { useGetPosts } from "@/customHooks/useGetPosts";
+// import { useGetPosts } from "@/customHooks/useGetPosts";
 // import useCheckAccessToken from "@/customHooks/useCheckAccessToken";
 import ClientWrapper from "@/providers/ClientWrapper";
-import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
+ 
 
 import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
-
-
-
 import PostItem from "./PostItem";
 
-import type { Post } from "@/common/types/Post";
+import type { PostResponse } from "@/common/types/PostTypes";
 import { checkAccessToken } from "@/services/api";
+import { refreshToken } from "../(common)/utils/refreshToken";
 
-interface PostWithId extends Post {
-    id: string;
-}
-function BlogList({ initialData }: { initialData: PostWithId[] }) {
-    const {
-        data: posts = initialData,
-        isLoading,
-        error,
-    } = useGetPosts(initialData);
+function BlogList({ initialData }: { initialData: PostResponse[] }) {
+
+    const posts = initialData;
 
     const router = useRouter();
 
@@ -40,14 +32,20 @@ function BlogList({ initialData }: { initialData: PostWithId[] }) {
         const isValidToken = await checkAccessToken();
 
         if (!isValidToken) {
-            toast.error("Your session has expired.....", {
-                position: "top-center",
-                autoClose: 3000,
-                onClose: () => router.push("/login"),
-            });
-        } else {
-            router.push("/posts/new");; // 토큰이 유효할 때 작성 페이지로 접근
-        }
+            const newAccessToken = await refreshToken();
+            if (newAccessToken) {
+                const isValidToken = await checkAccessToken();
+                if (isValidToken) {
+                    router.push("/posts/new"); // 최종적으로 토큰이 유효할 때 작성 페이지로 접근   
+                 } 
+                 if (!isValidToken) {
+                    throw new Error("Failed to enter the new post page. please retry again.");
+                }
+            } 
+        } 
+
+        router.push("/posts/new");
+        
     };
 
     return (
@@ -57,19 +55,19 @@ function BlogList({ initialData }: { initialData: PostWithId[] }) {
                 <h2 className='text-2xl font-bold text-center mb-8'>전체 글</h2>
 
                 {/* any 타입 나중에 수정 */}
-                {posts?.map((post: PostWithId) => (
+                {posts?.map((post: PostResponse) => (
                     <PostItem
                         // 여기서 uuid를 사용하면 컴포넌트가 재렌더링 될때마다 새로운 key값이 생성되어 불필요한 재렌더링이 발생할 수 있기 때문에 uuid 사용 안함.
                         // 리스트에서 기존의 항목과 새롭게 추가된 항목을 구분함으로써 불필요한 재렌더링 방지를 위함
                         // uuid를 key값으로 사용하면 모든 리스트 아이템들의 key값이 매번 새롭게 생성되기 때문에, 매번 모든 리스트 요소들이 새롭게 추가되었다고 인식해서 불필요한 재렌더링이 발생하게 된다.
                         key={post.id}
-                        id={post.id}
+                        postId={post.id}
                         title={post.title}
-                        content={extractTextFromHtml(post.content)}
+                        content={post.content}
                         createdAt={post.createdAt}
                         categoryName={post.categoryName}
                         postStatus={post.postStatus}
-                        thumbnailUrl={post.files && post.files.length > 0 ? post.files[0].fileUrl : "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-thumnail.jfif"}                    />
+                        thumbnailUrl={post.featuredImage ? post.featuredImage.fileUrl : "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-thumnail.jfif"}                    />
                 ))}
                 <button onClick={handleNewPost}>임시로 만든 글쓰기</button>
             </div>
@@ -77,7 +75,7 @@ function BlogList({ initialData }: { initialData: PostWithId[] }) {
     );
 }
 
-function BlogListWithProvider({ initialData }: { initialData: PostWithId[] }) {
+function BlogListWithProvider({ initialData }: { initialData: PostResponse[] }) {
 
 
     return (

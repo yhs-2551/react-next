@@ -9,14 +9,11 @@ export function extractTextWithoutImages(html: string): string {
         images[0].parentNode?.removeChild(images[0]);
     }
 
-    // // 파일 링크 태그 제거 (예: a 태그)
-    // const links = div.getElementsByTagName("a");
-    
-    // console.log("ilinks >>>", links);
-
-    // while (links.length > 0) {
-    //     links[0].parentNode?.removeChild(links[0]);
-    // }
+     // 클래스가 file-container인 요소 제거
+     const fileContainers = div.getElementsByClassName("file-container");
+     while (fileContainers.length > 0) {
+         fileContainers[0].parentNode?.removeChild(fileContainers[0]);
+     }
 
     // 텍스트 추출
     return div.textContent || "";
