@@ -36,7 +36,9 @@ function BlogList({ initialData }: { initialData: PostResponse[] }) {
             if (newAccessToken) {
                 const isValidToken = await checkAccessToken();
                 if (isValidToken) {
-                    router.push("/posts/new"); // 최종적으로 토큰이 유효할 때 작성 페이지로 접근   
+                    // 최종적으로 토큰이 유효할 때 작성 페이지로 접근   
+                    window.location.href = "/posts/new";
+                    // router.push("/posts/new"); 
                  } 
                  if (!isValidToken) {
                     throw new Error("Failed to enter the new post page. please retry again.");
@@ -44,7 +46,8 @@ function BlogList({ initialData }: { initialData: PostResponse[] }) {
             } 
         } 
 
-        router.push("/posts/new");
+        window.location.href = "/posts/new";
+        // router.push("/posts/new");
         
     };
 
@@ -67,7 +70,7 @@ function BlogList({ initialData }: { initialData: PostResponse[] }) {
                         createdAt={post.createdAt}
                         categoryName={post.categoryName}
                         postStatus={post.postStatus}
-                        thumbnailUrl={post.featuredImage ? post.featuredImage.fileUrl : "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-thumnail.jfif"}                    />
+                        thumbnailUrl={post.featuredImage ? post.featuredImage.fileUrl : "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-featured-image.jpg"}                    />
                 ))}
                 <button onClick={handleNewPost}>임시로 만든 글쓰기</button>
             </div>
@@ -75,14 +78,17 @@ function BlogList({ initialData }: { initialData: PostResponse[] }) {
     );
 }
 
-function BlogListWithProvider({ initialData }: { initialData: PostResponse[] }) {
+
+export default BlogList;
+
+// function BlogListWithProvider({ initialData }: { initialData: PostResponse[] }) {
 
 
-    return (
-        <ClientWrapper>
-            <BlogList initialData={initialData} />
-        </ClientWrapper>
-    );
-}
+//     return (
+//         <ClientWrapper>
+//             <BlogList initialData={initialData} />
+//         </ClientWrapper>
+//     );
+// }
 
-export default BlogListWithProvider;
+// export default BlogListWithProvider;

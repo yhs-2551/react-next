@@ -3,22 +3,31 @@ import React, { ChangeEvent, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { uploadFile } from "../utils/uploadFile";
 import type { FileMetadata } from "@/common/types/PostTypes";
+import NextImage from "next/image";
 
- 
 interface PublishModalProps {
     // isOpen: boolean;
     onClose: () => void;
     // titleRef: React.RefObject<string>;
     // contentRef: React.RefObject<string>;
-    onPublish: (postStatus: "PUBLIC" | "PRIVATE", commentsEnabled: "ALLOW" | "DISALLOW", featuredImage: FileMetadata | null) => void;
+    onPublish: (postStatus: "PUBLIC" | "PRIVATE", commentsEnabled: "ALLOW" | "DISALLOW", featuredImage: FileMetadata | null | undefined) => void;
     errorMessageRef: React.RefObject<string>;
     totalFileRef: React.MutableRefObject<FileMetadata[]>;
     deletedImageUrlsInFutureRef: React.MutableRefObject<string[]>;
+    fetchFeaturedImageFromServer?: FileMetadata | undefined;
 }
 
-function PublishModal({ onClose, onPublish, errorMessageRef, totalFileRef, deletedImageUrlsInFutureRef }: PublishModalProps) {
+function PublishModal({
+    onClose,
+    onPublish,
+    errorMessageRef,
+    totalFileRef,
+    deletedImageUrlsInFutureRef,
+    fetchFeaturedImageFromServer,
+}: PublishModalProps) {
     const [commentsEnabled, setCommentsEnabled] = useState<"ALLOW" | "DISALLOW">("ALLOW");
-    const [featuredImage, setFeaturedImage] = useState<FileMetadata | null>(null);
+    const [featuredImage, setFeaturedImage] = useState<FileMetadata | null | undefined>(fetchFeaturedImageFromServer);
+    // const [fetchFeaturedImage, setFetchFeaturedImage] = useState<FileMetadata | null | undefined>(fetchFeaturedImageFromServer);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const MAX_TOTAL_SIZE_MB = 20;
@@ -122,11 +131,7 @@ function PublishModal({ onClose, onPublish, errorMessageRef, totalFileRef, delet
         // if (!response.ok) {
         //     throw new Error("Failed to delete temporary featured file, please retry again.");
         // }
-
-
     };
-
- 
 
     return (
         <div className='fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'>
@@ -155,8 +160,16 @@ function PublishModal({ onClose, onPublish, errorMessageRef, totalFileRef, delet
 
                 <div className='mb-4 h-40 border border-gray-300 rounded-md relative bg-gray-100 flex justify-center items-center'>
                     {featuredImage ? (
-                        <div className='relative w-full h-full'>
-                            <img src={featuredImage.fileUrl} alt='Selected' className='w-full h-full object-cover rounded-md' />
+                        <div className='relative w-[20.875rem] h-[9.875rem]'>
+                            <NextImage
+                                src={featuredImage.fileUrl}
+                                alt='Representative Image'
+                                className='rounded-md'
+                                style={{ maxWidth: "100%", height: "auto" }}
+                                width={334}  
+                                height={158}  
+                                priority={true}
+                            />
                             <button
                                 onClick={handleImageRemove}
                                 className='absolute top-0 right-0 p-1 bg-black text-white z-10 rounded-sm w-6 h-6 flex items-center justify-center'

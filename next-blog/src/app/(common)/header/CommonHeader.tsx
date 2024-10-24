@@ -24,7 +24,7 @@ export default function CommonHeader() {
                 <img src='/path/to/logo.png' alt='Logo' className='h-8 w-8 mr-2' />
                 <span className='text-xl font-bold'>YHS의 블로그</span>
             </div>
-            <div className='flex items-center-center ql-toolbar-container'>
+            <div className='flex items-center ql-toolbar-container'>
                 {/* {pathname === "/posts" ? (
                     <h1 className='text-3xl font-bold'>YHS의 블로그</h1>
                 ) : (

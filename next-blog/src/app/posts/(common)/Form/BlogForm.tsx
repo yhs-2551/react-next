@@ -1,5 +1,3 @@
-// 중복된 태그명 있을 경우 toast 알림창 띄어주기
-
 "use client";
 
 import React, { ChangeEvent, useEffect, useRef } from "react";
@@ -8,14 +6,18 @@ import { v4 as uuidv4 } from "uuid";
 
 import { toast, ToastContainer } from "react-toastify";
 
-import PublishModal from "../../(common)/Modal/PublishModal";
+import PublishModal from "../Modal/PublishModal";
 
-import QuillEditor from "./QuillEditor/QuillEditor";
 import useAddPost from "@/customHooks/useAddPost";
 import { useRouter } from "next/navigation";
 import "react-toastify/dist/ReactToastify.css";
 import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
-import type { FileMetadata } from "@/common/types/PostTypes";
+import type { FileMetadata, PostRequest, PostResponse } from "@/common/types/PostTypes";
+import useUpdatePost from "@/customHooks/useUpdatePost";
+import { UseMutationResult } from "react-query";
+import QuillEditor from "../QuillEditor/QuillEditor";
+import ClientWrapper from "@/providers/ClientWrapper";
+import { initialize } from "next/dist/server/lib/render-server";
 
 interface Tag {
     id: string;
@@ -24,12 +26,14 @@ interface Tag {
 
 // const CustomEditor = dynamic( () => import( '@/app/posts/new/components/CKEditor/CustomCKEditor' ), { ssr: false } );
 
-function BlogForm() {
+function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?: string }) {
+    const isEditingRef = useRef<boolean>(!!postId);
+
     const quillContentRef = useRef<() => string>(() => "");
 
     const modalRef = useRef<HTMLDivElement | null>(null);
 
-    const contentRef = useRef<string>("");
+    const contentRef = useRef<string | undefined>(initialData?.content);
 
     // const titleRef = useRef<string>(""); 과 같이 사용할 수 있지만 수정 페이지와 일관성을 위해 아래와 같이 사용
     const titleInputRef = useRef<HTMLInputElement | null>(null);
@@ -47,10 +51,25 @@ function BlogForm() {
     const tagContainerRef = useRef<HTMLDivElement>(null);
 
     const errorMessageRef = useRef<string | null>(null);
-    const addPostMutation = useAddPost();
+
     const router = useRouter();
 
-    // let isSaved = false;
+    const addPostMutation = useAddPost();
+
+    let updatePostMutation: UseMutationResult<any, unknown, PostRequest, unknown>;
+
+    if (postId) {
+        updatePostMutation = useUpdatePost(postId);
+    }
+
+
+    console.log("contentRef.current >>" + contentRef.current);
+
+    useEffect(() => {
+        if (titleInputRef.current && initialData?.title) {
+            titleInputRef.current.value = initialData.title;
+        }
+    }, []);
 
     const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (titleInputRef.current) {
@@ -59,7 +78,8 @@ function BlogForm() {
     };
 
     const handleComplete = () => {
-        contentRef.current = quillContentRef.current(); // 최신 content 값 가져오기
+        // quillContentRef.current함수를 실행해서 DOMPurify.sanitize(html)로 정화?된 quill.innerhtml 즉 에디터 내의 모든 html 내용을 가져옴
+        contentRef.current = quillContentRef.current(); 
         const title = titleInputRef.current?.value || "";
         const content = contentRef.current || "";
 
@@ -102,17 +122,17 @@ function BlogForm() {
         }
     };
 
-    const handlePublish: (postStatus: "PUBLIC" | "PRIVATE", commentsEnabled: "ALLOW" | "DISALLOW", featuredImage: FileMetadata | null) => void = (
+    const handlePublish: (
         postStatus: "PUBLIC" | "PRIVATE",
         commentsEnabled: "ALLOW" | "DISALLOW",
-        featuredImage: FileMetadata | null
-    ) => {
+        featuredImage: FileMetadata | null | undefined
+    ) => void = (postStatus: "PUBLIC" | "PRIVATE", commentsEnabled: "ALLOW" | "DISALLOW", featuredImage: FileMetadata | null | undefined) => {
         // 최종 발행 시점에는 title및 content 값이 무조건 있어야 함.
-        let title = "";
-        if (titleInputRef.current) {
-            title = titleInputRef.current.value;
-        }
-        const content = contentRef.current;
+ 
+            const title = titleInputRef.current!.value;
+            const content = contentRef.current!;
+
+
         const category = categoryRef.current?.value || "";
 
         console.log("타이틀 >>>>" + title);
@@ -121,103 +141,82 @@ function BlogForm() {
         console.log("postStatus >>>>" + postStatus);
         console.log("댓글 허용 여부 >>" + commentsEnabled);
 
-        addPostMutation.mutate(
-            {
-                title,
-                content,
-                category,
-                tags: tags.current?.map((tag) => tag.value), // 태그 값만 전달
-                files: fileRef.current,
-                deleteTempImageUrls: deletedImageUrlsInFutureRef.current,
-                postStatus,
-                commentsEnabled,
-                featuredImage,
-            },
-            {
-                onSuccess: async () => {
-                    console.log("Blog 작성 성공 실행");
+        const postData = {
+            title,
+            content,
+            category,
+            tags: tags.current?.map((tag) => tag.value), // 태그 값만 전달
+            files: fileRef.current,
+            deleteTempImageUrls: deletedImageUrlsInFutureRef.current,
+            postStatus,
+            commentsEnabled,
+            featuredImage,
+        };
 
-                    if (modalRef.current) {
-                        modalRef.current.style.display = "none";
-                    }
+        const onSuccess = async () => {
+            console.log(isEditingRef.current ? "Blog Edit Form 성공 실행" : "Blog 작성 성공 실행");
 
-                    router.push("/posts");
-                    // 글 작성 성공하고 글 목록 페이지로 이동 후에 글 목록 페이지 page.tsx에 서버 컴포넌트 재실행.
-                    router.refresh();
-
-                    // isSaved = true;
-
-                    // console.log("실행");
-
-                    // const accessToken: string | false = localStorage.getItem("access_token") ?? false;
-                    // let response = await deleteTempAllFiles(accessToken, deletedImageUrlsInFutureRef.current);
-                    // if (!response.ok && response.status === 401) {
-                    //     const newAccessToken = await refreshToken();
-
-                    //     if (newAccessToken) {
-                    //         response = await deleteTempAllFiles(newAccessToken, deletedImageUrlsInFutureRef.current);
-                    //     }
-                    // }
-
-                    // if (!response.ok) {
-                    //     throw new Error("Failed to delete all temporary files, please retry again.");
-                    // }
-                },
-                onError: (error: any) => {
-                    console.log("Blog 작성 실패 실행");
-                    console.error("Error:", error); // 오류 로그 확인
-                    if (!(error.response.status === 401)) {
-                        errorMessageRef.current = error.message; // useAddPost에서  throw new Error로 던진 에러 메시지가 error.message에서 사용 된다.
-                        // 토큰이 만료된 에러인 401 에러가 아니면 인라인 메시지로 띄워주고, 토큰 만료 에러는 useAddPost에서 Toast 알림으로 처리.
-                    }
-                },
+            if (modalRef.current) {
+                modalRef.current.style.display = "none";
             }
-        );
+
+            if (isEditingRef.current) {
+                router.replace(`/posts/${postId}`);
+            } else {
+                // 글 작성시 rotuer.push를 쓰면 글 작성 성공하고 목록 페이지로 간 후에, 브라우저 뒤로가기를 통해 다시 글작성 페이지로 갈 경우 에디터가 제대로 작동하지 않음.
+
+                // -- 아래는 글 수정 시 --
+                // 수정 작업 후 상세 페이지로 이동한 상태에서 브라우저 뒤로가기를 했을때 다시 수정 페이지로 가지 않게 router.replace 사용.
+                // 즉 replace로 이동하면서 브라우저 history에 바로 직전 수정 페이지를 남기지 않음.
+                // 쉽게 replace는 뒤로가기를 했을때 전전 페이지로 간다고 보면 된다.
+                router.replace("/posts");
+            }
+
+            // 글 작성의 경우 글 작성 성공하고 글 목록 페이지로 이동 후에 글 목록 페이지 page.tsx에 서버 컴포넌트 재실행.
+            // 글 수정의 경우 상세페이지 및 그 아래 leaf segment인 수정 페이지에 다시 접근할 시 수정 페이지의 서버 컴포넌트까지 재실행 됨
+            router.refresh();
+        };
+
+        const onError = (error: any) => {
+            console.log(isEditingRef.current ? "Blog Edit Form 실패 실행" : "Blog 작성 실패 실행");
+            console.error("Error:", error); // 오류 로그 확인
+            errorMessageRef.current = error.message; // useAddPost 또는 useUpdatePost에서 throw new Error로 던진 에러 메시지가 error.message에서 사용 된다.
+        };
+
+        if (isEditingRef.current) {
+            updatePostMutation.mutate(postData, { onSuccess, onError });
+        } else {
+            addPostMutation.mutate(postData, { onSuccess, onError });
+        }
     };
 
-    // 나중에 임시저장 할때 처리
-    // useEffect(() => {
+    const removeTag = (uuidToRemove: string, tagElement: HTMLElement) => {
+        tags.current = tags.current.filter((tag) => tag.id !== uuidToRemove);
+        if (tagContainerRef.current) {
+            tagContainerRef.current.removeChild(tagElement);
+        }
 
-    //     const handleBeforeUnload: (e: BeforeUnloadEvent) => Promise<void> = async (e: BeforeUnloadEvent): Promise<void> => {
-    //         e.preventDefault();
+        if (tags.current.length < 10 && tagInputRef.current) {
+            tagInputRef.current.style.display = "block";
+        }
+    };
 
-    //         if (isSaved) return;
+    const addTagToDOM = (tag: Tag) => {
+        if (tagContainerRef.current) {
+            const tagElement = document.createElement("span");
+            tagElement.className = "inline-block text-xs mr-2 px-3 py-1";
+            tagElement.textContent = tag.value;
 
-    //             console.log("실행");
+            const removeButton = document.createElement("button");
+            removeButton.type = "button";
+            removeButton.className = "ml-2 text-xs text-gray-500";
+            removeButton.textContent = "×";
+            removeButton.onclick = () => removeTag(tag.id, tagElement);
 
-    //             const accessToken: string | false = localStorage.getItem("access_token") ?? false;
-    //             let response = await deleteTempAllFiles(accessToken, totalUploadedImagesUrlRef.current);
-    //             if (!response.ok && response.status === 401) {
-    //                 const newAccessToken = await refreshToken();
-
-    //                 if (newAccessToken) {
-    //                     response = await deleteTempAllFiles(newAccessToken, totalUploadedImagesUrlRef.current);
-    //                 }
-    //             }
-
-    //             if (!response.ok) {
-    //                 throw new Error("Failed to delete all temporary files, please retry again.");
-    //             }
-
-    //     };
-
-    //     window.addEventListener("beforeunload", handleBeforeUnload);
-
-    //     return () => {
-    //         window.removeEventListener("beforeunload", handleBeforeUnload);
-    //     };
-    // }, []);
-
-    // const deleteTempAllFiles = async (token: string | boolean, deleteTempAllFileUrl: string[]) => {
-    //     return await fetch("http://localhost:8000/api/posts/files/delete-temp-files", {
-    //         method: "POST",
-    //         headers: {
-    //             "Content-Type": "application/json",
-    //             Authorization: `Bearer ${token}`,
-    //         },
-    //         body: JSON.stringify({ urls: deleteTempAllFileUrl }),
-    //     });
-    // };
+            tagElement.appendChild(removeButton);
+            tagContainerRef.current.appendChild(tagElement);
+        }
+    };
 
     const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" || e.key === ",") {
@@ -226,6 +225,22 @@ function BlogForm() {
                 const inputValue = tagInputRef.current.value.trim();
                 if (!inputValue.startsWith("#")) {
                     tagInputRef.current.value = `#${inputValue}`;
+                }
+
+                // 중복 태그 오류 처리. 두번째 입력부터 검증
+                if (tags.current.length > 0) {
+                    const isExist = tags.current.some((tag) => tag.value === tagInputRef.current?.value.trim());
+
+                    if (isExist) {
+                        toast.error(
+                            <span>
+                                <span style={{ fontSize: "1.1rem" }}>!</span>&nbsp;&nbsp;&nbsp;&nbsp;이미 존재하는 태그입니다.
+                            </span>
+                        );
+
+                        tagInputRef.current.value = ""; // 입력 필드 초기화
+                        return;
+                    }
                 }
 
                 if (tags.current.length < 10) {
@@ -245,38 +260,10 @@ function BlogForm() {
             }
         }
     };
+
     // const handleCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
     //     setCategory(e.target.value);
     // };
-
-    const addTagToDOM = (tag: Tag) => {
-        if (tagContainerRef.current) {
-            const tagElement = document.createElement("span");
-            tagElement.className = "inline-block text-xs mr-2 px-3 py-1";
-            tagElement.textContent = tag.value;
-
-            const removeButton = document.createElement("button");
-            removeButton.type = "button";
-            removeButton.className = "ml-2 text-xs text-gray-500";
-            removeButton.textContent = "×";
-            removeButton.onclick = () => removeTag(tag.id, tagElement);
-
-            tagElement.appendChild(removeButton);
-            tagContainerRef.current.appendChild(tagElement);
-        }
-    };
-
-    const removeTag = (uuidToRemove: string, tagElement: HTMLElement) => {
-        tags.current = tags.current.filter((tag) => tag.id !== uuidToRemove);
-        if (tagContainerRef.current) {
-            tagContainerRef.current.removeChild(tagElement);
-        }
-
-        if (tags.current.length < 10 && tagInputRef.current) {
-            tagInputRef.current.style.display = "block";
-        }
-    };
-
 
     return (
         <>
@@ -308,17 +295,17 @@ function BlogForm() {
                         />
                     </div>
 
-
                     {/* mb-4 flex-1 */}
                     <div className='ql-custom-container relative min-h-[500px]'>
                         <QuillEditor
-                            value={contentRef.current}
+                            contentValue={contentRef.current}
                             fileRef={fileRef}
                             totalUploadedImagesUrlRef={totalUploadedImagesUrlRef}
                             deletedImageUrlsInFutureRef={deletedImageUrlsInFutureRef}
                             getEditorContent={(getContent) => {
                                 quillContentRef.current = getContent;
                             }}
+                            fetchFileFromServer={initialData?.files}
                         />
                     </div>
 
@@ -348,13 +335,14 @@ function BlogForm() {
                 <div ref={modalRef} className='hidden'>
                     <PublishModal
                         // isOpen={true}
-                        onClose={handleCloseModal}
                         // titleRef={titleRef}
                         // contentRef={contentRef}
+                        onClose={handleCloseModal}
                         onPublish={handlePublish}
                         errorMessageRef={errorMessageRef}
                         totalFileRef={fileRef}
                         deletedImageUrlsInFutureRef={deletedImageUrlsInFutureRef}
+                        fetchFeaturedImageFromServer={initialData?.featuredImage}
                     />
                 </div>
             </form>
@@ -363,3 +351,14 @@ function BlogForm() {
 }
 
 export default BlogForm;
+
+// function BlogFormWithProvider({ initialData, postId }: { initialData?: PostResponse; postId?: string }) {
+//     return (
+//         <ClientWrapper>
+//             {/* <BlogForm initialData={initialData} postId={postId} /> */}
+//             <BlogForm initialData={initialData} postId={postId} />
+//         </ClientWrapper>
+//     );
+// }
+
+// export default BlogFormWithProvider;

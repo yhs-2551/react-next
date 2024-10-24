@@ -3,6 +3,8 @@ export interface FileMetadata {
     fileType: string;
     fileUrl: string;
     fileSize: number;
+    width?: number;
+    height?: number;
 }
 
 

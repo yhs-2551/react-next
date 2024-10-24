@@ -1,17 +1,17 @@
 import React, { Suspense } from "react";
-import BlogForm from "./components/BlogForm";
 import ClientWrapper from "@/providers/ClientWrapper";
 import Loading from "./loading";
+import BlogForm from "../(common)/Form/BlogForm";
 
 function AddBlogPage() {
     return (
         <>
             <div className='container max-w-4xl mt-6 mx-auto bg-white'>
-                <ClientWrapper>
-                    <Suspense fallback={<Loading />}>
+                <Suspense fallback={<Loading />}>
+                    <ClientWrapper>
                         <BlogForm />
-                    </Suspense>
-                </ClientWrapper>
+                    </ClientWrapper>
+                </Suspense>
             </div>
         </>
     );

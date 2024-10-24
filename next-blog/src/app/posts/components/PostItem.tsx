@@ -1,4 +1,5 @@
 import { extractTextWithoutImages } from "@/utils/extractTextWithoutImages";
+import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 
@@ -9,7 +10,7 @@ interface PostProps {
     categoryName: string | null;
     createdAt: string;
     content: string;
-    thumbnailUrl?: string;
+    thumbnailUrl: string;
 }
 
 function PostItem({ postId, title, postStatus, categoryName, createdAt, content, thumbnailUrl }: PostProps) {
@@ -34,13 +35,20 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
 
     return (
         <div className='flex py-4'>
-
-            {/* 썸넹일 부분  */}
-            {thumbnailUrl && (
-                <div className='w-[12rem] mr-6 cursor-pointer'onClick={() => router.push(`/posts/${postId}`)}>
-                    <img src={thumbnailUrl} alt='Post Thumbnail' className='w-full h-[12rem] object-cover rounded' />
+            {/* 썸네일 부분  */}
+            {
+                <div className='w-[12rem] mr-6 cursor-pointer' onClick={() => router.push(`/posts/${postId}`)}>
+                    <NextImage
+                        src={thumbnailUrl}
+                        alt='Post Thumbnail'
+                        width={192} // 12rem = 192px
+                        height={192} // 12rem = 192px
+                        className='object-cover rounded'
+                        style={{ minWidth: "12rem", minHeight: "12rem" }}
+                        priority={true}
+                    />
                 </div>
-            )}
+            }
 
             {/* 텍스트 부분 */}
             <div className='flex flex-col justify-center'>
@@ -65,10 +73,13 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
                         {isContentLong ? "..." : ""}
                     </p>
                 )}
-
+                
                 {/* 버튼 부분 - 클릭 가능하도록 수정 완료*/}
                 <div className='mt-2'>
-                    <button className='text-sm text-white bg-customButtonColor px-3 py-1 rounded cursor-pointer' onClick={() => router.push(`/posts/${postId}`)}>
+                    <button
+                        className='text-sm text-white bg-customButtonColor px-3 py-1 rounded cursor-pointer'
+                        onClick={() => router.push(`/posts/${postId}`)}
+                    >
                         Read More
                     </button>
                 </div>

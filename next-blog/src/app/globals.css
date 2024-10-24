@@ -18,14 +18,17 @@ body {
   /* background-color: var(--body-color);
   color: var(--text-color);  */
 }
-ul {
+
+/* 툴바 기능 때문에 주석  */
+/* ul {
   list-style: none;
-}
+} */
 
 a {
   text-decoration: none;
 }
 
+/* next.js 이미지 조정 때문에 주석  */
 img {
   display: block;
   max-width: 100%;

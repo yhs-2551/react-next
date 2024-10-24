@@ -1,6 +1,6 @@
 import React from "react";
 
-import BlogListWithProvider from "./components/BlogListWithProvider";
+import BlogList from "./components/BlogListWithProvider";
 
 export default async function PostsPage() {
     const res = await fetch("http://localhost:8000/api/posts", {
@@ -11,5 +11,5 @@ export default async function PostsPage() {
 
     console.log("블로그 글 목록 페이지 실행 >>>>>>>>>>>");
 
-    return <BlogListWithProvider initialData={posts} />;
+    return <BlogList initialData={posts} />;
 }

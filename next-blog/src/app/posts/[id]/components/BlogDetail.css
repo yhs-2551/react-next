@@ -1,0 +1,77 @@
+/* .container::after {
+    content: "";
+    display: block;
+    height: 40vh;  
+}
+  */
+
+.ql-container::after {
+    content: "";
+    display: block;
+    height: 40vh; /* 뷰포트 높이의 40% 만큼 추가 공간을 만듦 */
+}
+
+.ql-editor {
+    padding: 0 !important;
+    /* 아래 일단 주석처리 크게 문제 없으면 나중에 삭제 */
+    /* position: relative !important; */
+}
+
+.ql-container {
+    border: none !important;
+}
+
+.ql-editor img {
+    cursor: pointer;
+}
+
+.ql-editor a {
+    text-decoration: none !important;
+}
+
+.file-container {
+    border: 1px solid #ddd;
+    padding: 10px;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 50%;
+    height: 60px;
+    font-size: 0.9rem;
+    color: #333;
+    cursor: pointer;
+    margin: 0 auto !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    transition: opacity 0.3s;
+}
+
+.file-container::before {
+    content: "\f15b";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    position: absolute;
+    left: 1.2rem;
+    font-size: 1.5rem;
+}
+
+.file-container::after {
+    content: "\f019";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    position: absolute;
+    right: 1.2rem;
+    font-size: 1.5rem;
+}
+
+.file-container:hover {
+    opacity: 0.8;
+}
+
+.file-container__item {
+    display: block;
+    width: 100%;
+    margin-left: 3rem;
+    color: inherit !important;
+    cursor: pointer;
+}
