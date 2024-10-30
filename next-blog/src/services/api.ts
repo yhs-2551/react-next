@@ -176,7 +176,7 @@ export const logoutUser = async () => {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || "로그아웃에 실패했습니다.");
+            throw new Error(errorData.message || "Fail to logout Please try again.");
         }
 
         // 로그아웃 성공시 로컬스토리지에서 토큰 제거

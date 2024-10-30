@@ -5,19 +5,17 @@ import React, { ChangeEvent, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import PublishModal from "../Modal/PublishModal";
 
 import useAddPost from "@/customHooks/useAddPost";
 import { useRouter } from "next/navigation";
-import "react-toastify/dist/ReactToastify.css";
 import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
 import type { FileMetadata, PostRequest, PostResponse } from "@/common/types/PostTypes";
 import useUpdatePost from "@/customHooks/useUpdatePost";
 import { UseMutationResult } from "react-query";
 import QuillEditor from "../QuillEditor/QuillEditor";
-import ClientWrapper from "@/providers/ClientWrapper";
-import { initialize } from "next/dist/server/lib/render-server";
 
 interface Tag {
     id: string;
@@ -49,6 +47,9 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
     const tags = useRef<Tag[]>([]);
     const tagInputRef = useRef<HTMLInputElement>(null);
     const tagContainerRef = useRef<HTMLDivElement>(null);
+    //수정 작업 시 서버로 삭제 된 태그를 전송해주기 위함. 
+    const editPageDeletedTags = useRef<string[]>([]);
+
 
     const errorMessageRef = useRef<string | null>(null);
 
@@ -69,6 +70,31 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         if (titleInputRef.current && initialData?.title) {
             titleInputRef.current.value = initialData.title;
         }
+
+        // const newTag: Tag = {
+        //     id: uuidv4(),
+        //     value: tagInputRef.current.value,
+        // };
+
+        // tags.current = [...tags.current, newTag];
+        // addTagToDOM(newTag);
+
+        if (initialData && initialData.tags) {
+            initialData.tags.forEach((tag) => {
+                const editPageTag: Tag = {
+                    id: uuidv4(),
+                    value: tag,
+                };
+
+                tags.current = [...tags.current, editPageTag];
+                addTagToDOM(editPageTag);
+            });
+
+            if (tags.current.length >= 10 && tagInputRef.current) {
+                tagInputRef.current.style.display = "none";
+            }
+        }
+
     }, []);
 
     const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -146,6 +172,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
             content,
             category,
             tags: tags.current?.map((tag) => tag.value), // 태그 값만 전달
+            editPageDeletedTags: editPageDeletedTags.current, // 수정페이지에서 삭제된 태그 전송
             files: fileRef.current,
             deleteTempImageUrls: deletedImageUrlsInFutureRef.current,
             postStatus,
@@ -191,6 +218,17 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
     };
 
     const removeTag = (uuidToRemove: string, tagElement: HTMLElement) => {
+
+        // 태그 삭제시 initialData가 있다면 수정 페이지에서 태그를 삭제하는 경우가 됨. 즉 수정 페이지인지 식별하기 위함 
+        if (initialData) {
+            const removedTag = tags.current.find((tag) => tag.id === uuidToRemove);
+            if (removedTag) {
+                editPageDeletedTags.current.push(removedTag.value);
+            }
+        }
+
+        console.log("editPageDeletedTags.current >>", editPageDeletedTags.current);
+
         tags.current = tags.current.filter((tag) => tag.id !== uuidToRemove);
         if (tagContainerRef.current) {
             tagContainerRef.current.removeChild(tagElement);
@@ -245,6 +283,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 
                 if (tags.current.length < 10) {
                     const newTag: Tag = {
+                        // 태그를 삭제할때 고유 id값이 필요해서 id값 설정.
                         id: uuidv4(),
                         value: tagInputRef.current.value,
                     };
@@ -319,7 +358,8 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                             placeholder='#태그 입력 (,키 및 엔터키로 분리)'
                             onKeyDown={handleTagKeyDown}
                         />
-                        <div ref={tagContainerRef} className='mt-2'></div>
+                        <div ref={tagContainerRef} className='mt-2'>
+                        </div>
                     </div>
                 </fieldset>
 
@@ -351,14 +391,3 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 }
 
 export default BlogForm;
-
-// function BlogFormWithProvider({ initialData, postId }: { initialData?: PostResponse; postId?: string }) {
-//     return (
-//         <ClientWrapper>
-//             {/* <BlogForm initialData={initialData} postId={postId} /> */}
-//             <BlogForm initialData={initialData} postId={postId} />
-//         </ClientWrapper>
-//     );
-// }
-
-// export default BlogFormWithProvider;

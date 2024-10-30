@@ -53,7 +53,7 @@ function BlogList({ initialData }: { initialData: PostResponse[] }) {
 
     return (
         <>
-            <ToastContainer />
+            <ToastContainer position='top-center'/>
             <div className='container max-w-4xl mx-auto p-6'>
                 <h2 className='text-2xl font-bold text-center mb-8'>전체 글</h2>
 

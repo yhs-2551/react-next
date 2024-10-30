@@ -1,6 +1,5 @@
 import React from "react";
-
-import BlogList from "./components/BlogListWithProvider";
+import BlogList from "./components/BlogList";
 
 export default async function PostsPage() {
     const res = await fetch("http://localhost:8000/api/posts", {

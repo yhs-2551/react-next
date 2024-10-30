@@ -30,75 +30,11 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     const [newAccessToken, setNewAccessToken]: [string | null, React.Dispatch<React.SetStateAction<string | null>>] = useState<string | null>(null);
     const [isAuthor, setIsAuthor]: [boolean, React.Dispatch<React.SetStateAction<boolean>>] = useState<boolean>(false); // 작성자 여부 상태
 
-
-    // const [imgSize, setImgSize] = useState<{
-    //     [key: string]: { width: number; height: number };
-    // }>({});
-    // const [imagesToLoad, setImagesToLoad] = useState<string[]>([]);
-
     const post = initialData;
 
-    // 아래 주석된 코드들은 시스템에 저장 되어 있는 이미지의 원본 크기를 가져오기 위한 코드들. 커밋하면 삭제 예정
-    // 이미지 원본 크기를 설정하는 함수
-    // useEffect(() => {
-    //     if (imagesToLoad.length > 0) {
-    //         // set으로 중복 제거 후 배열로 다시 반환.
-    //         const uniqueImagesToLoad = Array.from(new Set(imagesToLoad));
-
-    //         uniqueImagesToLoad.forEach((src) => {
-    //             if (imgSize[src]) return;
-
-    //             if (!imgSize[src]) {
-    //                 const img = new Image() as HTMLImageElement;
-    //                 img.src = src;
-    //                 img.onload = () => {
-    //                     setImgSize((prev) => ({
-    //                         ...prev,
-    //                         [src]: { width: img.naturalWidth, height: img.naturalHeight },
-    //                     }));
-    //                 };
-    //             }
-    //         });
-    //     }
-    // }, [imagesToLoad]);
-
-    // const parseContent = (htmlString: string) => {
-    //     return parse(DOMPurify.sanitize(htmlString), {
-    //         replace: (domNode: DOMNode) => {
-    //             if (domNode instanceof Element && domNode.name === "img") {
-    //                 const { src, alt } = domNode.attribs;
-
-    //                 // 상태에 저장되어 있는 이미지 원본 크기를 가져오기. 초기에는 없을텐데 없다면 setImagesToLoad 상태를 통해 원본 이미지 크기 설정.
-    //                 const { width, height } = imgSize[src] || { width: "500", height: "500" }; // 초기값 지정 즉, 상태관리를 통해 원본 이미지 크기를 가져오기 전까지 사용
-
-    //                 console.log("width >>>" + width);
-    //                 console.log("height >>>" + height);
-
-    //                 // 이미지 로딩 후 크기를 설정
-    //                 if (!imgSize[src] && !imagesToLoad.includes(src)) {
-    //                     setImagesToLoad((prev) => [...prev, src]);
-    //                 }
-
-    //                 return (
-    //                     <NextImage
-    //                         key={src}
-    //                         src={src}
-    //                         alt={alt || "detail page image"}
-    //                         width={width} // 기본값 추가
-    //                         height={height} // 기본값 추가
-    //                         style={{ width: "auto", height: "auto" }}
-    //                         loading='lazy'
-    //                     />
-    //                 );
-    //             }
-    //         },
-    //     });
-    // };
-
-
     const parseStyleString = (style: string) => {
-        return style.split(';').reduce((acc: { [key: string]: string | number }, styleProperty) => {
-            const [key, value] = styleProperty.split(':');
+        return style.split(";").reduce((acc: { [key: string]: string | number }, styleProperty) => {
+            const [key, value] = styleProperty.split(":");
             if (key && value) {
                 const camelCasedKey = key.trim().replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
                 acc[camelCasedKey] = value.trim();
@@ -114,43 +50,43 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         }
         return { width: 880, height: 495 }; // 기본값
     };
-    
-    
+
     const parseContent = (htmlString: string) => {
         // 이미지 태그가 포함되어 있는지 확인. 이미지 태그가 없다면 굳이 아래 서버로부터 이미지 크기 가져와서 Next 이미지 변환 로직을 실행할 필요가 없음.
         // DOM에서 이미지는 <img src~~와 같이 시작하기 때문에 <img로 선택
         if (!htmlString.includes("<img")) {
             return parse(DOMPurify.sanitize(htmlString));
         }
-    
+
+        // html을 react 컴포넌트로 변환하는 html-react-parser 라이브러리 사용
         return parse(DOMPurify.sanitize(htmlString), {
             replace: (domNode: DOMNode) => {
                 if (domNode instanceof Element && domNode.name === "img") {
                     const { src, alt, style } = domNode.attribs;
-    
+
                     console.log("style >>", style);
-    
+
                     // 서버에서 받은 이미지 크기 정보를 가져오기
                     const { width, height } = getImageSize(src);
-    
+
                     console.log("width >>>" + width);
                     console.log("height >>>" + height);
-    
+
                     // 스타일을 객체로 변환하여 React의 style 속성에 적용 가능하도록 만듦
                     let styleAttributes = {};
                     if (style) {
                         styleAttributes = parseStyleString(style);
                     }
-    
+
                     // 서버에서 받은 width, height 값을 기존 스타일에 병합
                     const finalStyle = {
                         ...styleAttributes,
                         width: `${width}px`, // width와 height를 명시적으로 추가하여 스타일에 포함
                         height: `${height}px`,
                     };
-    
+
                     console.log("finalStyle >>>", finalStyle);
-    
+
                     return (
                         <NextImage
                             key={src}
@@ -159,13 +95,16 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                             width={width} // 서버에서 받은 크기 사용
                             height={height} // 서버에서 받은 크기 사용
                             style={finalStyle} // 서버에서 받은 기존 스타일 유지
-                            loading="lazy"
+                            loading='lazy'
                         />
                     );
                 }
             },
         });
     };
+
+
+    // 아래쪽에 액세스 토큰 유효성 검사하고, 작성자 인지 확인하는 로직 나중에 백엔드쪽에서 하나로 묶어서 처리 고려. 굳이 두번 검증할 필요가 없음
 
     // 일부 React Hook 특히 useEffect는 React Strict mode에서 두 번 실행 함. 끄고 싶다면 next.config.mjs에서 스트릭트 모드 off 해야함.
     // 새로고침 시 액세스 토큰 유효성 검사 확인하는 로직
@@ -206,60 +145,45 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         }
     }, [newAccessToken]);
 
-    // 아래 상세페이지에서 파일 다운할 수 있게 하는 코드. 일단 주석처리
+    // 아래 상세페이지에서 파일 다운할 수 있게 하는 코드.
 
-    // dangerouslySetInnerHTML을 사용하여 HTML을 렌더링할 때, 다운로드 링크를 생성하는 로직
-    // dangerouslySetInnerHTML은 HTML을 렌더링할 때 React가 관리하지 않기 때문에, React가 관여하지 않는 DOM 변화를 갖미하여 추가적인 작업(예: 다운로드 링크 생성)을 할 수 있다.
-    // useEffect(() => {
-    //     const setDownloadAttributes: () => void = (): void => {
-    //         const anchorTags: NodeListOf<HTMLAnchorElement> = document.querySelectorAll("a");
-    //         let downloadAttributeSet: boolean = false;
+    useEffect(() => {
+        const anchorEl = document.querySelectorAll(".file-container__item") as NodeListOf<HTMLAnchorElement>;
+        anchorEl.forEach((el: HTMLAnchorElement) => {
+            el.addEventListener("click", (e) => {
+                e.preventDefault();
 
-    //         anchorTags?.forEach((anchorTag: HTMLAnchorElement) => {
-    //             const fileUrl: string | null = anchorTag.getAttribute("href");
+                const fileUrl: string | null = el.getAttribute("href");
 
-    //             if (fileUrl) {
-    //                 const lastHyphenIndex = fileUrl.lastIndexOf("-");
-    //                 const originalFileNameFromFileUrl = lastHyphenIndex !== -1 ? fileUrl.substring(lastHyphenIndex + 1) : fileUrl;
+                console.log("el", el);
+                console.log("el", fileUrl);
 
-    //                 if (originalFileNameFromFileUrl && anchorTag.textContent?.includes("첨부된 파일:")) {
-    //                     // Blob을 사용하여 다운로드 링크 생성
-    //                     fetch(fileUrl)
-    //                         .then((response) => response.blob())
-    //                         .then((blob) => {
-    //                             const url = window.URL.createObjectURL(blob); // Object URL 생성
-    //                             anchorTag.setAttribute("href", url);
-    //                             anchorTag.setAttribute("download", decodeURIComponent(originalFileNameFromFileUrl));
-    //                             anchorTag.style.color = "#06c";
-    //                             downloadAttributeSet = true;
-    //                             // window.URL.revokeObjectURL(url); // Object URL 해제 여기서 하면 다운이 안됨 인터넷 오류 발생
-    //                         })
-    //                         .catch(console.error);
-    //                 }
-    //             } else {
-    //                 console.log("Cannot find originalFileNameFromFileUrl and anchorTag.textContent >>>");
-    //             }
-    //         });
+                if (fileUrl) {
+                    const lastHyphenIndex = fileUrl.lastIndexOf("-");
+                    const originalFileNameFromFileUrl = lastHyphenIndex !== -1 ? fileUrl.substring(lastHyphenIndex + 1) : fileUrl;
 
-    //         // 다운로드 속성이 설정되면 observer를 해제
-    //         if (downloadAttributeSet) {
-    //             observer.disconnect();
-    //         }
-    //     };
+                    fetch(fileUrl)
+                        .then((response) => response.blob())
+                        .then((blob) => {
+                            const blobUrl = window.URL.createObjectURL(blob); // Object URL 생성
 
-    //     const observer: MutationObserver = new MutationObserver((mutations: MutationRecord[], obs: MutationObserver): void => {
-    //         setDownloadAttributes();
-    //     });
+                            console.log("blolbUrl >>>", blobUrl);
 
-    //     const targetNode: HTMLDivElement = document.querySelector(".container") as HTMLDivElement;
-    //     if (targetNode) {
-    //         observer.observe(targetNode, { childList: true, subtree: true });
-    //     }
+                            const link = document.createElement("a");
+                            link.href = blobUrl;
+                            // 한글 깨지는 현상 해결. URL 인코딩된 파일명을 올바른 한글 텍스트로 변환한다.
+                            link.download = decodeURIComponent(originalFileNameFromFileUrl);
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
 
-    //     return () => {
-    //         observer.disconnect();
-    //     };
-    // }, []);
+                            window.URL.revokeObjectURL(blobUrl); // Object URL 해제
+                        })
+                        .catch(console.error);
+                }
+            });
+        });
+    }, []);
 
     const deletePost = useDeletePost();
 
@@ -337,8 +261,6 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
 
                 <span className='text-sm text-gray-500 mb-2'>카테고리: {post.categoryName || "없음"}</span>
 
-               
-
                 {/* Title */}
                 <h2 className='text-3xl font-bold mt-3 mb-3'>{post.title}</h2>
 
@@ -391,13 +313,3 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
 }
 
 export default BlogDetail;
-
-// function BlogDetailWithProvider({ initialData, postId }: { initialData: PostResponse; postId: string }) {
-//     return (
-//         <ClientWrapper>
-//             <BlogDetail initialData={initialData} postId={postId} />
-//         </ClientWrapper>
-//     );
-// }
-
-// export default BlogDetailWithProvider;

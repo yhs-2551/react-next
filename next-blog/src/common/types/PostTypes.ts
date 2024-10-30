@@ -13,6 +13,7 @@ export interface PostRequest {
     title: string;
     content: string;
     tags?: string[];
+    editPageDeletedTags?: string[];
     files?: FileMetadata[];
     deleteTempImageUrls?: string[];
     postStatus: "PUBLIC" | "PRIVATE";

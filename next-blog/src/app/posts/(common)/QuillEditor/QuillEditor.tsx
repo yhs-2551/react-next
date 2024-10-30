@@ -4,6 +4,9 @@ import React, { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
+import hljs from 'highlight.js';
+import 'highlight.js/styles/atom-one-dark-reasonable.css';
+ 
 import { ToastContainer, toast } from "react-toastify";
 
 import { uploadFile } from "@/app/posts/(common)/utils/uploadFile";
@@ -41,16 +44,13 @@ interface DropdownMenuProps {
     dropdownRef: React.Ref<HTMLDivElement>;
 }
 
+
 //React.memo를 통해 부모 컴포넌트가 재렌더링 되어도 자식 컴포넌트의 props값이 변하지 않으면 QuillEditor의 재렌더링을 막는다. 따라서 BlogForm에서 제목의 내용을 변경해도 QuillEditor에는 제목 관련 Props가 없기 때문에 재렌더링 되지 않는다.
 export default React.memo(
     React.forwardRef<ReactQuill, QuillEditorProps>(function QuillEditor(
         { contentValue, fileRef, totalUploadedImagesUrlRef, deletedImageUrlsInFutureRef, getEditorContent, fetchFileFromServer },
         ref
     ) {
-
-
-
-        console.log("실행", contentValue);
 
         const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
         const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -207,14 +207,13 @@ export default React.memo(
                     console.log("imgElement >>>", imgElement);
 
                     // fileRef.current에서 해당 url과 일치하는 객체를 찾아 width와 height 값을 추가
-                    const file = fileRef.current.find(file => file.fileUrl === fileUrl);
+                    const file = fileRef.current.find((file) => file.fileUrl === fileUrl);
                     if (file) {
                         file.width = roundedWidth;
                         file.height = roundedHeight;
                         console.log("file >>>>>", file);
                     }
                 }
-
             };
 
             // 클립보드에서 붙여넣기된 이미지를 파일 형식으로 변환 처리하는 함수
@@ -244,23 +243,18 @@ export default React.memo(
                 }
             };
 
-
-
             // Quill Editor 초기화되면 클립보드 붙여넣기 이벤트 리스너 등록 및 툴바 헤더로 이동 로직.
             const initializeQuill: () => Quill | undefined = (): Quill | undefined => {
                 const quill = quillRef.current?.getEditor();
                 if (quill) {
-
                     if (contentValue) {
-
                         console.log("contenvalue>>>", contentValue);
 
+                        // 비제어 방식으로 ql-editor DOM에 직접 삽입 
                         quill.root.innerHTML = contentValue;
 
                         console.log("quill root >>>", quill.root);
-
                     }
-
 
                     quill.root.addEventListener("paste", handlePaste);
 
@@ -272,24 +266,8 @@ export default React.memo(
                         toolbarElement.classList.add("visible");
                     }
 
-              
-
-
                     // 수정 페이지에서 기존에 파일 데이터를 최종적으로 서버로 보낼 fileRef에 담아주기 위한 로직
                     if (fetchFileFromServer && fetchFileFromServer.length > 0) {
-
-                        // 아래는 필요 없을 예정 수정페이지에서 이미지 크기 유지하기 위함이었음.
-                        // const imgElements = quill.root.querySelectorAll('img');
-
-                        // imgElements.forEach((img) => {
-                        //     const src = img.src;
-                        //     const file = fetchFileFromServer.find((file: FileMetadata) => file.fileUrl === src);
-                        //     if (file) {
-                        //         img.style.width = `${file.width}px`;
-                        //         img.style.height = `${file.height}px`;
-                        //     }
-                        // });
-
                         fileRef.current = fetchFileFromServer;
                         totalUploadedImagesUrlRef.current = fetchFileFromServer.map((file) => file.fileUrl);
 
@@ -452,25 +430,21 @@ export default React.memo(
                         // 드래그 한번 조정 후에 조정된 img의 Rect값으로 재 적용.
                         imgRect = selectedImageRef.current?.getBoundingClientRect();
 
-
                         // 서버로 크기가 조정된 이미지의 width, height값을 같이 전송해주기 위함.
                         // 캡쳐가 아닌 툴바로 삽입하고 이미지 크기 따로 조정 안하면  880 / 495기본값으로 백엔드에서 지정해두었음.
                         if (imgRect && selectedImageRef.current) {
                             const width = Math.round(imgRect.width);
                             const height = Math.round(imgRect.height);
                             const src = selectedImageRef.current.src;
-    
+
                             // fileRef.current에서 해당 url과 일치하는 이미지를 찾아 width와 height 값을 추가
-                            const file = fileRef.current.find(file => file.fileUrl === src);
+                            const file = fileRef.current.find((file) => file.fileUrl === src);
                             if (file) {
                                 file.width = width;
                                 file.height = height;
                                 console.log("file >>>>>", file);
                             }
                         }
-
-                 
-
                     }
 
                     window.removeEventListener("mousemove", handleResizeInProgress);
@@ -910,11 +884,10 @@ export default React.memo(
 
             // saveSeleciton이 0인 경우 falsy 값이기 때문에 savedSelection으로 조건을 안잡고 아래 처럼 savedSelection != undefined로 조건을 잡음
             if (quill && fileUrl && savedSelection !== null && savedSelection !== undefined) {
+
                 const currentSelection = savedSelection; // 로컬 변수에 저장
 
                 if (type === "image") {
-                    // 커서가 index 0일 때 처리 로직
-
                     quill.insertEmbed(currentSelection, "image", fileUrl, Quill.sources.USER); // 이미지 삽입
 
                     setTimeout(() => {
@@ -922,6 +895,32 @@ export default React.memo(
                         quill.setSelection(currentSelection + 2, Quill.sources.SILENT);
                     }, 100); // 100ms 지연 후 실행
 
+                    // 삽입한 이미지의 width, height값을 fileRef에 저장시켜 서버로 전송시키기 위함. 이미지 삽입 후 이미지 크기 조정 안하면 이 사이즈를 서버에서 저장.
+                    const fileMetadata: { fileName: string; fileType: string; fileUrl: string; fileSize: number; width: number; height: number;
+                    } = { fileName: "", fileType: "", fileUrl: "", fileSize: 0, width: 0, height: 0,};
+
+                    const imgEl = quill.root.querySelector(`img[src="${fileUrl}"]`) as HTMLImageElement;
+
+                    console.log("ImgEl >>>", imgEl);
+
+                    if (imgEl) {
+                        // 이미지가 완전히 로드 되어야만 getBoundingClientRect에서 width, height값을 가져올 수 있음. 로드 전에 가져오면 0으로 나옴.
+                        imgEl.onload = () => {
+
+                            const imgRect = imgEl.getBoundingClientRect() as DOMRect;
+
+                            fileMetadata["fileName"] = file.name;
+                            fileMetadata["fileType"] = file.type;
+                            fileMetadata["fileUrl"] = fileUrl;
+                            fileMetadata["fileSize"] = file.size;
+                            fileMetadata["width"] = imgRect.width;
+                            fileMetadata["height"] = imgRect.height;
+
+                            if (fileRef && fileRef.current) {
+                                fileRef.current.push(fileMetadata);
+                            }
+                        };
+                    }
 
                 } else if (type === "file") {
                     const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
@@ -945,10 +944,8 @@ export default React.memo(
                             quill.setSelection(nextLineIndex + 1, Quill.sources.SILENT);
                         }
                     }, 100); // 100ms 지연 후 실행
-                } else if (type === "video") {
-                    // 나중에 추가 예정
-                }
 
+                    
                 if (fileRef && fileRef.current) {
                     fileRef.current.push({
                         fileName: file.name,
@@ -957,6 +954,13 @@ export default React.memo(
                         fileSize: file.size,
                     });
                 }
+
+                } else if (type === "video") {
+                    // 나중에 추가 예정
+                }
+
+
+                console.log("fileRef >>>>>", fileRef.current);
             }
         };
 
@@ -1047,7 +1051,7 @@ export default React.memo(
                 handleDropdownOutsideClick();
             }
         }, []);
-        
+
 
         const toolbarConfig = [
             [{ header: [1, 2, 3, 4, false] }],
@@ -1060,7 +1064,6 @@ export default React.memo(
             [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
             ["clean"],
         ];
-
 
         // 여기서 useMemo를 하거나 toggleDropdown 부분에 useCallback을 해야함 아니면 handleFileSelection 함수에 까지.
         const modules = useMemo(
@@ -1086,6 +1089,12 @@ export default React.memo(
                             }
                         },
                     },
+                },
+                syntax: {
+                    highlight: (text: any) => hljs.highlightAuto(text).value,
+                },
+                clipboard: {
+                    matchVisual: false, // 클립보드에서 텍스트 붙여넣기 시 원본 스타일을 무시하고 에디터 스타일을 적용
                 },
             }),
             []
