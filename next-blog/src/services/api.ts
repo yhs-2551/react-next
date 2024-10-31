@@ -2,6 +2,8 @@
 //     QueryFunctionContext,
 // } from "react-query";
 
+import { refreshToken } from "@/app/posts/(common)/utils/refreshToken";
+
 // export const fetchPosts = async () => {
 
 //     console.log("데이터 가져오는 리액트 쿼리 실행");
@@ -104,6 +106,37 @@ export const fetchIsAuthor = async (postId: string) => {
 
     const data = await response.json();
     return data.isAuthor; // 서버에서 isAuthor 값을 반환받아 true or false값을 반환
+};
+
+export const fetchCategories = async () => {
+    const accessToken = localStorage.getItem("access_token") ?? false;
+
+    const getAllCategories: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
+        return await fetch("http://localhost:8000/api/categories", {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+            },
+        });
+    };
+
+    let response = await getAllCategories(accessToken);
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            const newAccessToken = await refreshToken();
+            if (newAccessToken) {
+                response = await getAllCategories(newAccessToken);
+            }
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error("Failed to categories please retry again.");
+    }
+
+    return await response.json();
 };
 
 export const signupUser = async (newUser: { username: string; email: string; password: string }) => {

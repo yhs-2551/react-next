@@ -31,6 +31,7 @@ import { v4 as uuidv4 } from "uuid";
 import CategoryItem from "./CategoryItem";
 import { CategoryType } from "../types/category";
 import useAddCategory from "@/customHooks/useAddCategory";
+import { useGetAllCategories } from "@/customHooks/useGetCategories";
 
 // 컴포넌트 외부에 헬퍼 함수 정의
 const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
@@ -39,18 +40,18 @@ const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
 
     // 각 카테고리를 map에 저장
     categories.forEach((category) => {
-        map.set(category.id, { ...category, children: [] });
+        map.set(category.categoryUuid, { ...category, children: [] });
     });
 
     // 각 카테고리를 부모 아래에 배치
     categories.forEach((category) => {
-        if (category.parentId) {
-            const parent = map.get(category.parentId);
+        if (category.categoryUuidParent) {
+            const parent = map.get(category.categoryUuidParent);
             if (parent) {
-                parent.children?.push(map.get(category.id)!);
+                parent.children?.push(map.get(category.categoryUuid)!);
             }
         } else {
-            roots.push(map.get(category.id)!);
+            roots.push(map.get(category.categoryUuid)!);
         }
     });
 
@@ -58,6 +59,9 @@ const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
 };
 
 const Category: React.FC = () => {
+    const { data: categoriesFromServer, isLoading, error } = useGetAllCategories(); // 훅을 호출하여 데이터를 서버로부터 가져옴
+    const [isInitialLoad, setIsInitialLoad] = useState(true); // 초기 로드 상태를 추가합니다.
+
     const [categories, setCategories] = useState<CategoryType[]>([]);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
@@ -74,14 +78,25 @@ const Category: React.FC = () => {
     const createCategoryMutation = useAddCategory();
 
     useEffect(() => {
+
+        console.log("categoriesFromServer", categoriesFromServer);
+
+        if (categoriesFromServer) {
+            setCategories(categoriesFromServer);
+            setIsInitialLoad(false); // 초기 로드가 완료되었음을 설정.
+        }
+    }, [categoriesFromServer]);
+
+    useEffect(() => {
         if (categoryInputRef.current) {
             categoryInputRef.current.focus();
         }
+    }, []);
 
-        if (categories.length > 0) {
+    useEffect(() => {
+        if (!isInitialLoad && categories.length > 0) {
             setIsButtonVisible(true);
             createCategoryMutation.reset();
-
         }
     }, [categories]);
 
@@ -95,6 +110,8 @@ const Category: React.FC = () => {
     };
     const handleAddCategory = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        console.log("categories", categories);
 
         // 공백만 입력했을 때
         if (newCategoryName.trim() === "") {
@@ -120,7 +137,7 @@ const Category: React.FC = () => {
             return;
         }
 
-        setCategories([...categories, { id: uuidv4(), name: newCategoryName, parentId: null, children: [] }]);
+        setCategories([...categories, { categoryUuid: uuidv4(), name: newCategoryName, categoryUuidParent: null, children: [] }]);
         setNewCategoryName("");
     };
 
@@ -128,7 +145,7 @@ const Category: React.FC = () => {
         console.log("category", category);
 
         setSelectedCategory(category);
-        setSelectedParentCategoryId(category?.parentId || null);
+        setSelectedParentCategoryId(category?.categoryUuidParent || null);
         setIsModalOpen(true);
     };
 
@@ -145,7 +162,9 @@ const Category: React.FC = () => {
         e.preventDefault();
         if (selectedCategory) {
             const updatedCategories = categories.map((category) =>
-                category.id === selectedCategory.id ? { ...selectedCategory, parentId: selectedParentCategoryId } : category
+                category.categoryUuid === selectedCategory.categoryUuid
+                    ? { ...selectedCategory, categoryUuidParent: selectedParentCategoryId }
+                    : category
             );
             closeModal();
             setCategories(updatedCategories);
@@ -167,19 +186,40 @@ const Category: React.FC = () => {
 
     // 카테고리 삭제 (자식 카테고리는 삭제하지 않음)
     const handleDeleteCategory = (categoryId: string) => {
-        const updatedCategories = categories.filter((category) => category.id !== categoryId);
+        const categoryToDelete = categories.find((category) => category.categoryUuid === categoryId);
+
+        // 최상위 카테고리이고 자식을 가진 경우 삭제 중단
+        if (categoryToDelete && categoryToDelete.categoryUuidParent === null && categoryToDelete.children && categoryToDelete.children.length > 0) {
+            console.log("최상위 카테고리이며 자식을 가진 카테고리는 삭제할 수 없습니다.");
+            return;
+        }
+
+        const updatedCategories = categories
+            .filter((category) => category.categoryUuid !== categoryId)
+            .map((category) => {
+                if (category.children) {
+                    return {
+                        ...category,
+                        children: category.children.filter((child) => child.categoryUuid !== categoryId),
+                    };
+                }
+                return category;
+            });
+
+        console.log("updatedCategories", updatedCategories);
+
         setCategories(updatedCategories);
     };
 
     const renderCategoryOptions = (categories: CategoryType[], level: number = 0) => {
         const isDisabled = (category: CategoryType) => {
             // 선택된 카테고리 자체를 비활성화
-            if (category.id === selectedCategory?.id) return true;
+            if (category.categoryUuid === selectedCategory?.categoryUuid) return true;
 
             // 선택된 카테고리가 최상위 카테고리일 경우, 해당 카테고리와 그 하위 카테고리만 비활성화
-            if (selectedCategory && selectedCategory.parentId === null) {
+            if (selectedCategory && selectedCategory.categoryUuidParent === null) {
                 // 최상위 카테고리와 그 하위 카테고리 비활성화
-                if (category.parentId === selectedCategory.id) {
+                if (category.categoryUuidParent === selectedCategory.categoryUuid) {
                     return true;
                 }
                 if (selectedCategory.children && selectedCategory.children.length > 0) {
@@ -187,7 +227,7 @@ const Category: React.FC = () => {
                     console.log("cateogry >>", category);
                     return true;
                 } else if (!selectedCategory.children || selectedCategory.children.length === 0) {
-                    if (category.parentId) {
+                    if (category.categoryUuidParent) {
                         return true;
                     }
 
@@ -196,9 +236,9 @@ const Category: React.FC = () => {
             }
 
             // 선택된 카테고리가 하위 자식인 경우
-            if (selectedCategory && selectedCategory.parentId) {
+            if (selectedCategory && selectedCategory.categoryUuidParent) {
                 // 다른 하위 카테고리로 이동 불가
-                if (category.parentId) {
+                if (category.categoryUuidParent) {
                     return true;
                 } else {
                     // 최상위로만 이동 가능
@@ -212,9 +252,9 @@ const Category: React.FC = () => {
 
         return categories.map((category) => {
             return (
-                <React.Fragment key={category.id}>
+                <React.Fragment key={category.categoryUuid}>
                     <ListboxOption
-                        value={category.id}
+                        value={category.categoryUuid}
                         disabled={isDisabled(category)}
                         className={`p-3 flex items-center ${isDisabled(category) ? "cursor-not-allowed" : "cursor-pointer hover:bg-gray-100"}`}
                         style={{ paddingLeft: `${(level + 1) * 12}px` }} // 들여쓰기 적용. +1을 하지 않으면 level이 0일때 0px이 되기 때문. level이1일때 12px값으로 지정해야함.
@@ -222,15 +262,15 @@ const Category: React.FC = () => {
                         {/* 동그라미 직접 만들기 */}
                         <span
                             className={`w-4 h-4 rounded-full border-2 mr-2 flex items-center justify-center ${
-                                selectedParentCategoryId === category.id
+                                selectedParentCategoryId === category.categoryUuid
                                     ? "bg-[#333] border-[#333]"
-                                    : category.id === selectedCategory?.id
+                                    : category.categoryUuid === selectedCategory?.categoryUuid
                                     ? "bg-red-500 border-red-500"
                                     : "border-gray-400"
                             }`}
                         >
                             {/* 선택된 경우 내부에 작은 점 표시 */}
-                            {(selectedParentCategoryId === category.id || category.id === selectedCategory?.id) && (
+                            {(selectedParentCategoryId === category.categoryUuid || category.categoryUuid === selectedCategory?.categoryUuid) && (
                                 <span className='w-2 h-2 rounded-full bg-white'></span>
                             )}
                         </span>
@@ -245,27 +285,27 @@ const Category: React.FC = () => {
     const moveCategory = (sourceId: string, targetId: string, isTopLevelMove: boolean) => {
         setCategories((prevCategories) => {
             // 드래그된 카테고리와 대상 카테고리 찾기
-            const sourceCategory = prevCategories.find((cat) => cat.id === sourceId);
-            const targetCategory = prevCategories.find((cat) => cat.id === targetId);
+            const sourceCategory = prevCategories.find((cat) => cat.categoryUuid === sourceId);
+            const targetCategory = prevCategories.find((cat) => cat.categoryUuid === targetId);
 
             if (!sourceCategory || !targetCategory) return prevCategories;
 
             // 대상 카테고리가 최상위 카테고리인지 여부 확인
-            const isTargetTopLevel = targetCategory.parentId === null;
-            const isSourceTopLevel = sourceCategory.parentId === null;
+            const isTargetTopLevel = targetCategory.categoryUuidParent === null;
+            const isSourceTopLevel = sourceCategory.categoryUuidParent === null;
 
             // 최상위 카테고리를 다른 최상위 카테고리의 하위로 이동
             if (isSourceTopLevel && isTargetTopLevel && !isTopLevelMove) {
                 return prevCategories.map((cat) => {
                     // sourceCategory의 parentId를 업데이트
-                    if (cat.id === sourceId) {
-                        return { ...cat, parentId: targetCategory.id };
+                    if (cat.categoryUuid === sourceId) {
+                        return { ...cat, categoryUuidParent: targetCategory.categoryUuid };
                     }
                     // targetCategory의 children에 sourceCategory를 추가
-                    if (cat.id === targetId) {
+                    if (cat.categoryUuid === targetId) {
                         const updatedChildren = cat.children
-                            ? [...cat.children, { ...sourceCategory, parentId: targetCategory.id }]
-                            : [{ ...sourceCategory, parentId: targetCategory.id }];
+                            ? [...cat.children, { ...sourceCategory, categoryUuidParent: targetCategory.categoryUuid }]
+                            : [{ ...sourceCategory, categoryUuidParent: targetCategory.categoryUuid }];
                         return { ...cat, children: updatedChildren }; // children 배열에 추가
                     }
                     return cat;
@@ -273,8 +313,8 @@ const Category: React.FC = () => {
             }
             // 최상위 카테고리 간 위치 교환
             if (isSourceTopLevel && isTargetTopLevel && isTopLevelMove) {
-                const updatedCategories = prevCategories.filter((cat) => cat.id !== sourceId);
-                const targetIndex = prevCategories.findIndex((cat) => cat.id === targetId);
+                const updatedCategories = prevCategories.filter((cat) => cat.categoryUuid !== sourceId);
+                const targetIndex = prevCategories.findIndex((cat) => cat.categoryUuid === targetId);
                 updatedCategories.splice(targetIndex, 0, sourceCategory);
                 return updatedCategories;
             }
@@ -282,20 +322,20 @@ const Category: React.FC = () => {
             // 나머지 경우 (하위 카테고리 -> 상위 카테고리로 이동) 처리
             return prevCategories
                 .map((cat) => {
-                    if (cat.id === sourceId) {
+                    if (cat.categoryUuid === sourceId) {
                         // 하위 카테고리가 최상위로 이동하는 경우 parentId를 null로 설정
                         if (isTopLevelMove) {
-                            return { ...cat, parentId: null }; // 최상위로 이동
+                            return { ...cat, categoryUuidParent: null }; // 최상위로 이동
                         }
                         // 상위 카테고리의 자식으로 이동하는 경우
-                        return { ...cat, parentId: targetCategory.id };
+                        return { ...cat, categoryUuidParent: targetCategory.categoryUuid };
                     }
 
-                    if (cat.id === targetId) {
+                    if (cat.categoryUuid === targetId) {
                         // targetCategory의 children에 sourceCategory 추가
                         const updatedChildren = cat.children
-                            ? [...cat.children, { ...sourceCategory, parentId: targetCategory.id }]
-                            : [{ ...sourceCategory, parentId: targetCategory.id }];
+                            ? [...cat.children, { ...sourceCategory, categoryUuidParent: targetCategory.categoryUuid }]
+                            : [{ ...sourceCategory, categoryUuidParent: targetCategory.categoryUuid }];
 
                         return { ...cat, children: updatedChildren };
                     }
@@ -304,10 +344,10 @@ const Category: React.FC = () => {
                 })
                 .map((cat) => {
                     // 기존 부모 카테고리에서 sourceCategory를 children 배열에서 제거
-                    if (cat.id === sourceCategory.parentId) {
+                    if (cat.categoryUuid === sourceCategory.categoryUuidParent) {
                         return {
                             ...cat,
-                            children: cat.children?.filter((child) => child.id !== sourceId),
+                            children: cat.children?.filter((child) => child.categoryUuid !== sourceId),
                         };
                     }
 
@@ -368,39 +408,50 @@ const Category: React.FC = () => {
                                 <DndProvider backend={HTML5Backend}>
                                     <ul className='space-y-3 mt-7'>
                                         {categories
-                                            .filter((category) => category.parentId === null) // 최상위 카테고리 필터링
+                                            .filter((category) => category.categoryUuidParent === null) // 최상위 카테고리 필터링
                                             .map((parentCategory) => (
-                                                <React.Fragment key={parentCategory.id}>
+                                                <React.Fragment key={parentCategory.categoryUuid}>
                                                     <CategoryItem
                                                         category={parentCategory}
-                                                        index={categories.findIndex((cat) => cat.id === parentCategory.id)}
+                                                        index={categories.findIndex((cat) => cat.categoryUuid === parentCategory.categoryUuid)}
                                                         moveCategory={moveCategory}
                                                         openModal={openModal}
                                                         deleteCategory={handleDeleteCategory}
-                                                        onDragStateChange={(isDragging) => handleDragStateChange(isDragging, parentCategory.id)}
+                                                        onDragStateChange={(isDragging) =>
+                                                            handleDragStateChange(isDragging, parentCategory.categoryUuid)
+                                                        }
+                                                        isDeleteDisabled={
+                                                            parentCategory.categoryUuidParent === null &&
+                                                            parentCategory.children &&
+                                                            parentCategory.children.length > 0
+                                                        }
                                                     />
 
                                                     {/* 2단계 하위 카테고리 */}
                                                     {/* 부모가 드래깅 시작하면 그 자식까지 동일한 css  */}
                                                     <ul
                                                         className={`ml-6 space-y-2 ${
-                                                            draggingCategoryId === parentCategory.id && !draggingFromChild
+                                                            draggingCategoryId === parentCategory.categoryUuid && !draggingFromChild
                                                                 ? "opacity-50 border-blue-500"
                                                                 : ""
                                                         }`}
                                                     >
                                                         {categories
-                                                            .filter((childCategory) => childCategory.parentId === parentCategory.id)
+                                                            .filter(
+                                                                (childCategory) => childCategory.categoryUuidParent === parentCategory.categoryUuid
+                                                            )
                                                             .map((childCategory) => (
                                                                 <CategoryItem
-                                                                    key={childCategory.id}
+                                                                    key={childCategory.categoryUuid}
                                                                     category={childCategory}
-                                                                    index={categories.findIndex((cat) => cat.id === childCategory.id)}
+                                                                    index={categories.findIndex(
+                                                                        (cat) => cat.categoryUuid === childCategory.categoryUuid
+                                                                    )}
                                                                     moveCategory={moveCategory}
                                                                     openModal={openModal}
                                                                     deleteCategory={handleDeleteCategory}
                                                                     onDragStateChange={(isDragging) =>
-                                                                        handleDragStateChange(isDragging, parentCategory.id, true)
+                                                                        handleDragStateChange(isDragging, parentCategory.categoryUuid, true)
                                                                     }
                                                                 />
                                                             ))}
@@ -416,7 +467,7 @@ const Category: React.FC = () => {
                         <div className='px-8 py-5 flex justify-end mt-6 bg-[#FAFBFC]'>
                             <button
                                 onClick={handleSaveCategoryToServer}
-                                disabled={!isButtonVisible || createCategoryMutation.isLoading|| createCategoryMutation.isSuccess}
+                                disabled={!isButtonVisible || createCategoryMutation.isLoading || createCategoryMutation.isSuccess}
                                 className={`w-[9rem] font-medium text-sm px-4 py-2   ${
                                     isButtonVisible && !createCategoryMutation.isSuccess
                                         ? "cursor-pointer shadow-md  bg-[#333] text-white hover:bg-[#505050] hover:shadow-md transition-all"
@@ -468,7 +519,7 @@ const Category: React.FC = () => {
                                     <input
                                         type='text'
                                         value={selectedCategory?.name || ""}
-                                        onChange={(e) => setSelectedCategory({ id: selectedCategory!.id, name: e.target.value })}
+                                        onChange={(e) => setSelectedCategory({ categoryUuid: selectedCategory!.categoryUuid, name: e.target.value })}
                                         className='mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm'
                                     />
                                 </div>
@@ -487,7 +538,7 @@ const Category: React.FC = () => {
                                             <div className='flex items-center justify-between mb-3'>
                                                 <ListboxButton className='mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-left'>
                                                     {selectedParentCategoryId
-                                                        ? categories.find((cat) => cat.id === selectedParentCategoryId)?.name
+                                                        ? categories.find((cat) => cat.categoryUuid === selectedParentCategoryId)?.name
                                                         : "최상위 카테고리"}
                                                 </ListboxButton>
                                             </div>
