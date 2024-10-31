@@ -1,6 +1,6 @@
 export interface CategoryType {
-    parentId?: string | null;
-    id: string;
+    categoryUuidParent?: string | null;
+    categoryUuid: string;
     name: string;
     children?: CategoryType[]; // children 필드 추가
 }
