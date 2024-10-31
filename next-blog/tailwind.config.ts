@@ -19,6 +19,7 @@ const config: Config = {
         customFooterBackgroundColor: "#F5F5F5",
         tagColor: "#929292",
         customGray: "#333",
+        manageBgColor: "#F3F5F7"
       },
       cursor: {
         "nwse-resize": "nwse-resize",  // 커서 추가

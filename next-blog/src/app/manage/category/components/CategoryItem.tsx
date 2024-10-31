@@ -3,10 +3,16 @@
 // 편집시 상위 카테고리 목록에 현재 카테고리가 나타나지 않도록 수정
 
 import React, { useRef, useState, useEffect } from "react";
+
+import { CategoryType } from "../types/category";
+
 import { MdDelete, MdEdit } from "react-icons/md";
 import { IoEllipsisHorizontal, IoEllipsisVertical } from "react-icons/io5";
-import { CategoryType } from "../types/category";
+
 import { useDrag, useDrop } from "react-dnd";
+
+import { RxDragHandleHorizontal } from "react-icons/rx";
+import { FaFolder } from "react-icons/fa";
 
 interface CategoryItemProps {
     category: CategoryType;
@@ -45,7 +51,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, moveCategory, ind
         if (showMenu) {
             setHoveredItem("edit"); // 메뉴가 열리면 기본적으로 편집 항목에 포커스
         }
-    }, []);
+    }, [showMenu]);
 
     const [{ isDragging }, drag] = useDrag({
         type: "category",
@@ -66,33 +72,39 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, moveCategory, ind
         setShowMenu((prev) => !prev);
     };
 
+
+    // 드랍시 category는 target category 즉, 최종적으로 drop될 카테고리를 의미함.
     const [{ isOver, canDrop, draggedItem }, drop] = useDrop({
         accept: "category",
-        canDrop: (draggedItem) => {
+        canDrop: (draggedItem: CategoryType) => {
+            console.log("dragggggg>>", draggedItem);
+
+            console.log("category>>>>>>>>>>>>>", category);
+
             // 드래그된 아이템이 하위 카테고리인 경우, 타겟이 최상위 카테고리여야 함
             if (draggedItem.parentId && !category.parentId) {
                 return true;
             }
 
             // 드래그된 아이템이 최상위 카테고리인 경우 + 자식이 있는 경우 타겟이 반드시 최상위 카테고리여야 함
-            if (!draggedItem.parentId && draggedItem.children.length > 0) {
-                console.log("draggedItem", draggedItem);
-                console.log("category wktlr>>>>>>>>>>>>>>>>>>>>>>>>", category);
-
+            if (!draggedItem.parentId && draggedItem.children && draggedItem.children.length > 0) {
                 // 타겟이 최상위 카테고리일 때만 허용
                 if (!category.parentId) {
                     return true;
                 } else {
-                    console.log("여기실행ㅇㅇㅇㅇㅇ");
                     // 타겟이 하위 카테고리인 경우 자식이 있는 최상위 카테고리는 이동 불가
                     return false;
                 }
             }
 
             // 드래그된 아이템이 최상위 카테고리인 경우 + 자식이 없는 경우
-            if (!draggedItem.parentId && draggedItem.children.length === 0) {
+            // 아래 !draggedItem.children || draggedItem.children.length === 0) 이 조건은 Array(0)일수도 있고, children이 undefined일 수도 있어서 저렇게 두개 추가. draggedItem.children.length === 0은 undefined를 통과시키지 못함.
+            if (!draggedItem.parentId && (!draggedItem.children || draggedItem.children.length === 0)) {
                 // 타겟이 최상위 카테고리이거나 하위 카테고리일 때 모두 허용
                 if (!category.parentId) {
+
+                    console.log("얘 ㅣ실행");
+
                     return true;
                 }
             }
@@ -106,19 +118,17 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, moveCategory, ind
             // clientOffset: monitor.getClientOffset(),
         }),
         drop: (draggedItem, monitor) => {
-            if (!draggedItem.parentId && draggedItem.children.length > 0) {
+            if (!draggedItem.parentId && draggedItem.children && draggedItem.children.length > 0) {
                 moveCategory(draggedItem.id, category.id, true);
                 return;
             }
-
-            console.log("category", category);
 
             const clientOffset = monitor.getClientOffset();
             const targetRect = categoryRef.current?.getBoundingClientRect();
 
             if (!clientOffset || !targetRect) return;
 
-            const leftBoundary = targetRect.left + targetRect.width * 0.1;
+            const leftBoundary = targetRect.left + targetRect.width * 0.2;
 
             if (clientOffset.x < leftBoundary) {
                 if (draggedItem.id !== category.id) {
@@ -146,57 +156,63 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, moveCategory, ind
         }
     }, []);
 
-      // 드래그 시작 시 sub-category 클래스에 스타일 추가
-      useEffect(() => {
-        onDragStateChange(isDragging)
+    // 드래그 시작 시 sub-category 클래스에 스타일 추가
+    useEffect(() => {
+        onDragStateChange(isDragging);
     }, [isDragging]);
-
 
     // 배경색 결정 함수
     const getBackgroundColor = () => {
         if (!isOver) return "transparent";
 
         if (isOver && canDrop && draggedItem?.id !== category.id) {
-            if (draggedItem?.children?.length > 0 && !draggedItem.parentId) {
-                // 자식이 있는 최상위 카테고리일 때 파란색
-                return "rgba(0, 0, 255, 0.2)";
+            if (draggedItem.children && draggedItem.children.length > 0 && !draggedItem.parentId) {
+                // 자식이 있는 최상위 카테고리일 때 무조건 파란색
+                return "#1D4ED8";
             }
 
-            // 왼쪽 10%일 때 파란색
-            const leftBoundary = categoryRef.current?.getBoundingClientRect().left + categoryRef.current?.getBoundingClientRect().width * 0.1;
-            if (clientOffset?.x < leftBoundary) {
-                return "rgba(0, 0, 255, 0.2)";
-            }
+            if (categoryRef.current) {
+                // 왼쪽 20%일 때 파란색
+                const leftBoundary = categoryRef.current?.getBoundingClientRect().left + categoryRef.current?.getBoundingClientRect().width * 0.2;
 
-            // 오른쪽 90%일 때 초록색
-            return "rgba(0, 255, 0, 0.2)";
+                if (clientOffset && clientOffset.x < leftBoundary) {
+                    return "#1D4ED8";
+                }
+                // 오른쪽 80%일 때 빨간색
+                return "#FF5A50";
+            }
         }
-
-        return "transparent"; // 기본은 투명
+        return "transparent"; // 기본은 투명 사실 이 코드는 없어도 됨 실행되진 않을 듯.
     };
 
     return (
         <li
-            className={`relative p-4 bg-gray-100 border border-gray-300 rounded-md flex justify-between items-center ${
-                isDragging ? "opacity-50 border-blue-500" : ""
-            }`}
+            className={`relative h-[3.8rem] border border-gray-300 rounded-md flex items-center ${isDragging ? "opacity-50" : ""} hover:cursor-move`}
             ref={categoryRef}
             style={{
-                backgroundColor: getBackgroundColor(),
+                borderBottom: isOver ? `4px solid ${getBackgroundColor()}` : undefined,
             }}
         >
-            <span>{category.name}</span>
+            {/* <TfiHandDrag  className="text-3xl"/>
+            <RxDragHandleDots1 className="text-3xl"/> */}
+
+            <RxDragHandleHorizontal className='text-4xl h-full ml-4 pr-2 opacity-70' />
+            <div className='flex items-center ml-6'>
+                <FaFolder className='text-xl mr-2 opacity-60' />
+                {category.name}
+            </div>
 
             {/* 메뉴 토글 버튼 (일립스 아이콘) */}
-            <button onClick={toggleMenu} className={`${showMenu ? "text-blue-500" : "text-gray-700"} text-xl`}>
-                {showMenu ? <IoEllipsisVertical /> : <IoEllipsisHorizontal />}
-            </button>
-
+            <div className='ml-auto mr-4'>
+                <button onClick={toggleMenu} className={`${showMenu ? "text-blue-700" : "text-gray-700"} text-xl`}>
+                    {showMenu ? <IoEllipsisVertical className='opacity-70' /> : <IoEllipsisHorizontal className='opacity-70' />}
+                </button>
+            </div>
             {/* 말풍선 메뉴 (일립스를 가리키는 스타일) */}
             {showMenu && (
-                <div ref={menuRef} className='absolute right-0 top-full mt-2 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10'>
+                <div ref={menuRef} className='absolute right-0 top-10 mt-2 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10'>
                     {/* 화살표 부분 */}
-                    <div className='absolute top-[-8px] right-4 w-4 h-4 bg-white border-l border-t border-gray-300 rotate-45'></div>
+
                     <div className='flex flex-col py-2'>
                         <button
                             onMouseEnter={() => setHoveredItem("edit")} // 편집 항목에 마우스 진입 시 상태 업데이트
@@ -205,17 +221,17 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, moveCategory, ind
                                 openModal(category); // 편집 버튼 클릭 시 모달 열기
                                 setShowMenu(false);
                             }}
-                            className={`w-full text-left px-4 py-2 flex items-center ${hoveredItem === "edit" ? "bg-gray-100" : ""}`} // 초기 상태에서 기본적으로 "편집" 항목에 배경색
+                            className={`w-full text-left px-4 py-2 flex items-center ${hoveredItem === "edit" ? "bg-[#333] text-white" : ""}`} // 초기 상태에서 기본적으로 "편집" 항목에 배경색
                         >
-                            <MdEdit className='mr-2 text-gray-600' /> 편집
+                            <MdEdit className='mr-2' /> 편집
                         </button>
                         <button
                             onMouseEnter={() => setHoveredItem("delete")} // 삭제 항목에 마우스 진입 시 상태 업데이트
                             onMouseLeave={() => setHoveredItem(null)} // 마우스가 나가면 상태 초기화
                             onClick={handleDelete}
-                            className={`w-full text-left px-4 py-2 flex items-center ${hoveredItem === "delete" ? "bg-gray-100" : ""}`}
+                            className={`w-full text-left px-4 py-2 flex items-center ${hoveredItem === "delete" ? "bg-[#333] text-white" : ""}`}
                         >
-                            <MdDelete className='mr-2 text-gray-600' /> 삭제
+                            <MdDelete className='mr-2' /> 삭제
                         </button>
                     </div>
                 </div>

@@ -365,7 +365,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 
                 <button
                     type='submit'
-                    className='absolute bottom-0 right-20 px-4 py-2 bg-black text-white rounded-md hover:bg-red-500 focus:outline-none active:bg-red-400'
+                    className='absolute bottom-0 right-20 px-4 py-2 bg-[#333] text-white rounded-md hover:bg-red-500 focus:outline-none active:bg-red-400'
                     onClick={handleComplete}
                 >
                     완료
