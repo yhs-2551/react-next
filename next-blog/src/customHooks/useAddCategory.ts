@@ -4,12 +4,17 @@ import { useMutation } from "react-query";
 
 import { CategoryType } from "@/app/manage/category/types/category";
 
+interface CategoryPayload {
+    categories: CategoryType[];
+    categoryToDelete: string[] | null;
+}
+
 function useAddCategory() {
     // const queryClient = useQueryClient();
     const accessToken = localStorage.getItem("access_token") ?? false;
 
     return useMutation(
-        async (category: CategoryType[]) => {
+        async (category: CategoryPayload) => {
             console.log("category >>>", category);
 
             const createCategory: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {

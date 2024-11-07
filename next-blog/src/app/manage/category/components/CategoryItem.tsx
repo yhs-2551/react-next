@@ -24,7 +24,15 @@ interface CategoryItemProps {
     isDeleteDisabled?: boolean;
 }
 
-const CategoryItem: React.FC<CategoryItemProps> = ({ category, moveCategory, index, openModal, deleteCategory, onDragStateChange, isDeleteDisabled }) => {
+const CategoryItem: React.FC<CategoryItemProps> = ({
+    category,
+    moveCategory,
+    index,
+    openModal,
+    deleteCategory,
+    onDragStateChange,
+    isDeleteDisabled,
+}) => {
     const [showMenu, setShowMenu] = useState(false);
     const [hoveredItem, setHoveredItem] = useState<string | null>("edit"); // 기본적으로 편집 항목을 선택 상태로 설정
     const menuRef = useRef<HTMLDivElement>(null);
@@ -73,7 +81,6 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, moveCategory, ind
         setShowMenu((prev) => !prev);
     };
 
-
     // 드랍시 category는 target category 즉, 최종적으로 drop될 카테고리를 의미함.
     const [{ isOver, canDrop, draggedItem }, drop] = useDrop({
         accept: "category",
@@ -103,7 +110,6 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, moveCategory, ind
             if (!draggedItem.categoryUuidParent && (!draggedItem.children || draggedItem.children.length === 0)) {
                 // 타겟이 최상위 카테고리이거나 하위 카테고리일 때 모두 허용
                 if (!category.categoryUuidParent) {
-
                     console.log("얘 ㅣ실행");
 
                     return true;
@@ -133,12 +139,22 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, moveCategory, ind
 
             if (clientOffset.x < leftBoundary) {
                 if (draggedItem.categoryUuid !== category.categoryUuid) {
-                    moveCategory(draggedItem.categoryUuid, category.categoryUuid, true); // 최상위 카테고리 간 이동
+                    // 드래그하는 부모 ID와 target의 ID가 같다면 최상위로 이동. 즉 자식이 직속 부모로 이동할 시 무조건 최상위로 이동
+                    if (draggedItem.categoryUuidParent === category.categoryUuid) {
+                        moveCategory(draggedItem.categoryUuid, category.categoryUuid, true); // 최상위 카테고리 간 이동
+                    } else {
+                        moveCategory(draggedItem.categoryUuid, category.categoryUuid, true); // 최상위 카테고리 간 이동
+                    }
                     return;
                 }
             } else {
                 if (draggedItem.categoryUuid !== category.categoryUuid) {
-                    moveCategory(draggedItem.categoryUuid, category.categoryUuid, false); // 하위로 이동
+                    // 부모 ID와 target의 ID가 같다면 최상위로 이동
+                    if (draggedItem.categoryUuidParent === category.categoryUuid) {
+                        moveCategory(draggedItem.categoryUuid, category.categoryUuid, true); // 최상위 카테고리 간 이동
+                    } else {
+                        moveCategory(draggedItem.categoryUuid, category.categoryUuid, false); // 하위로 이동
+                    }
                     return;
                 }
             }
@@ -169,6 +185,11 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, moveCategory, ind
         if (isOver && canDrop && draggedItem?.categoryUuid !== category.categoryUuid) {
             if (draggedItem.children && draggedItem.children.length > 0 && !draggedItem.categoryUuidParent) {
                 // 자식이 있는 최상위 카테고리일 때 무조건 파란색
+                return "#1D4ED8";
+            }
+
+            // 드래그하는 부모 ID와 target의 ID가 같다면 최상위로 이동. 즉 자식이 직속 부모로 이동할 시 무조건 최상위(파란색)
+            if (draggedItem.categoryUuidParent === category.categoryUuid) {
                 return "#1D4ED8";
             }
 
@@ -230,9 +251,9 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, moveCategory, ind
                             onMouseEnter={() => setHoveredItem("delete")} // 삭제 항목에 마우스 진입 시 상태 업데이트
                             onMouseLeave={() => setHoveredItem(null)} // 마우스가 나가면 상태 초기화
                             onClick={handleDelete}
-                            className={`w-full text-left px-4 py-2 flex items-center ${
-                                hoveredItem === "delete" ? "bg-[#333] text-white" : ""
-                            } ${isDeleteDisabled ? "cursor-not-allowed bg-white text-gray-400" : ""}`}
+                            className={`w-full text-left px-4 py-2 flex items-center ${hoveredItem === "delete" ? "bg-[#333] text-white" : ""} ${
+                                isDeleteDisabled ? "cursor-not-allowed bg-white text-gray-400" : ""
+                            }`}
                             disabled={isDeleteDisabled}
                         >
                             <MdDelete className='mr-2' /> 삭제

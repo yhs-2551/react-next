@@ -2,9 +2,10 @@
 
 import React from "react";
 import ReactQueryProvider from "./ReactQueryProvider";
+import ReactQueryPersistProvider from "./ReactQueryPersistProvider";
 
-function ClientWrapper({ children }: { children: React.ReactNode }) {
-    return <ReactQueryProvider>{children}</ReactQueryProvider>;
+function ClientWrapper({ children, usePersist = false }: { children: React.ReactNode; usePersist?: boolean }) {
+    return usePersist ? <ReactQueryPersistProvider>{children}</ReactQueryPersistProvider> : <ReactQueryProvider>{children}</ReactQueryProvider>;
 }
 
 export default ClientWrapper;
