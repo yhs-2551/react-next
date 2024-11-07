@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import hljs from 'highlight.js';
 import 'highlight.js/styles/atom-one-dark-reasonable.css';
@@ -11,7 +11,7 @@ import { ToastContainer, toast } from "react-toastify";
 
 import { uploadFile } from "@/app/posts/(common)/utils/uploadFile";
 
-import { faFile, faImage, faVideo, faAlignCenter, faAlignLeft, faAlignRight } from "@fortawesome/free-solid-svg-icons";
+// import { faFile, faImage, faVideo, faAlignCenter, faAlignLeft, faAlignRight } from "@fortawesome/free-solid-svg-icons";
 
 import DOMPurify from "dompurify";
 
@@ -1111,15 +1111,15 @@ export default React.memo(
             >
                 <ul>
                     <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("image")}>
-                        <FontAwesomeIcon className='inline-block w-4 h-4 mr-2' icon={faImage} style={{ color: "#a3a3a3" }} />
+                        {/* <FontAwesomeIcon className='inline-block w-4 h-4 mr-2' icon={faImage} style={{ color: "#a3a3a3" }} /> */}
                         사진
                     </li>
                     <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("file")}>
-                        <FontAwesomeIcon className='inline-block w-4 h-4 mr-2' icon={faFile} style={{ color: "#a3a3a3" }} />
+                        {/* <FontAwesomeIcon className='inline-block w-4 h-4 mr-2' icon={faFile} style={{ color: "#a3a3a3" }} /> */}
                         파일
                     </li>
                     <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("video")}>
-                        <FontAwesomeIcon className='inline-block w-4 h-4 mr-2' icon={faVideo} style={{ color: "#a3a3a3" }} />
+                        {/* <FontAwesomeIcon className='inline-block w-4 h-4 mr-2' icon={faVideo} style={{ color: "#a3a3a3" }} /> */}
                         동영상
                     </li>
                 </ul>
@@ -1139,13 +1139,16 @@ export default React.memo(
                     {/* 정렬 버튼들 */}
                     <div className='absolute top-[-2.5rem] left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 shadow-md flex space-x-2 p-2 rounded-md'>
                         <button onClick={() => handleAlign("left")}>
-                            <FontAwesomeIcon icon={faAlignLeft} />
+                            왼쪽
+                            {/* <FontAwesomeIcon icon={faAlignLeft} /> */}
                         </button>
                         <button onClick={() => handleAlign("center")}>
-                            <FontAwesomeIcon icon={faAlignCenter} />
+                            가운데
+                            {/* <FontAwesomeIcon icon={faAlignCenter} /> */}
                         </button>
                         <button onClick={() => handleAlign("right")}>
-                            <FontAwesomeIcon icon={faAlignRight} />
+                            오른쪽
+                            {/* <FontAwesomeIcon icon={faAlignRight} /> */}
                         </button>
                     </div>
 

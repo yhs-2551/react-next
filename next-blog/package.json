@@ -8,19 +8,19 @@
     "start": "next start",
     "lint": "next lint"
   },
- "dependencies": {
+  "dependencies": {
     "@headlessui/react": "^2.2.0",
     "@tanstack/react-query-persist-client": "^5.52.1",
     "dompurify": "^3.1.6",
     "framer-motion": "^11.3.30",
     "highlight.js": "^11.10.0",
     "html-react-parser": "^5.1.18",
-    "next": "14.2.5",
+    "next": "^15.0.3",
     "quill": "^2.0.2",
-    "react": "^18",
+    "react": "^19.0.0-rc-5c56b873-20241107",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
-    "react-dom": "^18",
+    "react-dom": "^19.0.0-rc-5c56b873-20241107",
     "react-icons": "^5.3.0",
     "react-query": "^3.39.3",
     "react-quill": "^2.0.0",

@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGoogle } from "@fortawesome/free-brands-svg-icons";
+// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+// import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 import { loginUser } from "@/services/api";
 
 function Login() {
@@ -140,11 +140,12 @@ function Login() {
                                     <i className='fab fa-github fa-2x'></i>
                                 </button>
                                 <button onClick={handleGoogleLogin}>
-                                    <FontAwesomeIcon
+                                    {/* <FontAwesomeIcon
                                         icon={faGoogle}
                                         size='lg'
                                         style={{ color: "#74C0FC" }}
-                                    />
+                                    /> */}
+                                    구글 로그인
                                 </button>
                                 <button className='text-blue-700'>
                                     <i className='fab fa-facebook fa-2x'></i>

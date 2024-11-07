@@ -74,7 +74,9 @@ function CommonSideNavigation() {
                         태그 · 공감
                     </h2>
                     <ul className='space-y-1'>
-                        <li className='text-gray-700'>태그 관리</li>
+                        <li className='text-gray-700'>
+                        <Link href='/manage/tag'>태그 관리</Link>
+                        </li>
                         <li className='text-gray-700'>공감 관리</li>
                     </ul>
                 </section>

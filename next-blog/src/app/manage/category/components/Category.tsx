@@ -78,10 +78,7 @@ const Category: React.FC = () => {
     const createCategoryMutation = useAddCategory();
 
     useEffect(() => {
-        console.log("categoriesFromServer", categoriesData);
-
         if (categoriesData) {
-            console.log("얘 실행 되나");
             setCategories(categoriesData);
         }
     }, [categoriesData]);
@@ -91,7 +88,6 @@ const Category: React.FC = () => {
             categoryInputRef.current.focus();
         }
     }, []);
-
 
     const categoryTree = buildCategoryTree(categories); // 이 부분은 렌더링 전에 위치
 
@@ -116,8 +112,6 @@ const Category: React.FC = () => {
             // muation success를 초기화 함으로써 저장 완료 버튼에서 변경사항 저장 버튼으로 다시 변경
             createCategoryMutation.reset();
         }
-
-        console.log("categories", categories);
 
         // 공백만 입력했을 때
         if (newCategoryName.trim() === "") {
@@ -210,8 +204,6 @@ const Category: React.FC = () => {
             categoryToDelete: categoryToDeleteRef.current,
         };
 
-        console.log("categoryPayLoad>>>>>>>", categoryPayLoad);
-
         const onSuccess = async () => {
             // 카테고리 저장에 성공하면 강제로 리패칭. 저장 성공할때만 리패칭 그 이외에 React Query Persist LocalStorage 사용.
             // 즉 저장 요청 1번 보내고 성공하면 데이터 조회 요청 1번. 총 2번의 요청을 보냄
@@ -241,12 +233,10 @@ const Category: React.FC = () => {
             }
 
             categoryToDeleteRef.current = [...categoryToDeleteRef.current, categoryToDelete.categoryUuid];
-            console.log("categoryToDeleteRef:", categoryToDeleteRef.current); // 추가된 값 확인
         }
 
         // 최상위 카테고리이고 자식을 가진 경우 삭제 중단
         if (categoryToDelete && categoryToDelete.categoryUuidParent === null && categoryToDelete.children && categoryToDelete.children.length > 0) {
-            console.log("최상위 카테고리이며 자식을 가진 카테고리는 삭제할 수 없습니다.");
             return;
         }
 
@@ -261,8 +251,6 @@ const Category: React.FC = () => {
                 }
                 return category;
             });
-
-        console.log("updatedCategories", updatedCategories);
 
         setCategories(updatedCategories);
     };
@@ -337,12 +325,7 @@ const Category: React.FC = () => {
     };
 
     const moveCategory = (sourceId: string, targetId: string, isTopLevelMove: boolean) => {
-        console.log("sourceId", sourceId);
-        console.log("targetId", targetId);
-
-        setCategories((prevCategories) => {
-            console.log("000000000000000000");
-
+        setCategories((prevCategories: CategoryType[]) => {
             // 드래그된 카테고리와 대상 카테고리 찾기
             let sourceCategory = prevCategories.find((cat) => cat.categoryUuid === sourceId);
             let targetCategory = prevCategories.find((cat) => cat.categoryUuid === targetId);
@@ -366,20 +349,18 @@ const Category: React.FC = () => {
 
             // 최상위 카테고리를 다른 최상위 카테고리의 하위로 이동
             if (isSourceTopLevel && isTargetTopLevel && !isTopLevelMove) {
-                console.log("11111111111111");
-
                 return prevCategories
                     .filter((cat) => cat.categoryUuid !== sourceId) // 최상위에서 sourceCategory 제거
                     .map((cat) => {
                         if (cat.categoryUuid === targetId) {
                             // targetCategory의 children에 sourceCategory 추가
                             const updatedChildren = cat.children
-                                ? [...cat.children, { ...sourceCategory, categoryUuidParent: targetCategory.categoryUuid }]
-                                : [{ ...sourceCategory, categoryUuidParent: targetCategory.categoryUuid }];
+                                ? [...cat.children, { ...sourceCategory, categoryUuidParent: targetCategory!.categoryUuid }]
+                                : [{ ...sourceCategory, categoryUuidParent: targetCategory!.categoryUuid }];
                             return { ...cat, children: updatedChildren };
                         }
                         return cat;
-                    });
+                    }) as CategoryType[];
             }
 
             // 최상위 카테고리 간 위치 교환
@@ -387,14 +368,14 @@ const Category: React.FC = () => {
                 const updatedCategories = prevCategories.filter((cat) => cat.categoryUuid !== sourceId);
                 const targetIndex = prevCategories.findIndex((cat) => cat.categoryUuid === targetId);
                 updatedCategories.splice(targetIndex, 0, sourceCategory);
-                return updatedCategories;
+                return updatedCategories as CategoryType[];
             }
 
             // 하위 카테고리를 최상위 카테고리로 이동하는 경우에 사용.
             if (!isSourceTopLevel && isTopLevelMove) {
                 const updatedCategories = prevCategories.map((cat) => {
                     // 기존 부모 카테고리에서 sourceCategory를 children 배열에서 제거
-                    if (cat.categoryUuid === sourceCategory.categoryUuidParent) {
+                    if (cat.categoryUuid === sourceCategory!.categoryUuidParent) {
                         return {
                             ...cat,
                             children: cat.children?.filter((child) => child.categoryUuid !== sourceId),
@@ -404,10 +385,10 @@ const Category: React.FC = () => {
                 });
 
                 // 부모 카테고리의 바로 아래로 sourceCategory를 최상위로 추가
-                const parentIndex = updatedCategories.findIndex((cat) => cat.categoryUuid === sourceCategory.categoryUuidParent);
+                const parentIndex = updatedCategories.findIndex((cat) => cat.categoryUuid === sourceCategory!.categoryUuidParent);
                 updatedCategories.splice(parentIndex + 1, 0, { ...sourceCategory, categoryUuidParent: null });
 
-                return updatedCategories;
+                return updatedCategories as CategoryType[];
             }
 
             //  하위 카테고리를 다른 상위 카테고리의 자식으로 이동하거나, 최상위로 이동하는 경우에 사용.
@@ -420,14 +401,14 @@ const Category: React.FC = () => {
                             return { ...cat, categoryUuidParent: null }; // 최상위로 이동
                         }
                         // 상위 카테고리의 자식으로 이동하는 경우
-                        return { ...cat, categoryUuidParent: targetCategory.categoryUuid };
+                        return { ...cat, categoryUuidParent: targetCategory!.categoryUuid };
                     }
 
                     if (cat.categoryUuid === targetId) {
                         // targetCategory의 children에 sourceCategory 추가
                         const updatedChildren = cat.children
-                            ? [...cat.children, { ...sourceCategory, categoryUuidParent: targetCategory.categoryUuid }]
-                            : [{ ...sourceCategory, categoryUuidParent: targetCategory.categoryUuid }];
+                            ? [...cat.children, { ...sourceCategory, categoryUuidParent: targetCategory!.categoryUuid }]
+                            : [{ ...sourceCategory, categoryUuidParent: targetCategory!.categoryUuid }];
 
                         return { ...cat, children: updatedChildren };
                     }
@@ -436,7 +417,7 @@ const Category: React.FC = () => {
                 })
                 .map((cat) => {
                     // 기존 부모 카테고리에서 sourceCategory를 children 배열에서 제거
-                    if (cat.categoryUuid === sourceCategory.categoryUuidParent) {
+                    if (cat.categoryUuid === sourceCategory!.categoryUuidParent) {
                         return {
                             ...cat,
                             children: cat.children?.filter((child) => child.categoryUuid !== sourceId),
@@ -444,7 +425,7 @@ const Category: React.FC = () => {
                     }
 
                     return cat;
-                });
+                }) as CategoryType[];
         });
     };
 
@@ -617,7 +598,6 @@ const Category: React.FC = () => {
                                             value={selectedParentCategoryId}
                                             onChange={(value) => {
                                                 setSelectedParentCategoryId(value);
-                                                console.log("Selected value:", value); // 선택된 값 확인
                                             }}
                                         >
                                             <div className='flex items-center justify-between mb-3'>
