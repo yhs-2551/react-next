@@ -55,10 +55,9 @@ const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
 };
 
 const Category: React.FC = () => {
-
-    // categoriesFromServer는 서버로 가져온 요청만이 아닌 캐시로 부터 가져온 데이터도 저장하게 된다. 
-    // 즉 리액트 쿼리 Persist Data 로컬스토리지를 사용할 경우 로컬 스토리지 데이터 -> React Query Cache에 저장 -> 캐쉬 데이터로부터 데이터를 가져온다. 
-    const { data: categoriesData , refetchCategories, isFetching, isLoading, error } = useGetAllCategories(); // 훅을 호출하여 데이터를 서버로부터 가져옴
+    // categoriesFromServer는 서버로 가져온 요청만이 아닌 캐시로 부터 가져온 데이터도 저장하게 된다.
+    // 즉 리액트 쿼리 Persist Data 로컬스토리지를 사용할 경우 로컬 스토리지 데이터 -> React Query Cache에 저장 -> 캐쉬 데이터로부터 데이터를 가져온다.
+    const { data: categoriesData, refetchCategories, isFetching, isLoading, error } = useGetAllCategories(); // 훅을 호출하여 데이터를 서버로부터 가져옴
     const [isInitialLoad, setIsInitialLoad] = useState(true); // 초기 로드 상태를 추가합니다.
 
     const [categories, setCategories] = useState<CategoryType[]>([]);
@@ -79,11 +78,11 @@ const Category: React.FC = () => {
     const createCategoryMutation = useAddCategory();
 
     useEffect(() => {
-        console.log("categoriesFromServer", categoriesData );
+        console.log("categoriesFromServer", categoriesData);
 
         if (categoriesData) {
             console.log("얘 실행 되나");
-            setCategories(categoriesData );
+            setCategories(categoriesData);
         }
     }, [categoriesData]);
 
@@ -93,11 +92,6 @@ const Category: React.FC = () => {
         }
     }, []);
 
-    // useEffect(() => {
-    //     if (categories.length > 0) {
-    //         setIsButtonVisible(true);
-    //     }
-    // }, [categories]);
 
     const categoryTree = buildCategoryTree(categories); // 이 부분은 렌더링 전에 위치
 
@@ -110,8 +104,18 @@ const Category: React.FC = () => {
     const handleAddCategory = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        setIsInitialLoad(false); // 초기 로드 상태 변경. 변경사항 저장 버튼 활성화
-        setIsButtonVisible(true);
+        if (isInitialLoad) {
+            setIsInitialLoad(false); // 초기 로드 상태 변경. 변경사항 저장 버튼 활성화
+        }
+
+        if (!isButtonVisible) {
+            setIsButtonVisible(true);
+        }
+
+        if (createCategoryMutation.isSuccess) {
+            // muation success를 초기화 함으로써 저장 완료 버튼에서 변경사항 저장 버튼으로 다시 변경
+            createCategoryMutation.reset();
+        }
 
         console.log("categories", categories);
 
@@ -209,9 +213,8 @@ const Category: React.FC = () => {
         console.log("categoryPayLoad>>>>>>>", categoryPayLoad);
 
         const onSuccess = async () => {
-            // 서버로 요청하고 재요청할 때 이전 Mutation 상태를 초기화한다. 즉, 불필요한 상태가 남아있는 것을 방지한다.
-            createCategoryMutation.reset();
-            // 카테고리 저장에 성공하면 강제로 리패칭
+            // 카테고리 저장에 성공하면 강제로 리패칭. 저장 성공할때만 리패칭 그 이외에 React Query Persist LocalStorage 사용.
+            // 즉 저장 요청 1번 보내고 성공하면 데이터 조회 요청 1번. 총 2번의 요청을 보냄
             await refetchCategories();
         };
 
@@ -463,16 +466,18 @@ const Category: React.FC = () => {
 
                             <h3 className='text-xl font-medium text-gray-700'>사이트의 카테고리를 생성, 수정 및 관리하세요.</h3>
 
-                            <div className='flex justify-between items-center'>
-                                <p className='text-gray-500 text-base font-normal'>드래그 앤 드롭으로 카테고리 순서를 변경할 수 있습니다.</p>
-                                <a
-                                    className='inline-block ml-2 text-gray-500  text-sm'
-                                    data-tooltip-id='dragAndDrop-tooltip'
-                                    data-tooltip-html='&bull; 카테고리는 2단계까지 설정 가능합니다.<br/> &bull; 드래그시 왼쪽 부분은 상위 카테고리로 이동할 수 있습니다.<br/>&bull; 드래그시 오른쪽 부분은 하위 카테고리로 이동할 수 있습니다.</br>&bull; 하위 카테고리를 가지고 있는 상위 카테고리는 상위 카테고리간 이동만 가능합니다.'
-                                >
-                                    ?
-                                </a>
-                                <Tooltip className='' id='dragAndDrop-tooltip' place='top' />
+                            <div className='flex justify-between'>
+                                <div className='flex items-center'>
+                                    <p className='text-gray-500 text-base font-normal'>드래그 앤 드롭으로 카테고리 순서를 변경할 수 있습니다.</p>
+                                    <a
+                                        className='inline-block ml-2 text-gray-500  text-sm'
+                                        data-tooltip-id='dragAndDrop-tooltip'
+                                        data-tooltip-html='&bull; 카테고리는 2단계까지 설정 가능합니다.<br/> &bull; 드래그시 왼쪽 부분은 상위 카테고리로 이동할 수 있습니다.<br/>&bull; 드래그시 오른쪽 부분은 하위 카테고리로 이동할 수 있습니다.</br>&bull; 하위 카테고리를 가지고 있는 상위 카테고리는 상위 카테고리간 이동만 가능합니다.'
+                                    >
+                                        ?
+                                    </a>
+                                    <Tooltip className='' id='dragAndDrop-tooltip' place='top' />
+                                </div>
 
                                 <form onSubmit={handleAddCategory}>
                                     <fieldset className='flex items-center space-x-2 right-0'>
