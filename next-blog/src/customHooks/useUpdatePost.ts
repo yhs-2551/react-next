@@ -1,9 +1,8 @@
 // import { useRouter } from "next/navigation";
+import { PostRequest } from "@/types/PostTypes";
+import { refreshToken } from "@/utils/refreshToken";
 import { useMutation } from "react-query";
 // import { toast } from "react-toastify";
-
-import type { PostRequest } from "@/common/types/PostTypes";
-import { refreshToken } from "@/app/posts/(common)/utils/refreshToken";
 
 function useUpdatePost(id: string) {
     // const queryClient = useQueryClient();
@@ -17,7 +16,7 @@ function useUpdatePost(id: string) {
                 id: string,
                 token: string | boolean
             ): Promise<Response> => {
-                return fetch(`http://localhost:8000/api/posts/${id}`, {
+                return fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/posts/post/${id}`, {
                     method: "PATCH",
                     headers: {
                         "Content-Type": "application/json",

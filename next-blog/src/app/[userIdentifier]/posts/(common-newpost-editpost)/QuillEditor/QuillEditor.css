@@ -1,0 +1,114 @@
+.ql-editor {
+    padding: 8px !important;
+    position: relative !important;
+}
+
+.ql-toolbar {
+    border: none !important;
+    visibility: hidden;
+}
+
+.ql-toolbar.visible {
+    visibility: visible;
+}  
+
+.ql-container {
+    border: none !important;
+}
+
+.ql-container::after {
+    content: "";
+    display: block;
+    height: 40vh; /* 뷰포트 높이의 40% 만큼 추가 공간을 만듦 */
+}
+
+.ql-editor img {
+    cursor: pointer;
+}
+
+.ql-editor a {
+    text-decoration: none !important;
+}
+
+.ql-code-block-container .ql-ui {
+    background-color: #333 !important;
+    border: 1px solid #fff !important;
+}
+
+/* 
+.file-container {
+    border: 1px solid #ddd !important;
+    background-color: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40% !important;
+    height: 3.5rem !important;
+    cursor: pointer !important;
+    margin: 0 auto !important;
+    font-size: 0.9rem !important;
+    color: #333 !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15) !important;
+} */
+
+.file-container {
+    border: 1px solid #ddd;
+    padding: 10px;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 50%;
+    height: 60px;
+    font-size: 0.9rem;
+    color: #333;
+    cursor: pointer;
+    margin: 0 auto !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    transition: opacity 0.3s;
+}
+
+.file-container::before {
+    content: "\f15b";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    position: absolute;
+    left: 1.2rem;
+    font-size: 1.5rem;
+}
+
+.file-container::after {
+    content: "\f019";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    position: absolute;
+    right: 1.2rem;
+    font-size: 1.5rem;
+}
+
+.file-container:hover {
+    opacity: 0.8;
+}
+
+.file-container__item {
+    display: block;
+    width: 100%;
+    margin-left: 3rem;
+    color: inherit !important;
+    cursor: pointer;
+}
+
+/* .file-container__item {
+    cursor: pointer;  
+    text-decoration: none;
+    text-align: center;
+    color: inherit;
+} */
+
+/* .image-actions__overlay {
+ display: none !important;
+  } */
+
+/* .image-actions__toolbar-button {
+    display: none !important;
+} */

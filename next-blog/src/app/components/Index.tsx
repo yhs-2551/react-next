@@ -3,9 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { fetchAccessToken, logoutUser } from "@/services/api";
+import { useQueryClient } from "react-query";
 
 export default function Index() {
     const router = useRouter();
+    const queryClient = useQueryClient();
 
     const accessToken = localStorage.getItem("access_token") ?? false;
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(!!accessToken); // 작성자 여부 상태
@@ -40,6 +42,8 @@ export default function Index() {
         try {
             await logoutUser();
             setIsLoggedIn(false);
+            queryClient.clear();  
+            localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE');  
             console.log("로그아웃 성공");
         } catch (error: any) {
             console.log("로그아웃 실패: ", error.message);

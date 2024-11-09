@@ -2,8 +2,9 @@
 //     QueryFunctionContext,
 // } from "react-query";
 
-import { refreshToken } from "@/app/posts/(common)/utils/refreshToken";
+import { refreshToken } from "@/utils/refreshToken";
 
+ 
 // export const fetchPosts = async () => {
 
 //     console.log("데이터 가져오는 리액트 쿼리 실행");
@@ -109,6 +110,8 @@ export const fetchIsAuthor = async (postId: string) => {
 };
 
 export const fetchCategories = async () => {
+    console.log("실행 펫치 카테고리");
+    
     const accessToken = localStorage.getItem("access_token") ?? false;
 
     const getAllCategories: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {

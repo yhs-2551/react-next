@@ -1,6 +1,6 @@
 import React from "react";
-import Index from "./components/Index";
 import ClientWrapper from "@/providers/ClientWrapper";
+import Index from "./components/Index";
 
 function IndexPage() {
   return (

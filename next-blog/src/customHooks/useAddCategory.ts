@@ -1,9 +1,9 @@
-import { refreshToken } from "@/app/posts/(common)/utils/refreshToken";
-
+ 
 import { useMutation } from "react-query";
 
-import { CategoryType } from "@/app/manage/category/types/category";
-import { useEffect, useState } from "react";
+ import { useEffect, useState } from "react";
+import { CategoryType } from "@/types/category";
+import { refreshToken } from "@/utils/refreshToken";
 
 interface CategoryPayload {
     categories: CategoryType[];
