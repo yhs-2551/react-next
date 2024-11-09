@@ -1,32 +1,24 @@
-"use client";
-
 import React from "react";
 
 import { QueryClient, QueryClientProvider } from "react-query";
 import { ReactQueryDevtools } from "react-query/devtools";
 
 // import { queryClient } from "./ReactQueryPersistProvider";
-import dynamic from "next/dynamic";
-
-// dynamic을 사용하여 클라이언트 측에서만 컴포넌트를 로드
-const ReactQueryPersistProvider = dynamic(
-    () => import("./ReactQueryPersistProvider"),
-    {
-        ssr: false, // 서버 사이드 렌더링 비활성화
-    }
-);
 
 export default function ReactQueryProvider({
     children,
 }: {
     children: React.ReactNode;
 }) {
+
+    console.log("얘 실행은 안댐");
+
     const queryClient = new QueryClient();
 
     return (
         <QueryClientProvider client={queryClient}>
-            <ReactQueryPersistProvider>{children}</ReactQueryPersistProvider>
-            <ReactQueryDevtools initialIsOpen={false} />
-        </QueryClientProvider>
+        {children}
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
     );
 }

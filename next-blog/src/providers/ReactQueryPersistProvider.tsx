@@ -4,30 +4,33 @@
 
 // 얘를 사용하려면  refetchOnWindowFocus: false, refetchOnReconnect: true, refetchOnMount: true,로 지정해야 한다.
 
-
-"use client";
-
 import React from "react";
 import { persistQueryClient } from "react-query/persistQueryClient-experimental";
 import { createWebStoragePersistor } from "react-query/createWebStoragePersistor-experimental";
-import { QueryClient } from "react-query";
-
-const queryClient = new QueryClient();
-
-if (typeof window !== "undefined") {
-  const localStoragePersistor = createWebStoragePersistor({
-    storage: window.localStorage,
-  });
-
-  persistQueryClient({
-    queryClient,
-    persistor: localStoragePersistor,
-    // maxAge: 1800000, // 로컬 스토리지에 캐시되는 시간 30분 설정, 즉 새로 고침 및 offline 상태여도 유지 됨. 지정 안하면 무제한으로 저장 된다.
-  });
-
-
-}
+import { QueryClient, QueryClientProvider } from "react-query";
+import { ReactQueryDevtools } from "react-query/devtools";
 
 export default function ReactQueryPersistProvider({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+   
+    console.log("얘 실행됨");
+  const queryClient = new QueryClient();
+
+    if (typeof window !== "undefined") {
+        const localStoragePersistor = createWebStoragePersistor({
+            storage: window.localStorage,
+        });
+
+        persistQueryClient({
+            queryClient,
+            persistor: localStoragePersistor,
+            maxAge: Infinity, // 로컬 스토리지에 캐시되는 시간 30분 설정, 즉 새로 고침 및 offline 상태여도 유지 됨. 지정 안하면 무제한으로 저장 된다.
+        });
+    }
+
+    return (
+        <QueryClientProvider client={queryClient}>
+            {children}
+            <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
+    );
 }

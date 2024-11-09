@@ -1,4 +1,4 @@
-import { refreshToken } from "@/app/posts/(common)/utils/refreshToken";
+import { refreshToken } from "@/utils/refreshToken";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "react-query";
 
@@ -8,7 +8,7 @@ const deletePost: (postId: string, accessToken: string | boolean) => Promise<Res
     postId: string,
     accessToken: string | boolean
 ): Promise<Response> => {
-    return await fetch(`http://localhost:8000/api/posts/${postId}`, {
+    return fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/posts/post/${postId}`, {
         method: "DELETE",
         headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -18,12 +18,10 @@ const deletePost: (postId: string, accessToken: string | boolean) => Promise<Res
 };
 
 function useDeletePost() {
-
     const accessToken = localStorage.getItem("access_token") ?? false;
 
     return useMutation(
         async (postId: string) => {
-
             let response = await deletePost(postId, accessToken);
 
             if (!response.ok) {
@@ -40,7 +38,7 @@ function useDeletePost() {
             }
 
             return await response.text();
-        },
+        }
         // {
         //     onSuccess: () => {
         //         // 포스트 목록을 다시 불러오게 만듦
