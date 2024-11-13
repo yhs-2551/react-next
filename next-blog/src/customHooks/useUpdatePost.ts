@@ -4,7 +4,7 @@ import { refreshToken } from "@/utils/refreshToken";
 import { useMutation } from "react-query";
 // import { toast } from "react-toastify";
 
-function useUpdatePost(id: string) {
+function useUpdatePost(id: string, userIdentifier: string) {
     // const queryClient = useQueryClient();
     // const router = useRouter();
 
@@ -16,7 +16,7 @@ function useUpdatePost(id: string) {
                 id: string,
                 token: string | boolean
             ): Promise<Response> => {
-                return fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/posts/post/${id}`, {
+                return fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/posts/${id}`, {
                     method: "PATCH",
                     headers: {
                         "Content-Type": "application/json",

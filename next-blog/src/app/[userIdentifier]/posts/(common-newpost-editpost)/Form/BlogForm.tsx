@@ -21,6 +21,7 @@ import "highlight.js/styles/atom-one-dark-reasonable.css";
 
 import dynamic from "next/dynamic";
 import { FileMetadata, PostRequest, PostResponse } from "@/types/PostTypes";
+import { Tag } from "@/types/TagTypes";
 
 // QuillEditor 컴포넌트를 동적으로 임포트하면서 highlight.js도 함께 설정
 const QuillEditor = dynamic(
@@ -44,10 +45,7 @@ const QuillEditor = dynamic(
     }
 );
 
-interface Tag {
-    id: string;
-    value: string;
-}
+
 
 // const CustomEditor = dynamic( () => import( '@/app/posts/new/components/CKEditor/CustomCKEditor' ), { ssr: false } );
 
@@ -60,7 +58,6 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 
     const contentRef = useRef<string | undefined>(initialData?.content);
 
-    // const titleRef = useRef<string>(""); 과 같이 사용할 수 있지만 수정 페이지와 일관성을 위해 아래와 같이 사용
     const titleInputRef = useRef<HTMLInputElement | null>(null);
 
     // 최종 발행 시 서버로 전송할 파일 Ref
@@ -81,15 +78,15 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 
     const router = useRouter();
 
-    const addPostMutation = useAddPost();
-
     const params = useParams();
     const userIdentifier = params.userIdentifier as string;
+
+    const addPostMutation = useAddPost(userIdentifier);
 
     let updatePostMutation: UseMutationResult<any, unknown, PostRequest, unknown>;
 
     if (postId) {
-        updatePostMutation = useUpdatePost(postId);
+        updatePostMutation = useUpdatePost(postId, userIdentifier);
     }
 
     console.log("contentRef.current >>" + contentRef.current);
@@ -240,7 +237,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         if (isEditingRef.current) {
             updatePostMutation.mutate(postData, { onSuccess, onError });
         } else {
-            addPostMutation.mutate({ newPost: postData, userIdentifier }, { onSuccess, onError });
+            addPostMutation.mutate(postData, { onSuccess, onError });
         }
     };
 

@@ -31,24 +31,24 @@ import CategoryItem from "./CategoryItem";
 import useAddCategory from "@/customHooks/useAddCategory";
 import { useGetAllCategories } from "@/customHooks/useGetCategories";
 import { useQueryClient } from "react-query";
-import { CategoryType } from "@/types/category";
 import CommonSideNavigation from "../../(common-side-navigation)/CommonSideNavigation";
 import { useParams } from "next/navigation";
+import { CategoryType } from "@/types/CateogryTypes";
 
 // 컴포넌트 외부에 헬퍼 함수 정의
 const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
     const map = new Map<string, CategoryType>();
 
-    // 모든 카테고리를 map에 저장하면서 children을 초기화합니다.
+    // 모든 카테고리를 map에 저장하면서 children을 초기화.
     categories.forEach((category) => {
         map.set(category.categoryUuid, { ...category });
     });
 
     const roots: CategoryType[] = [];
 
-    // 각 카테고리를 부모 아래에 배치하거나 최상위로 분류합니다.
+    // 각 카테고리를 부모 아래에 배치하거나 최상위로 분류.
     categories.forEach((category) => {
-        // 부모가 없으면 최상위 카테고리로 간주하고 roots에 추가합니다.
+        // 부모가 없으면 최상위 카테고리로 간주하고 roots에 추가.
         roots.push(map.get(category.categoryUuid)!);
     });
 
@@ -56,11 +56,10 @@ const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
 };
 
 const Category: React.FC = () => {
-
     // categoriesFromServer는 서버로 가져온 요청만이 아닌 캐시로 부터 가져온 데이터도 저장하게 된다.
     // 즉 리액트 쿼리 Persist Data 로컬스토리지를 사용할 경우 로컬 스토리지 데이터 -> React Query Cache에 저장 -> 캐쉬 데이터로부터 데이터를 가져온다.
     const { data: categoriesData, refetchCategories, isFetching, isLoading, error } = useGetAllCategories(); // 훅을 호출하여 데이터를 서버로부터 가져옴
-    const [isInitialLoad, setIsInitialLoad] = useState(true); // 초기 로드 상태를 추가합니다.
+    const [isInitialLoad, setIsInitialLoad] = useState(true); // 초기 로드 상태를 추가.
 
     const [categories, setCategories] = useState<CategoryType[]>([]);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -77,11 +76,22 @@ const Category: React.FC = () => {
 
     const categoryToDeleteRef = useRef<string[] | null>(null);
 
-    const createCategoryMutation = useAddCategory();
+    const queryClient = useQueryClient();
+
+    const params = useParams();
+    const userIdentifier = params.userIdentifier as string;
+
+    const createCategoryMutation = useAddCategory(userIdentifier);
+
+
+    console.log("cateogires>>>>>>>>>>>>>>>", categories);
 
     useEffect(() => {
+        
+    console.log("categoriesData", categoriesData);
+
         if (categoriesData) {
-            setCategories(categoriesData);
+            setCategories(categoriesData.data);
         }
     }, [categoriesData]);
 
@@ -158,6 +168,19 @@ const Category: React.FC = () => {
         }, 200);
     };
     const handleSaveCategoryFromModal = (e: React.FormEvent) => {
+        if (isInitialLoad) {
+            setIsInitialLoad(false); // 초기 로드 상태 변경. 변경사항 저장 버튼 활성화
+        }
+
+        if (!isButtonVisible) {
+            setIsButtonVisible(true);
+        }
+
+        if (createCategoryMutation.isSuccess) {
+            // muation success를 초기화 함으로써 저장 완료 버튼에서 변경사항 저장 버튼으로 다시 변경
+            createCategoryMutation.reset();
+        }
+
         e.preventDefault();
         if (selectedCategory) {
             const updatedCategories = categories
@@ -207,9 +230,13 @@ const Category: React.FC = () => {
         };
 
         const onSuccess = async () => {
+
+           
+
             // 카테고리 저장에 성공하면 강제로 리패칭. 저장 성공할때만 리패칭 그 이외에 React Query Persist LocalStorage 사용.
             // 즉 저장 요청 1번 보내고 성공하면 데이터 조회 요청 1번. 총 2번의 요청을 보냄
             await refetchCategories();
+
         };
 
         const onError = (error: any) => {
@@ -224,6 +251,19 @@ const Category: React.FC = () => {
 
     // 카테고리 삭제 (자식 카테고리는 삭제하지 않음)
     const handleDeleteCategory = (categoryId: string) => {
+        if (isInitialLoad) {
+            setIsInitialLoad(false); // 초기 로드 상태 변경. 변경사항 저장 버튼 활성화
+        }
+
+        if (!isButtonVisible) {
+            setIsButtonVisible(true);
+        }
+
+        if (createCategoryMutation.isSuccess) {
+            // muation success를 초기화 함으로써 저장 완료 버튼에서 변경사항 저장 버튼으로 다시 변경
+            createCategoryMutation.reset();
+        }
+
         const categoryToDelete =
             categories.find((category) => category.categoryUuid === categoryId) ||
             categories.flatMap((category) => category.children || []).find((child) => child.categoryUuid === categoryId); // flatMap을 통해 children 배열을 하나의 배열로 평탄화하고, 해당 카테고리를 찾음
@@ -327,6 +367,19 @@ const Category: React.FC = () => {
     };
 
     const moveCategory = (sourceId: string, targetId: string, isTopLevelMove: boolean) => {
+        if (isInitialLoad) {
+            setIsInitialLoad(false); // 초기 로드 상태 변경. 변경사항 저장 버튼 활성화
+        }
+
+        if (!isButtonVisible) {
+            setIsButtonVisible(true);
+        }
+
+        if (createCategoryMutation.isSuccess) {
+            // muation success를 초기화 함으로써 저장 완료 버튼에서 변경사항 저장 버튼으로 다시 변경
+            createCategoryMutation.reset();
+        }
+
         setCategories((prevCategories: CategoryType[]) => {
             // 드래그된 카테고리와 대상 카테고리 찾기
             let sourceCategory = prevCategories.find((cat) => cat.categoryUuid === sourceId);

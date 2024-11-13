@@ -43,7 +43,7 @@ import { refreshToken } from "@/utils/refreshToken";
 
 export const fetchAccessToken = async () => {
     // 초기 로그인 시 브라우저 쿠키에 담긴 액세스 토큰을 서버에서 검증한 후, 다시 클라이언트측으로 응답 헤더를 통해 액세스 토큰 전송
-    const response = await fetch("http://localhost:8000/api/token/initial-token", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/token/initial-token`, {
         method: "GET",
         credentials: "include",
     });
@@ -74,7 +74,7 @@ export const checkAccessToken = async () => {
 
     try {
         if (accessToken) {
-            const response = await fetch("http://localhost:8000/api/token/check-access-token", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/token/check-access-token`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
@@ -94,10 +94,11 @@ export const checkAccessToken = async () => {
     }
 };
 
-export const fetchIsAuthor = async (postId: string) => {
+export const fetchIsAuthor = async (postId: string, userIdentifier: string) => {
     const accessToken = localStorage.getItem("access_token");
 
-    const response = await fetch(`http://localhost:8000/api/token/${postId}/verify-author`, {
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/posts/${postId}/verify-author`, {
         method: "GET",
         headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -109,13 +110,13 @@ export const fetchIsAuthor = async (postId: string) => {
     return data.isAuthor; // 서버에서 isAuthor 값을 반환받아 true or false값을 반환
 };
 
-export const fetchCategories = async () => {
+export const fetchCategories = async (userIdentifier: string) => {
     console.log("실행 펫치 카테고리");
     
     const accessToken = localStorage.getItem("access_token") ?? false;
-
+     
     const getAllCategories: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
-        return await fetch("http://localhost:8000/api/categories", {
+        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/categories`, {
             method: "GET",
             headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -144,7 +145,7 @@ export const fetchCategories = async () => {
 
 export const signupUser = async (newUser: { username: string; email: string; password: string }) => {
     try {
-        const response = await fetch("http://localhost:8000/api/user/signup", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/signup`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -166,7 +167,7 @@ export const signupUser = async (newUser: { username: string; email: string; pas
 
 export const loginUser = async (loginData: { email: string; password: string }) => {
     try {
-        const response = await fetch("http://localhost:8000/api/user/login", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -202,7 +203,7 @@ export const logoutUser = async () => {
     try {
         const accessToken = localStorage.getItem("access_token");
 
-        const response = await fetch("http://localhost:8000/api/user/logout", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/logout`, {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${accessToken}`,

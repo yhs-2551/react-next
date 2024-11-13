@@ -8,15 +8,13 @@ export async function middleware(request: NextRequest) {
 
     if (userIdentifier) {
         try {
-
-            const accessToken = request.headers.get('Authorization')?.split(' ')[1];
-
-            console.log(accessToken);
             
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/user/${userIdentifier}/availability`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/availability`);
 
 
             if (!response.ok) {
+
+                console.log("실행ㅇㅇㅇㅇ");
                 // url은 유지하면서 404 페이지를 보여주기 위해 rewrite 사용. url을 변경하고 싶다면 redirect
                 return NextResponse.rewrite(new URL("/404", request.url));
             }

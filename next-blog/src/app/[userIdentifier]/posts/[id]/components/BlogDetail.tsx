@@ -140,7 +140,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     // 아래 fetchIsAuthor 도 액세스 토큰이 있을 경우에만 실행. 액세스 토큰이 유효하다면 작성자 인지 확인하는 로직
     useEffect(() => {
         const fetchAuthorStatus: () => Promise<void> = async (): Promise<void> => {
-            const isAuthor = await fetchIsAuthor(postId);
+            const isAuthor = await fetchIsAuthor(postId, userIdentifier);
 
             if (isAuthor) setIsAuthor(isAuthor);
         };
@@ -190,7 +190,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         });
     }, []);
 
-    const deletePost = useDeletePost();
+    const deletePost = useDeletePost(postId, userIdentifier);
 
     const formattedDate: string = new Date(post.createdAt).toLocaleString("ko-KR", {
         year: "numeric",
@@ -231,7 +231,9 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     };
 
     const handleDelete: () => void = (): void => {
-        deletePost.mutate(postId, {
+        deletePost.mutate(
+            undefined, 
+            {
             onSuccess: async () => {
                 router.replace(`/${userIdentifier}/posts`);
                 // 삭제 후 글 목록 페이지로 갔을때 router.push는 페이지 새로고침이 아닌 클라이언트 측 이동이기때문에 서버 컴포넌트가 재실행 되지 않는다.

@@ -3,11 +3,11 @@ import BlogDetail from "./components/BlogDetail";
 import ClientWrapper from "@/providers/ClientWrapper";
 import { notFound } from "next/navigation";
 
-export default async function PostDetailPage({ params }: { params: { id: string } }) {
+export default async function PostDetailPage({ params }: { params: { id: string, userIdentifier: string } }) {
 
-    const { id } = await params;
+    const { id, userIdentifier } = await params;
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/posts/post/${id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/posts/${id}`, {
         cache: "no-store",
     });
     

@@ -19,6 +19,7 @@ import ReactQuill from "react-quill-new";
 import Quill, { Range } from "quill";
 import { FileMetadata } from "@/types/PostTypes";
 import { uploadFile } from "@/utils/uploadFile";
+import { useParams } from "next/navigation";
 
 interface QuillEditorProps {
     contentValue: string | undefined;
@@ -75,7 +76,11 @@ export default React.memo(
         const dropdownPosition = { top: -9999, left: -9999 };
 
         let savedSelection: number | undefined = undefined; // 사용자가 토글 누르기 전 커서 위치 저장을 위한 변수. state로 할 시 비동기로 예상치 못한 결과를 가져와서 일반 변수로 선언.
-
+       
+        const params = useParams();
+        const userIdentifier = params.userIdentifier as string;
+    
+       
         // quill 에디터의 content를 관리하는 함수. getEditorContent 함수를 실행하면 getEditorContent 함수의 인자로 있는 함수를  BlogForm 컴포넌트에서 quillContentRef.current에 저장한다.
         useEffect(() => {
             const quill = quillRef.current?.getEditor();
@@ -169,7 +174,7 @@ export default React.memo(
             // 최종적으로 클라우드 스토리지에 저장 후, 해당 url을 받아와서 에디터에 붙여넣는 함수
             const handleImagePaste: (quill: Quill, file: File) => Promise<void> = async (quill: Quill, file: File) => {
                 // 이미지 파일을 서버에 업로드
-                const fileUrl = await uploadFile(file);
+                const fileUrl = await uploadFile(file, userIdentifier);
 
                 const currentUploadedImages: string[] = totalUploadedImagesUrlRef.current;
                 totalUploadedImagesUrlRef.current = [...currentUploadedImages, fileUrl];
@@ -983,7 +988,7 @@ export default React.memo(
             input.onchange = async () => {
                 const file = input.files ? input.files[0] : null;
                 if (file && validateFileSize(file, type)) {
-                    const fileUrl = await uploadFile(file);
+                    const fileUrl = await uploadFile(file, userIdentifier);
 
                     const currentUploadedImages: string[] = totalUploadedImagesUrlRef.current;
                     totalUploadedImagesUrlRef.current = [...currentUploadedImages, fileUrl];

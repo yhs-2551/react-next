@@ -37,7 +37,7 @@ function Login() {
     };
 
     const handleGoogleLogin = () => {
-        window.location.assign("http://localhost:8000/oauth2/authorization/google");
+        window.location.assign(`${process.env.NEXT_PUBLIC_BACKEND_URL}/oauth2/authorization/google`);
     };
 
     return (

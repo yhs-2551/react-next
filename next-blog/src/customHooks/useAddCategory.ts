@@ -2,28 +2,31 @@
 import { useMutation } from "react-query";
 
  import { useEffect, useState } from "react";
-import { CategoryType } from "@/types/category";
+
 import { refreshToken } from "@/utils/refreshToken";
+import { CategoryType } from "@/types/CateogryTypes";
 
 interface CategoryPayload {
     categories: CategoryType[];
     categoryToDelete: string[] | null;
 }
 
-function useAddCategory() {
-    const [accessToken, setAccessToken] = useState<string | false>(false);
+function useAddCategory(userIdentifier: String) {
+    // const [accessToken, setAccessToken] = useState<string | false>(false);
 
-    // localStorage는 서버사이드 렌더링에서 오류가 나기 때문에 useEffect를 사용해 클라이언트에서만 사용하도록 한다.
-    // useEffect로 감싸면 useEffect 코드는 서버사이드 렌더링에서 실행되지 않고, 컴포넌트 마운트 후 "클라이언트 사이드에서만" useEffect를 실행하게 됨.
-    useEffect(() => {
-        setAccessToken(localStorage.getItem("access_token") ?? false);
-    }, []);
+    // // localStorage는 서버사이드 렌더링에서 오류가 나기 때문에 useEffect를 사용해 클라이언트에서만 사용하도록 한다.
+    // // useEffect로 감싸면 useEffect 코드는 서버사이드 렌더링에서 실행되지 않고, 컴포넌트 마운트 후 "클라이언트 사이드에서만" useEffect를 실행하게 됨.
+    // useEffect(() => {
+    //     setAccessToken(localStorage.getItem("access_token") ?? false);
+    // }, []);
+
+    const accessToken = localStorage.getItem("access_token") ?? false;
 
     return useMutation(async (category: CategoryPayload) => {
         console.log("category >>>", category);
 
         const createCategory: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
-            return await fetch("http://localhost:8000/api/categories", {
+            return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/categories`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -48,7 +51,11 @@ function useAddCategory() {
             throw new Error("Failed to add new category please retry again.");
         }
 
-        return await response.json();
+        console.log("response 데이터>>>", response);
+
+        const responseData = await response.json();
+        console.log("Response data:", responseData);
+        return responseData;
     });
 }
 

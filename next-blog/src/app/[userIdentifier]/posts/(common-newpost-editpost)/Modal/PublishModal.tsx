@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import NextImage from "next/image";
 import { FileMetadata } from "@/types/PostTypes";
 import { uploadFile } from "@/utils/uploadFile";
+import { useParams } from "next/navigation";
 
 interface PublishModalProps {
     // isOpen: boolean;
@@ -31,6 +32,9 @@ function PublishModal({
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const MAX_TOTAL_SIZE_MB = 20;
+
+    const params = useParams();
+    const userIdentifier = params.userIdentifier as string;
 
     // let isPublishClick: boolean = false;
 
@@ -85,7 +89,7 @@ function PublishModal({
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            const imageUrl = await uploadFile(file, "featured");
+            const imageUrl = await uploadFile(file, userIdentifier, "featured");
             setFeaturedImage({
                 fileName: file.name,
                 fileType: file.type,

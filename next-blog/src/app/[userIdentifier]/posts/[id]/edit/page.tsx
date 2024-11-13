@@ -4,10 +4,10 @@ import ClientWrapper from "@/providers/ClientWrapper";
 import BlogForm from "../../(common-newpost-editpost)/Form/BlogForm";
 import AuthCheck from "@/app/[userIdentifier]/components/AuthCheck";
 
-export default async function PostEditPage({ params }: { params: { id: string } }) {
-    const { id } = await params;
+export default async function PostEditPage({ params }: { params: { id: string; userIdentifier: string } }) {
+    const { userIdentifier, id } = await params;
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/posts/post/${id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/posts/${id}`, {
         cache: "no-store",
     });
 

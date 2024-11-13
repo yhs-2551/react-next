@@ -13,7 +13,7 @@ import { useDrag, useDrop } from "react-dnd";
 
 import { RxDragHandleHorizontal } from "react-icons/rx";
 import { FaFolder } from "react-icons/fa";
-import { CategoryType } from "@/types/category";
+import { CategoryType } from "@/types/CateogryTypes";
 
 interface CategoryItemProps {
     category: CategoryType;
