@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ChangeEvent, Suspense, useEffect, useRef } from "react";
+import React, { ChangeEvent, Suspense, useEffect, useMemo, useRef } from "react";
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -22,6 +22,7 @@ import "highlight.js/styles/atom-one-dark-reasonable.css";
 import dynamic from "next/dynamic";
 import { FileMetadata, PostRequest, PostResponse } from "@/types/PostTypes";
 import { Tag } from "@/types/TagTypes";
+import { CategoryType } from "@/types/CateogryTypes";
 
 // QuillEditor 컴포넌트를 동적으로 임포트하면서 highlight.js도 함께 설정
 const QuillEditor = dynamic(
@@ -45,8 +46,6 @@ const QuillEditor = dynamic(
     }
 );
 
-
-
 // const CustomEditor = dynamic( () => import( '@/app/posts/new/components/CKEditor/CustomCKEditor' ), { ssr: false } );
 
 function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?: string }) {
@@ -68,6 +67,8 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
     const deletedImageUrlsInFutureRef: React.MutableRefObject<string[]> = useRef<string[]>([]);
 
     const categoryRef = useRef<HTMLSelectElement>(null);
+    const categoriesRef = useRef<CategoryType[]>([]);
+
     const tags = useRef<Tag[]>([]);
     const tagInputRef = useRef<HTMLInputElement>(null);
     const tagContainerRef = useRef<HTMLDivElement>(null);
@@ -89,20 +90,27 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         updatePostMutation = useUpdatePost(postId, userIdentifier);
     }
 
-    console.log("contentRef.current >>" + contentRef.current);
+    // 리액트 쿼리 오프라인 캐시를 가져와서 카테고리 데이터를 캐싱
+    useMemo(() => {
+        const cacheData = localStorage.getItem("REACT_QUERY_OFFLINE_CACHE");
+        if (!cacheData) return [];
+
+        try {
+            const parsedData = JSON.parse(cacheData);
+            const data = parsedData?.clientState?.queries?.[0]?.state?.data?.data || [];
+            // ref의 current에 직접 할당
+            categoriesRef.current = data;
+            return data;
+        } catch (error) {
+            console.error("캐시 파싱 에러:", error);
+            return [];
+        }
+    }, []);
 
     useEffect(() => {
         if (titleInputRef.current && initialData?.title) {
             titleInputRef.current.value = initialData.title;
         }
-
-        // const newTag: Tag = {
-        //     id: uuidv4(),
-        //     value: tagInputRef.current.value,
-        // };
-
-        // tags.current = [...tags.current, newTag];
-        // addTagToDOM(newTag);
 
         if (initialData && initialData.tags) {
             initialData.tags.forEach((tag) => {
@@ -127,7 +135,15 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         }
     };
 
+    const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        if (categoryRef.current) {
+            categoryRef.current.value = e.target.value;
+        }
+    };
+
     const handleComplete = () => {
+        console.log("컨텐츠 >>>>" + categoryRef.current?.value);
+
         // quillContentRef.current함수를 실행해서 DOMPurify.sanitize(html)로 정화?된 quill.innerhtml 즉 에디터 내의 모든 html 내용을 가져옴
         contentRef.current = quillContentRef.current();
         const title = titleInputRef.current?.value || "";
@@ -182,8 +198,8 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         const title = titleInputRef.current!.value;
         const content = contentRef.current!;
 
-        const category = categoryRef.current?.value || "";
-
+        let categoryName =  categoryRef.current!.value as string | null;
+ 
         console.log("타이틀 >>>>" + title);
         console.log("컨텐츠 >>>>" + content);
 
@@ -193,7 +209,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         const postData = {
             title,
             content,
-            category,
+            categoryName,
             tags: tags.current?.map((tag) => tag.value), // 태그 값만 전달
             editPageDeletedTags: editPageDeletedTags.current, // 수정페이지에서 삭제된 태그 전송
             files: fileRef.current,
@@ -336,14 +352,28 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                     <legend className='sr-only'>새로운 블로그 글 등록 폼</legend>
 
                     <div className='mb-4'>
-                        <select ref={categoryRef} className='w-[20%] p-2 border border-gray-300 rounded-md'>
-                            <option value=''>카테고리</option>
-                            <option value='html'>HTML</option>
-                            <option value='css'>CSS</option>
-                            <option value='react'>React</option>
-                            <option value='next.js'>Next.js</option>
-                            <option value='spring'>Spring</option>
-                            <option value='spring boot'>Spring Boot</option>
+                        <select
+                            ref={categoryRef}
+                            className='w-[20%] p-2 border border-gray-300 rounded-md text-sm'
+                            onChange={handleCategoryChange}
+                            defaultValue={initialData?.categoryName || 'null'}
+                        >
+                            <option value='null' className='text-sm'>
+                                카테고리
+                            </option>
+                            {categoriesRef?.current.length > 0 &&
+                                categoriesRef.current.map((mainCategory) => (
+                                    <React.Fragment key={mainCategory.categoryUuid}>
+                                        <option value={mainCategory.name} className='text-sm'>
+                                            {mainCategory.name}
+                                        </option>
+                                        {mainCategory.children?.map((subCategory) => (
+                                            <option key={subCategory.categoryUuid} value={subCategory.name} className='text-xs'>
+                                                └ {subCategory.name}
+                                            </option>
+                                        ))}
+                                    </React.Fragment>
+                                ))}
                         </select>
                     </div>
 

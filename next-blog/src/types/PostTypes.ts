@@ -9,7 +9,7 @@ export interface FileMetadata {
 
 
 export interface PostRequest {
-    category?: string;
+    categoryName: string | null;
     title: string;
     content: string;
     tags?: string[];

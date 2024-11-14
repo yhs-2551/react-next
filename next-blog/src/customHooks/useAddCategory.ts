@@ -1,7 +1,6 @@
- 
 import { useMutation } from "react-query";
 
- import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { refreshToken } from "@/utils/refreshToken";
 import { CategoryType } from "@/types/CateogryTypes";
@@ -51,11 +50,9 @@ function useAddCategory(userIdentifier: String) {
             throw new Error("Failed to add new category please retry again.");
         }
 
-        console.log("response 데이터>>>", response);
-
         const responseData = await response.json();
-        console.log("Response data:", responseData);
-        return responseData;
+        
+        return responseData.data;
     });
 }
 

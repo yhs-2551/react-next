@@ -76,21 +76,15 @@ const Category: React.FC = () => {
 
     const categoryToDeleteRef = useRef<string[] | null>(null);
 
-    const queryClient = useQueryClient();
-
     const params = useParams();
     const userIdentifier = params.userIdentifier as string;
 
     const createCategoryMutation = useAddCategory(userIdentifier);
 
-
-    console.log("cateogires>>>>>>>>>>>>>>>", categories);
-
     useEffect(() => {
         
-    console.log("categoriesData", categoriesData);
-
         if (categoriesData) {
+            //sealed 클래스에서 객체.data 형식에 실제 데이터가 담김 {idClass: 값, data: 값, message: 값} 형식
             setCategories(categoriesData.data);
         }
     }, [categoriesData]);
