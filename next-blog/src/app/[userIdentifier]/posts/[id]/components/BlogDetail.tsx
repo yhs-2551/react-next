@@ -4,12 +4,9 @@ import "./BlogDetail.css";
 
 import "react-quill-new/dist/quill.snow.css"; // Snow 테마 CSS 파일
 
-
 import parse, { DOMNode, Element } from "html-react-parser";
 
 import useDeletePost from "@/customHooks/useDeletePost";
-// import { useGetPost } from "@/customHooks/useGetPost";
-import ClientWrapper from "@/providers/ClientWrapper";
 
 import React, { useEffect, useState } from "react";
 
@@ -20,22 +17,19 @@ import { checkAccessToken, fetchIsAuthor } from "@/services/api";
 import DOMPurify from "dompurify";
 
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
- 
+
 import NextImage from "next/image";
 import { FileMetadata, PostResponse } from "@/types/PostTypes";
 import { refreshToken } from "@/utils/refreshToken";
 
 function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId: string }) {
     const router: AppRouterInstance = useRouter();
-    const accessToken: string | false = localStorage.getItem("access_token") ?? false;
-    const [newAccessToken, setNewAccessToken]: [string | null, React.Dispatch<React.SetStateAction<string | null>>] = useState<string | null>(null);
     const [isAuthor, setIsAuthor]: [boolean, React.Dispatch<React.SetStateAction<boolean>>] = useState<boolean>(false); // 작성자 여부 상태
-
-    const post = initialData;
 
     const params = useParams();
     const userIdentifier = params.userIdentifier as string;
 
+    const post = initialData;
 
     const parseStyleString = (style: string) => {
         return style.split(";").reduce((acc: { [key: string]: string | number }, styleProperty) => {
@@ -108,47 +102,22 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         });
     };
 
-
-    // 아래쪽에 액세스 토큰 유효성 검사하고, 작성자 인지 확인하는 로직 나중에 백엔드쪽에서 하나로 묶어서 처리 고려. 굳이 두번 검증할 필요가 없음
-
+    //  액세스 토큰이 유효하다면 작성자 인지 확인하는 로직
     // 일부 React Hook 특히 useEffect는 React Strict mode에서 두 번 실행 함. 끄고 싶다면 next.config.mjs에서 스트릭트 모드 off 해야함.
-    // 새로고침 시 액세스 토큰 유효성 검사 확인하는 로직
-    useEffect(() => {
-        const validateTokenOnLoad: () => Promise<void> = async (): Promise<void> => {
-            const isValidToken = await checkAccessToken();
 
-            if (isValidToken) return;
-
-            if (!isValidToken) {
-                const newAccessToken = await refreshToken();
-                if (newAccessToken) {
-                    setNewAccessToken(newAccessToken);
-                    return;
-                }
-
-                if (!newAccessToken) {
-                    throw new Error("Failed to enter the detail post page. please retry again.");
-                }
-            }
-        };
-
-        if (accessToken) {
-            validateTokenOnLoad();
-        }
-    }, []);
-
-    // 아래 fetchIsAuthor 도 액세스 토큰이 있을 경우에만 실행. 액세스 토큰이 유효하다면 작성자 인지 확인하는 로직
     useEffect(() => {
         const fetchAuthorStatus: () => Promise<void> = async (): Promise<void> => {
-            const isAuthor = await fetchIsAuthor(postId, userIdentifier);
+            const isAuthor = await fetchIsAuthor(postId, userIdentifier, accessToken);
 
             if (isAuthor) setIsAuthor(isAuthor);
         };
 
-        if (accessToken) {
-            fetchAuthorStatus();
-        }
-    }, [newAccessToken]);
+        const accessToken: string | null = localStorage.getItem("access_token");
+
+        if (!accessToken) return;
+
+        fetchAuthorStatus();
+    }, []);
 
     // 아래 상세페이지에서 파일 다운할 수 있게 하는 코드.
 
@@ -202,10 +171,6 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     });
 
     const handleEdit: () => Promise<void> = async (): Promise<void> => {
-        if (!accessToken) {
-            router.push("/login"); // 로그인 안된 사용자(해당 블로그 주인) 처리
-            return;
-        }
         const isValidToken: boolean | undefined = await checkAccessToken();
 
         if (isValidToken) {
@@ -214,7 +179,6 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
             // 따라서 수정 페이지로 이동할땐 window.location.href를 사용하여 수정 페이지 전체 새로고침이 일어나도록 한다.
             // router.push(`/posts/${postId}/edit`);
             window.location.assign(`/${userIdentifier}/posts/${postId}/edit`);
-
         }
 
         if (!isValidToken) {
@@ -231,10 +195,10 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     };
 
     const handleDelete: () => void = (): void => {
-        deletePost.mutate(
-            undefined, 
-            {
+        deletePost.mutate(undefined, {
             onSuccess: async () => {
+                localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE"); // 글 삭제 성공 후 캐시 삭제. 카테고리 페이지로 갔을 떄 새로운 데이터로 불러오기 위함
+
                 router.replace(`/${userIdentifier}/posts`);
                 // 삭제 후 글 목록 페이지로 갔을때 router.push는 페이지 새로고침이 아닌 클라이언트 측 이동이기때문에 서버 컴포넌트가 재실행 되지 않는다.
                 // 따라서 router.push로 이동 후에 router.refresh()로 서버 컴포넌트를 다시 실행해서 새로운 데이터를 가져온 후 삭제 작업이 적용될 수 있도록 한다.

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ChangeEvent, Suspense, useEffect, useMemo, useRef } from "react";
+import React, { ChangeEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -13,7 +13,7 @@ import useAddPost from "@/customHooks/useAddPost";
 import { useParams, useRouter } from "next/navigation";
 import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
 import useUpdatePost from "@/customHooks/useUpdatePost";
-import { UseMutationResult } from "react-query";
+import { UseMutationResult, useQueryClient } from "react-query";
 
 import ClipLoader from "react-spinners/ClipLoader";
 
@@ -23,6 +23,7 @@ import dynamic from "next/dynamic";
 import { FileMetadata, PostRequest, PostResponse } from "@/types/PostTypes";
 import { Tag } from "@/types/TagTypes";
 import { CategoryType } from "@/types/CateogryTypes";
+import { useGetAllCategories } from "@/customHooks/useGetCategories";
 
 // QuillEditor 컴포넌트를 동적으로 임포트하면서 highlight.js도 함께 설정
 const QuillEditor = dynamic(
@@ -49,6 +50,8 @@ const QuillEditor = dynamic(
 // const CustomEditor = dynamic( () => import( '@/app/posts/new/components/CKEditor/CustomCKEditor' ), { ssr: false } );
 
 function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?: string }) {
+    console.log("실행이다아ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ");
+
     const isEditingRef = useRef<boolean>(!!postId);
 
     const quillContentRef = useRef<() => string>(() => "");
@@ -67,7 +70,9 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
     const deletedImageUrlsInFutureRef: React.MutableRefObject<string[]> = useRef<string[]>([]);
 
     const categoryRef = useRef<HTMLSelectElement>(null);
-    const categoriesRef = useRef<CategoryType[]>([]);
+
+    // const categoriesRef = useRef<CategoryType[]>([]);
+    const categories = useRef<CategoryType[]>([]);
 
     const tags = useRef<Tag[]>([]);
     const tagInputRef = useRef<HTMLInputElement>(null);
@@ -76,6 +81,8 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
     const editPageDeletedTags = useRef<string[]>([]);
 
     const errorMessageRef = useRef<string | null>(null);
+
+    const queryClient = useQueryClient();
 
     const router = useRouter();
 
@@ -91,21 +98,62 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
     }
 
     // 리액트 쿼리 오프라인 캐시를 가져와서 카테고리 데이터를 캐싱
-    useMemo(() => {
-        const cacheData = localStorage.getItem("REACT_QUERY_OFFLINE_CACHE");
-        if (!cacheData) return [];
+    // useMemo(() => {
+    //     const cacheData = localStorage.getItem("REACT_QUERY_OFFLINE_CACHE");
+    //     if (!cacheData)  return [];
+    //     try {
+    //         const parsedData = JSON.parse(cacheData);
+    //         const data = parsedData?.clientState?.queries?.[0]?.state?.data?.data || [];
+    //         // ref의 current에 직접 할당
+    //         categoriesRef.current = data;
+    //         return data;
+    //     } catch (error) {
+    //         console.error("캐시 파싱 에러:", error);
+    //         return [];
+    //     }
+    // }, []);
 
-        try {
-            const parsedData = JSON.parse(cacheData);
-            const data = parsedData?.clientState?.queries?.[0]?.state?.data?.data || [];
-            // ref의 current에 직접 할당
-            categoriesRef.current = data;
-            return data;
-        } catch (error) {
-            console.error("캐시 파싱 에러:", error);
-            return [];
+    const { data: categoriesData, refetchCategories, isFetching, isRefetching, isLoading, error } = useGetAllCategories();
+
+    useEffect(() => {
+        console.log("categoriesData >>>>", categoriesData);
+
+        if (categoryRef.current && categoriesData) {
+            // 기존 옵션 제거
+            categoryRef.current.innerHTML = "";
+
+            // 기본 옵션 추가
+            const defaultOption = document.createElement("option");
+            defaultOption.value = "null";
+            defaultOption.textContent = "카테고리";
+            categoryRef.current.appendChild(defaultOption);
+
+            // 카테고리 데이터 렌더링
+            categoriesData.data.forEach((mainCategory: CategoryType) => {
+                // 상위 카테고리 옵션 생성
+                const mainOption = document.createElement("option");
+                mainOption.value = mainCategory.name;
+                mainOption.textContent = mainCategory.name;
+                mainOption.className = "text-sm";
+                categoryRef.current?.appendChild(mainOption);
+
+                // 하위 카테고리 옵션 생성
+                if (mainCategory.children && mainCategory.children.length > 0) {
+                    mainCategory.children.forEach((subCategory) => {
+                        const subOption = document.createElement("option");
+                        subOption.value = subCategory.name;
+                        subOption.textContent = `└ ${subCategory.name}`;
+                        subOption.className = "text-xs";
+                        categoryRef.current?.appendChild(subOption);
+                    });
+                }
+            });
+
+            if (categoryRef.current && initialData?.categoryName) {
+                categoryRef.current.value = initialData.categoryName;
+            }
         }
-    }, []);
+    }, [categoriesData]);
 
     useEffect(() => {
         if (titleInputRef.current && initialData?.title) {
@@ -198,8 +246,8 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         const title = titleInputRef.current!.value;
         const content = contentRef.current!;
 
-        let categoryName =  categoryRef.current!.value as string | null;
- 
+        let categoryName = categoryRef.current!.value as string | null;
+
         console.log("타이틀 >>>>" + title);
         console.log("컨텐츠 >>>>" + content);
 
@@ -226,21 +274,31 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                 modalRef.current.style.display = "none";
             }
 
-            if (isEditingRef.current) {
-                router.replace(`/${userIdentifier}/posts/${postId}`);
+            if (isEditingRef.current) { 
+                window.location.replace(`/${userIdentifier}/posts/${postId}`);
+                // await router.replace(`/${userIdentifier}/posts/${postId}`);
             } else {
-                // 글 작성시 rotuer.push를 쓰면 글 작성 성공하고 목록 페이지로 간 후에, 브라우저 뒤로가기를 통해 다시 글작성 페이지로 갈 경우 에디터가 제대로 작동하지 않음.
-
-                // -- 아래는 글 수정 시 --
-                // 수정 작업 후 상세 페이지로 이동한 상태에서 브라우저 뒤로가기를 했을때 다시 수정 페이지로 가지 않게 router.replace 사용.
-                // 즉 replace로 이동하면서 브라우저 history에 바로 직전 수정 페이지를 남기지 않음.
-                // 쉽게 replace는 뒤로가기를 했을때 전전 페이지로 간다고 보면 된다.
-                router.replace(`/${userIdentifier}/posts`);
+                await router.replace(`/${userIdentifier}/posts`);
             }
+
+            // 글 작성시 rotuer.push를 쓰면 글 작성 성공하고 목록 페이지로 간 후에, 브라우저 뒤로가기를 통해 다시 글작성 페이지로 갈 경우 에디터가 제대로 작동하지 않음.
+            // 즉 router.replace는 브라우저 히스토리 스택에 남기지 않고 이동함
+            // -- 아래는 글 수정 시 --
+            // 수정 작업 후 상세 페이지로 이동한 상태에서 브라우저 뒤로가기를 했을때 다시 수정 페이지로 가지 않게 router.replace 사용.
+            // 즉 replace로 이동하면서 브라우저 history에 바로 직전 수정 페이지를 남기지 않음.
+            // 쉽게 replace는 뒤로가기를 했을때 전전 페이지로 간다고 보면 된다.
+
+   
 
             // 글 작성의 경우 글 작성 성공하고 글 목록 페이지로 이동 후에 글 목록 페이지 page.tsx에 서버 컴포넌트 재실행.
             // 글 수정의 경우 상세페이지 및 그 아래 leaf segment인 수정 페이지에 다시 접근할 시 수정 페이지의 서버 컴포넌트까지 재실행 됨
-            router.refresh();
+            // await router.refresh();
+
+            // queryClient.clear();
+            setTimeout(() => {
+
+                localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE"); // 글 작성 성공 후 캐시 삭제. 카테고리 페이지로 갔을 떄 새로운 데이터로 불러오기 위함
+            }, 500);
         };
 
         const onError = (error: any) => {
@@ -356,25 +414,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                             ref={categoryRef}
                             className='w-[20%] p-2 border border-gray-300 rounded-md text-sm'
                             onChange={handleCategoryChange}
-                            defaultValue={initialData?.categoryName || 'null'}
-                        >
-                            <option value='null' className='text-sm'>
-                                카테고리
-                            </option>
-                            {categoriesRef?.current.length > 0 &&
-                                categoriesRef.current.map((mainCategory) => (
-                                    <React.Fragment key={mainCategory.categoryUuid}>
-                                        <option value={mainCategory.name} className='text-sm'>
-                                            {mainCategory.name}
-                                        </option>
-                                        {mainCategory.children?.map((subCategory) => (
-                                            <option key={subCategory.categoryUuid} value={subCategory.name} className='text-xs'>
-                                                └ {subCategory.name}
-                                            </option>
-                                        ))}
-                                    </React.Fragment>
-                                ))}
-                        </select>
+                        ></select>
                     </div>
 
                     <div className='mb-4 '>

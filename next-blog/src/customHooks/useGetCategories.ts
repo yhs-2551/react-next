@@ -15,7 +15,6 @@ export const useGetAllCategories = () => {
 
     const shouldFetch = !cachedCategories;
 
-
     const query = useQuery(["categories", userIdentifier], () => fetchCategories(userIdentifier), {
         enabled: shouldFetch,
         staleTime: Infinity, // 데이터가 절대 stale하지 않음

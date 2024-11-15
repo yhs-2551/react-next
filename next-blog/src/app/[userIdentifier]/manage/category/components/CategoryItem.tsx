@@ -4,8 +4,6 @@
 
 import React, { useRef, useState, useEffect } from "react";
 
- 
-
 import { MdDelete, MdEdit } from "react-icons/md";
 import { IoEllipsisHorizontal, IoEllipsisVertical } from "react-icons/io5";
 
@@ -223,6 +221,8 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
             <div className='flex items-center ml-6'>
                 <FaFolder className='text-xl mr-2 opacity-60' />
                 {category.name}
+
+                &nbsp;<span className="text-base text-gray-600">({category.postCount ?? 0})</span>
             </div>
 
             {/* 메뉴 토글 버튼 (일립스 아이콘) */}

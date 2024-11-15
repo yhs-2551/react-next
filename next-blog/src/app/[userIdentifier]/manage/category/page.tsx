@@ -4,7 +4,6 @@ import Category from "./components/Category";
 export default function CategoryPage() {
  
     return (
-        // 카테고리에서만 persist 사용
         <ClientWrapper usePersist={true}>
             <Category />
         </ClientWrapper>

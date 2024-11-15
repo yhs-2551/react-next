@@ -4,7 +4,6 @@
 
 import { refreshToken } from "@/utils/refreshToken";
 
- 
 // export const fetchPosts = async () => {
 
 //     console.log("데이터 가져오는 리액트 쿼리 실행");
@@ -94,17 +93,35 @@ export const checkAccessToken = async () => {
     }
 };
 
-export const fetchIsAuthor = async (postId: string, userIdentifier: string) => {
-    const accessToken = localStorage.getItem("access_token");
+export const fetchIsAuthor = async (postId: string, userIdentifier: string, accessToken: string | null) => {
+ 
+    const verifyPostAuthor = async (accessToken: string | null) => {
+        return await fetch(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/posts/${postId}/verify-author`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+    };
 
+    let response = await verifyPostAuthor(accessToken);
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/posts/${postId}/verify-author`, {
-        method: "GET",
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-        },
-    });
+    if (!response.ok) {
+        if (response.status === 401) {
+            const newAccessToken = await refreshToken();
+            if (newAccessToken) {
+                response = await verifyPostAuthor(newAccessToken);
+            }
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error("Failed to verify author please retry again.");
+    }
 
     const data = await response.json();
     return data.isAuthor; // 서버에서 isAuthor 값을 반환받아 true or false값을 반환
@@ -112,9 +129,9 @@ export const fetchIsAuthor = async (postId: string, userIdentifier: string) => {
 
 export const fetchCategories = async (userIdentifier: string) => {
     console.log("실행 펫치 카테고리");
-    
+
     const accessToken = localStorage.getItem("access_token") ?? false;
-     
+
     const getAllCategories: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
         return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/categories`, {
             method: "GET",

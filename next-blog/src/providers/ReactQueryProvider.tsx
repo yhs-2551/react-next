@@ -11,8 +11,6 @@ export default function ReactQueryProvider({
     children: React.ReactNode;
 }) {
 
-    console.log("얘 실행은 안댐");
-
     const queryClient = new QueryClient();
 
     return (

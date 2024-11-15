@@ -16,7 +16,7 @@ export default async function PostEditPage({ params }: { params: { id: string; u
 
     return (
         <div className='container max-w-4xl mt-6 mx-auto bg-white'>
-            <ClientWrapper>
+            <ClientWrapper usePersist={true}>
                 <AuthCheck>
                     <BlogForm initialData={post} postId={id} />
                 </AuthCheck>

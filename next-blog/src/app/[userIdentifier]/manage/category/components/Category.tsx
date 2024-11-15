@@ -58,7 +58,7 @@ const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
 const Category: React.FC = () => {
     // categoriesFromServer는 서버로 가져온 요청만이 아닌 캐시로 부터 가져온 데이터도 저장하게 된다.
     // 즉 리액트 쿼리 Persist Data 로컬스토리지를 사용할 경우 로컬 스토리지 데이터 -> React Query Cache에 저장 -> 캐쉬 데이터로부터 데이터를 가져온다.
-    const { data: categoriesData, refetchCategories, isFetching, isLoading, error } = useGetAllCategories(); // 훅을 호출하여 데이터를 서버로부터 가져옴
+    const { data: categoriesData, refetchCategories, isFetching, isRefetching, isLoading, error } = useGetAllCategories(); // 훅을 호출하여 데이터를 서버로부터 가져옴
     const [isInitialLoad, setIsInitialLoad] = useState(true); // 초기 로드 상태를 추가.
 
     const [categories, setCategories] = useState<CategoryType[]>([]);
@@ -82,7 +82,6 @@ const Category: React.FC = () => {
     const createCategoryMutation = useAddCategory(userIdentifier);
 
     useEffect(() => {
-        
         if (categoriesData) {
             //sealed 클래스에서 객체.data 형식에 실제 데이터가 담김 {idClass: 값, data: 값, message: 값} 형식
             setCategories(categoriesData.data);
@@ -95,17 +94,27 @@ const Category: React.FC = () => {
         }
     }, []);
 
+    console.log("categories >>>", categories);
+
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            // mutation이 로딩중일때 및 mutation 성공 후 리패칭 중일 때 캐시 삭제 -> 아마 뮤테이션 로딩상태는 서버측으로부터 응답데이터를 받아올때까지가 로딩 상태라고 보는 듯 하다.
+            if (createCategoryMutation.isLoading || isRefetching) {
+                console.log("캐시 삭제 실행");
+                localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE");
+            }
+        };
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, []); // 의존성 배열 추가
+
     const categoryTree = buildCategoryTree(categories); // 이 부분은 렌더링 전에 위치
 
-    const handleDragStateChange = (isDragging: boolean, categoryId: string, isChild = false) => {
-        if (!isChild) {
-            setDraggingCategoryId(isDragging ? categoryId : null); // 부모가 드래깅 중일 때만 ID 저장
-        }
-        setDraggingFromChild(isDragging && isChild); // 자식이 드래깅 중인 상태 저장
-    };
-    const handleAddCategory = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-
+    const resetUIStates = () => {
         if (isInitialLoad) {
             setIsInitialLoad(false); // 초기 로드 상태 변경. 변경사항 저장 버튼 활성화
         }
@@ -118,6 +127,18 @@ const Category: React.FC = () => {
             // muation success를 초기화 함으로써 저장 완료 버튼에서 변경사항 저장 버튼으로 다시 변경
             createCategoryMutation.reset();
         }
+    };
+
+    const handleDragStateChange = (isDragging: boolean, categoryId: string, isChild = false) => {
+        if (!isChild) {
+            setDraggingCategoryId(isDragging ? categoryId : null); // 부모가 드래깅 중일 때만 ID 저장
+        }
+        setDraggingFromChild(isDragging && isChild); // 자식이 드래깅 중인 상태 저장
+    };
+    const handleAddCategory = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        resetUIStates();
 
         // 공백만 입력했을 때
         if (newCategoryName.trim() === "") {
@@ -131,7 +152,11 @@ const Category: React.FC = () => {
             return;
         }
 
-        const isDuplicateName = categories.some((category) => category.name === newCategoryName.trim());
+        const isDuplicateName = categories.some(
+            (category) =>
+                category.name === newCategoryName.trim() ||
+                (category.children && category.children.length !== 0 && category.children.some((child) => child.name === newCategoryName.trim()))
+        );
 
         if (isDuplicateName) {
             toast.error(
@@ -162,18 +187,7 @@ const Category: React.FC = () => {
         }, 200);
     };
     const handleSaveCategoryFromModal = (e: React.FormEvent) => {
-        if (isInitialLoad) {
-            setIsInitialLoad(false); // 초기 로드 상태 변경. 변경사항 저장 버튼 활성화
-        }
-
-        if (!isButtonVisible) {
-            setIsButtonVisible(true);
-        }
-
-        if (createCategoryMutation.isSuccess) {
-            // muation success를 초기화 함으로써 저장 완료 버튼에서 변경사항 저장 버튼으로 다시 변경
-            createCategoryMutation.reset();
-        }
+        resetUIStates();
 
         e.preventDefault();
         if (selectedCategory) {
@@ -224,13 +238,9 @@ const Category: React.FC = () => {
         };
 
         const onSuccess = async () => {
-
-           
-
             // 카테고리 저장에 성공하면 강제로 리패칭. 저장 성공할때만 리패칭 그 이외에 React Query Persist LocalStorage 사용.
             // 즉 저장 요청 1번 보내고 성공하면 데이터 조회 요청 1번. 총 2번의 요청을 보냄
             await refetchCategories();
-
         };
 
         const onError = (error: any) => {
@@ -245,18 +255,7 @@ const Category: React.FC = () => {
 
     // 카테고리 삭제 (자식 카테고리는 삭제하지 않음)
     const handleDeleteCategory = (categoryId: string) => {
-        if (isInitialLoad) {
-            setIsInitialLoad(false); // 초기 로드 상태 변경. 변경사항 저장 버튼 활성화
-        }
-
-        if (!isButtonVisible) {
-            setIsButtonVisible(true);
-        }
-
-        if (createCategoryMutation.isSuccess) {
-            // muation success를 초기화 함으로써 저장 완료 버튼에서 변경사항 저장 버튼으로 다시 변경
-            createCategoryMutation.reset();
-        }
+        resetUIStates();
 
         const categoryToDelete =
             categories.find((category) => category.categoryUuid === categoryId) ||
@@ -271,8 +270,14 @@ const Category: React.FC = () => {
             categoryToDeleteRef.current = [...categoryToDeleteRef.current, categoryToDelete.categoryUuid];
         }
 
-        // 최상위 카테고리이고 자식을 가진 경우 삭제 중단
-        if (categoryToDelete && categoryToDelete.categoryUuidParent === null && categoryToDelete.children && categoryToDelete.children.length > 0) {
+        // 최상위 카테고리이고 자식을 가진 경우 삭제 중단 및 최상위 카테고리, 자식 카테고리 각각 post를 가진 경우 삭제 중단.
+        // CategoryType에 postCount, childrenCount에 ?를 붙여서 null일 경우를 대비해야 함. 붙인 이유는 postCount, childrenCount속성은 응답시에만 오는 데이터이기 때문.  
+        if (
+            (categoryToDelete &&
+                categoryToDelete.categoryUuidParent === null &&
+                categoryToDelete.childrenCount! > 0) ||
+            (categoryToDelete && categoryToDelete.postCount! > 0)
+        ) {
             return;
         }
 
@@ -361,18 +366,7 @@ const Category: React.FC = () => {
     };
 
     const moveCategory = (sourceId: string, targetId: string, isTopLevelMove: boolean) => {
-        if (isInitialLoad) {
-            setIsInitialLoad(false); // 초기 로드 상태 변경. 변경사항 저장 버튼 활성화
-        }
-
-        if (!isButtonVisible) {
-            setIsButtonVisible(true);
-        }
-
-        if (createCategoryMutation.isSuccess) {
-            // muation success를 초기화 함으로써 저장 완료 버튼에서 변경사항 저장 버튼으로 다시 변경
-            createCategoryMutation.reset();
-        }
+        resetUIStates();
 
         setCategories((prevCategories: CategoryType[]) => {
             // 드래그된 카테고리와 대상 카테고리 찾기
@@ -540,9 +534,8 @@ const Category: React.FC = () => {
                                                     deleteCategory={handleDeleteCategory}
                                                     onDragStateChange={(isDragging) => handleDragStateChange(isDragging, parentCategory.categoryUuid)}
                                                     isDeleteDisabled={
-                                                        parentCategory.categoryUuidParent === null &&
-                                                        parentCategory.children &&
-                                                        parentCategory.children.length > 0
+                                                        (parentCategory.categoryUuidParent === null && parentCategory.childrenCount! > 0) ||
+                                                        parentCategory.postCount! > 0
                                                     }
                                                 />
 
@@ -567,6 +560,7 @@ const Category: React.FC = () => {
                                                                 onDragStateChange={(isDragging) =>
                                                                     handleDragStateChange(isDragging, parentCategory.categoryUuid, true)
                                                                 }
+                                                                isDeleteDisabled={childCategory.postCount! > 0}
                                                             />
                                                         ))}
                                                     </ul>
@@ -589,9 +583,9 @@ const Category: React.FC = () => {
                                         : "cursor-not-allowed bg-white text-gray-400 border-2 border-manageBgColor"
                                 }`}
                             >
-                                {createCategoryMutation.isSuccess ? (
+                                {createCategoryMutation.isSuccess && !isFetching && !isRefetching && !createCategoryMutation.isLoading ? (
                                     "저장 완료"
-                                ) : createCategoryMutation.isLoading ? (
+                                ) : createCategoryMutation.isLoading && isFetching && isRefetching ? (
                                     <ClipLoader color='#ffffff' size={20} />
                                 ) : (
                                     "변경사항 저장"
