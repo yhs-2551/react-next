@@ -159,8 +159,8 @@ export const fetchCategories = async (userIdentifier: string) => {
 
     return await response.json();
 };
-
-export const signupUser = async (newUser: { username: string; email: string; password: string }) => {
+ 
+export const signupUser = async (newUser: { blogId: string; nickName: string; email: string; password: string;}) => {
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/signup`, {
             method: "POST",

@@ -97,11 +97,18 @@ const Category: React.FC = () => {
     console.log("categories >>>", categories);
 
     useEffect(() => {
+
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+
+
+
             // mutation이 로딩중일때 및 mutation 성공 후 리패칭 중일 때 캐시 삭제 -> 아마 뮤테이션 로딩상태는 서버측으로부터 응답데이터를 받아올때까지가 로딩 상태라고 보는 듯 하다.
             if (createCategoryMutation.isLoading || isRefetching) {
                 console.log("캐시 삭제 실행");
                 localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE");
+
+                // 사용자에게 알림 메시지 표시
+   
             }
         };
 
@@ -110,7 +117,7 @@ const Category: React.FC = () => {
         return () => {
             window.removeEventListener("beforeunload", handleBeforeUnload);
         };
-    }, []); // 의존성 배열 추가
+    }, [createCategoryMutation.isLoading, isRefetching]); // 의존성 배열 추가
 
     const categoryTree = buildCategoryTree(categories); // 이 부분은 렌더링 전에 위치
 
@@ -137,8 +144,6 @@ const Category: React.FC = () => {
     };
     const handleAddCategory = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-
-        resetUIStates();
 
         // 공백만 입력했을 때
         if (newCategoryName.trim() === "") {
@@ -167,6 +172,8 @@ const Category: React.FC = () => {
             );
             return;
         }
+
+        resetUIStates(); // toast error 앞쪽에서 호출하면 토스트 에러 알림창이 나오면서 동시에 변경사항 저장 버튼이 활성화 되는 문제가 있기 때문에, 뒤쪽에서 호출
 
         setCategories([...categories, { categoryUuid: uuidv4(), name: newCategoryName, categoryUuidParent: null, children: [] }]);
         setNewCategoryName("");

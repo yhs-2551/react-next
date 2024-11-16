@@ -1,7 +1,7 @@
 import { extractTextWithoutImages } from "@/utils/extractTextWithoutImages";
 import NextImage from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 interface PostProps {
     postId: string;
@@ -14,7 +14,10 @@ interface PostProps {
 }
 
 function PostItem({ postId, title, postStatus, categoryName, createdAt, content, thumbnailUrl }: PostProps) {
-    
+    const [textContentWithoutImages, setTextContentWithoutImages] = useState('');
+    const [isContentLong, setIsContentLong] = useState(false);
+
+
     const router = useRouter();
 
     const params = useParams();
@@ -33,9 +36,13 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
         hour12: false, // 24시간 형식으로 표시
     });
 
-    const textContentWithoutImages = extractTextWithoutImages(content);
 
-    const isContentLong = textContentWithoutImages.length > 100; // content가 100글자 이상인지 체크
+    
+    useEffect(() => {
+        const extractedText = extractTextWithoutImages(content);
+        setTextContentWithoutImages(extractedText);
+        setIsContentLong(extractedText.length > 100); // content가 100글자 이상인지 체크
+      }, []);
 
     return (
         <div className='flex py-4'>

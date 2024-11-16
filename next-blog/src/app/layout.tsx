@@ -24,12 +24,12 @@ export default function RootLayout({
         <html lang='en'>
             <body className={inter.className}>
                 <div className='page-wrapper min-h-screen flex flex-col'>
-                    {/* <CommonHeader /> */}
+                    <CommonHeader />
                     <main className='flex-grow'>
                         {children}
  
                     </main>
-                    {/* <CommonFooter /> */}
+                    <CommonFooter />
                 </div>
             </body>
         </html>

@@ -274,31 +274,11 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                 modalRef.current.style.display = "none";
             }
 
-            if (isEditingRef.current) { 
-                window.location.replace(`/${userIdentifier}/posts/${postId}`);
-                // await router.replace(`/${userIdentifier}/posts/${postId}`);
-            } else {
-                await router.replace(`/${userIdentifier}/posts`);
-            }
+            // window.location.replace사용하기 전인 router push, router refresh관련 주석은 이전 커밋 기록에서 확인
+            const replacePath = isEditingRef.current ? `/${userIdentifier}/posts/${postId}` : `/${userIdentifier}/posts`;
+            window.location.replace(replacePath);
 
-            // 글 작성시 rotuer.push를 쓰면 글 작성 성공하고 목록 페이지로 간 후에, 브라우저 뒤로가기를 통해 다시 글작성 페이지로 갈 경우 에디터가 제대로 작동하지 않음.
-            // 즉 router.replace는 브라우저 히스토리 스택에 남기지 않고 이동함
-            // -- 아래는 글 수정 시 --
-            // 수정 작업 후 상세 페이지로 이동한 상태에서 브라우저 뒤로가기를 했을때 다시 수정 페이지로 가지 않게 router.replace 사용.
-            // 즉 replace로 이동하면서 브라우저 history에 바로 직전 수정 페이지를 남기지 않음.
-            // 쉽게 replace는 뒤로가기를 했을때 전전 페이지로 간다고 보면 된다.
-
-   
-
-            // 글 작성의 경우 글 작성 성공하고 글 목록 페이지로 이동 후에 글 목록 페이지 page.tsx에 서버 컴포넌트 재실행.
-            // 글 수정의 경우 상세페이지 및 그 아래 leaf segment인 수정 페이지에 다시 접근할 시 수정 페이지의 서버 컴포넌트까지 재실행 됨
-            // await router.refresh();
-
-            // queryClient.clear();
-            setTimeout(() => {
-
-                localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE"); // 글 작성 성공 후 캐시 삭제. 카테고리 페이지로 갔을 떄 새로운 데이터로 불러오기 위함
-            }, 500);
+            localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE"); // 글 작성 성공 후 캐시 삭제. 카테고리 페이지로 갔을 떄 새로운 데이터로 불러오기 위함
         };
 
         const onError = (error: any) => {

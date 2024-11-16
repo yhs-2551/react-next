@@ -1,12 +1,12 @@
 import { refreshToken } from "@/utils/refreshToken";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "react-query";
 
 import "react-toastify/dist/ReactToastify.css";
 
-const deletePost: (postId: string, accessToken: string | boolean, userIdentifier: string) => Promise<Response> = async (
+const deletePost: (postId: string, accessToken: string | null, userIdentifier: string) => Promise<Response> = async (
     postId: string,
-    accessToken: string | boolean,
+    accessToken: string | null,
     userIdentifier: string
 ): Promise<Response> => {
     return fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/posts/${postId}`, {
@@ -18,12 +18,20 @@ const deletePost: (postId: string, accessToken: string | boolean, userIdentifier
     });
 };
 
-// 내부함수인 useMutation를 실행할때 postId, userIdentifier, accessToken은 클로져로 참조 가능. 
+// 내부함수인 useMutation를 실행할때 postId, userIdentifier, accessToken은 클로져로 참조 가능.
 function useDeletePost(postId: string, userIdentifier: string) {
-    const accessToken = localStorage.getItem("access_token") ?? false;
+    const [accessToken, setAccessToken] = useState<string | null>(null);
+
+    useEffect(() => {
+        const token = localStorage.getItem("access_token");
+        setAccessToken(token);
+    }, []);
 
     return useMutation(
         async () => {
+
+            if (accessToken === null) return;
+
             let response = await deletePost(postId, accessToken, userIdentifier);
 
             if (!response.ok) {

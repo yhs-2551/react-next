@@ -22,17 +22,14 @@ export default function CommonHeader() {
                 )} */
     }
 
-    
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); // 작성자 여부 상태
-    
+
     const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
     const menuRef = useRef<HTMLDivElement>(null);
-    
-    const router = useRouter();
-    
-    // const accessToken = localStorage.getItem("access_token") ?? false;
 
-   
+    const router = useRouter();
+
+    const pathname = usePathname();
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -45,7 +42,6 @@ export default function CommonHeader() {
     };
 
     useEffect(() => {
-
         // useEffect 내부가 아닌 외부에서 실행하면 서버사이드 렌더링에서 브라우저의 localStorage를 정의할 수 없다는 오류 발생.
         const accessToken = localStorage.getItem("access_token");
         setIsLoggedIn(!!accessToken);
@@ -73,15 +69,23 @@ export default function CommonHeader() {
                     setIsMenuOpen(false);
                     setIsLoggedIn(false);
                     console.log("로그아웃 성공 " + logoutSuccessResponse);
-                    router.push("/posts");
+                    window.location.reload();
                 }
             } catch (error: any) {
                 // 로그아웃 실패의 경우 토스트 메시지로 사용자에게 알릴 순 있지만, 일단 보류
                 console.log("로그아웃 실패: ", error.message);
             }
         } else {
+
+            // 현재 URL 저장 (로그인 페이지 제외)
+            if (!pathname.includes("/login")) {
+                localStorage.setItem("lastVisitedUrl", pathname);
+            }
+
             setIsMenuOpen(false);
+           
             router.push("/login");
+            
         }
     };
 

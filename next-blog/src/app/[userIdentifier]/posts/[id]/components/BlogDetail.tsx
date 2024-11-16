@@ -14,17 +14,17 @@ import { useParams, useRouter } from "next/navigation";
 
 import { toast, ToastContainer } from "react-toastify";
 import { checkAccessToken, fetchIsAuthor } from "@/services/api";
-import DOMPurify from "dompurify";
 
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
 import NextImage from "next/image";
 import { FileMetadata, PostResponse } from "@/types/PostTypes";
 import { refreshToken } from "@/utils/refreshToken";
+import DOMPurify from "dompurify";
 
 function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId: string }) {
-    const router: AppRouterInstance = useRouter();
     const [isAuthor, setIsAuthor]: [boolean, React.Dispatch<React.SetStateAction<boolean>>] = useState<boolean>(false); // 작성자 여부 상태
+    const [parsedContent, setParsedContent] = useState<React.ReactNode | null>(null);
 
     const params = useParams();
     const userIdentifier = params.userIdentifier as string;
@@ -50,71 +50,85 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         return { width: 880, height: 495 }; // 기본값
     };
 
-    const parseContent = (htmlString: string) => {
-        // 이미지 태그가 포함되어 있는지 확인. 이미지 태그가 없다면 굳이 아래 서버로부터 이미지 크기 가져와서 Next 이미지 변환 로직을 실행할 필요가 없음.
-        // DOM에서 이미지는 <img src~~와 같이 시작하기 때문에 <img로 선택
-        if (!htmlString.includes("<img")) {
-            return parse(DOMPurify.sanitize(htmlString));
-        }
+    useEffect(() => {
+        const parseContent = (htmlString: string) => {
+            // 이미지 태그가 포함되어 있는지 확인. 이미지 태그가 없다면 굳이 아래 서버로부터 이미지 크기 가져와서 Next 이미지 변환 로직을 실행할 필요가 없음.
+            // DOM에서 이미지는 <img src~~와 같이 시작하기 때문에 <img로 선택
+            if (!htmlString.includes("<img")) {
+                return parse(DOMPurify.sanitize(htmlString)); // xss 공격 방지.
+            }
 
-        // html을 react 컴포넌트로 변환하는 html-react-parser 라이브러리 사용
-        return parse(DOMPurify.sanitize(htmlString), {
-            replace: (domNode: DOMNode) => {
-                if (domNode instanceof Element && domNode.name === "img") {
-                    const { src, alt, style } = domNode.attribs;
+            // html을 react 컴포넌트로 변환하는 html-react-parser 라이브러리 사용
+            return parse(DOMPurify.sanitize(htmlString), {
+                replace: (domNode: DOMNode) => {
+                    if (domNode instanceof Element && domNode.name === "img") {
+                        const { src, alt, style } = domNode.attribs;
 
-                    console.log("style >>", style);
+                        console.log("style >>", style);
 
-                    // 서버에서 받은 이미지 크기 정보를 가져오기
-                    const { width, height } = getImageSize(src);
+                        // 서버에서 받은 이미지 크기 정보를 가져오기
+                        const { width, height } = getImageSize(src);
 
-                    console.log("width >>>" + width);
-                    console.log("height >>>" + height);
+                        console.log("width >>>" + width);
+                        console.log("height >>>" + height);
 
-                    // 스타일을 객체로 변환하여 React의 style 속성에 적용 가능하도록 만듦
-                    let styleAttributes = {};
-                    if (style) {
-                        styleAttributes = parseStyleString(style);
+                        // 스타일을 객체로 변환하여 React의 style 속성에 적용 가능하도록 만듦
+                        let styleAttributes = {};
+                        if (style) {
+                            styleAttributes = parseStyleString(style);
+                        }
+
+                        // 서버에서 받은 width, height 값을 기존 스타일에 병합
+                        const finalStyle = {
+                            ...styleAttributes,
+                            width: `${width}px`, // width와 height를 명시적으로 추가하여 스타일에 포함
+                            height: `${height}px`,
+                        };
+
+                        console.log("finalStyle >>>", finalStyle);
+
+                        return (
+                            <NextImage
+                                key={src}
+                                src={src}
+                                alt={alt || "detail page image"}
+                                width={width} // 서버에서 받은 크기 사용
+                                height={height} // 서버에서 받은 크기 사용
+                                style={finalStyle} // 서버에서 받은 기존 스타일 유지
+                                loading='lazy'
+                            />
+                        );
                     }
+                },
+            });
+        };
 
-                    // 서버에서 받은 width, height 값을 기존 스타일에 병합
-                    const finalStyle = {
-                        ...styleAttributes,
-                        width: `${width}px`, // width와 height를 명시적으로 추가하여 스타일에 포함
-                        height: `${height}px`,
-                    };
+        setParsedContent(parseContent(post.content));
+    }, []);
 
-                    console.log("finalStyle >>>", finalStyle);
+    const formattedDate: string = new Date(post.createdAt).toLocaleString("ko-KR", {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+        hour12: false, // 24-hour format
+    });
 
-                    return (
-                        <NextImage
-                            key={src}
-                            src={src}
-                            alt={alt || "detail page image"}
-                            width={width} // 서버에서 받은 크기 사용
-                            height={height} // 서버에서 받은 크기 사용
-                            style={finalStyle} // 서버에서 받은 기존 스타일 유지
-                            loading='lazy'
-                        />
-                    );
-                }
-            },
-        });
-    };
+    const deletePost = useDeletePost(postId, userIdentifier);
 
     //  액세스 토큰이 유효하다면 작성자 인지 확인하는 로직
     // 일부 React Hook 특히 useEffect는 React Strict mode에서 두 번 실행 함. 끄고 싶다면 next.config.mjs에서 스트릭트 모드 off 해야함.
-
     useEffect(() => {
+        const accessToken: string | null = localStorage.getItem("access_token");
+
+        if (!accessToken) return;
+
         const fetchAuthorStatus: () => Promise<void> = async (): Promise<void> => {
             const isAuthor = await fetchIsAuthor(postId, userIdentifier, accessToken);
 
             if (isAuthor) setIsAuthor(isAuthor);
         };
-
-        const accessToken: string | null = localStorage.getItem("access_token");
-
-        if (!accessToken) return;
 
         fetchAuthorStatus();
     }, []);
@@ -159,17 +173,6 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         });
     }, []);
 
-    const deletePost = useDeletePost(postId, userIdentifier);
-
-    const formattedDate: string = new Date(post.createdAt).toLocaleString("ko-KR", {
-        year: "numeric",
-        month: "numeric",
-        day: "numeric",
-        hour: "numeric",
-        minute: "numeric",
-        hour12: false, // 24-hour format
-    });
-
     const handleEdit: () => Promise<void> = async (): Promise<void> => {
         const isValidToken: boolean | undefined = await checkAccessToken();
 
@@ -199,20 +202,11 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
             onSuccess: async () => {
                 localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE"); // 글 삭제 성공 후 캐시 삭제. 카테고리 페이지로 갔을 떄 새로운 데이터로 불러오기 위함
 
-                router.replace(`/${userIdentifier}/posts`);
-                // 삭제 후 글 목록 페이지로 갔을때 router.push는 페이지 새로고침이 아닌 클라이언트 측 이동이기때문에 서버 컴포넌트가 재실행 되지 않는다.
-                // 따라서 router.push로 이동 후에 router.refresh()로 서버 컴포넌트를 다시 실행해서 새로운 데이터를 가져온 후 삭제 작업이 적용될 수 있도록 한다.
-                // router.refresh()는 서버 컴포넌트를 다시 실행한다. 즉 서버 컴포넌트만 다시 가져와서 렌더링을 갱신하는 방식.
-                // 클라이언트 컴포넌트의 상태를 초기화하지 않는다. 클라이언트 컴포넌트의 상태를 초기화하려면 router.reload()를 사용해야 한다.
-                router.refresh();
+                // 이전에 사용한 router관련 push, router.replace, refresh, reload에 대한 주석 설명은 이전 커밋 기록들에서 확인.
+                // 수정 및 삭제시에도 window방식을 사용하기 때문에 일관성 및 앱의 안전성을 위하여 window방식 사용
+                window.location.replace(`/${userIdentifier}/posts`);
 
                 console.log("Post deleted successfully");
-
-                // 포스트 목록을 다시 불러오게 만듦
-                // queryClient.invalidateQueries(["posts"]);
-
-                // 리액트 쿼리의 프리패치
-                // await queryClient.prefetchQuery(["posts"], fetchPosts);
             },
             onError: (error: any) => {
                 console.error("Error deleting post:", error.message);
@@ -264,7 +258,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                                 className='text-gray-700'
                                 // dangerouslySetInnerHTML={{ __html: processedContent }}
                             >
-                                {parseContent(post.content)}
+                                {parsedContent}
                             </div>
                         </div>
                     </div>
