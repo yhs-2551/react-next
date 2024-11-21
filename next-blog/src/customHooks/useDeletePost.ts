@@ -4,12 +4,12 @@ import { useMutation, useQueryClient } from "react-query";
 
 import "react-toastify/dist/ReactToastify.css";
 
-const deletePost: (postId: string, accessToken: string | null, userIdentifier: string) => Promise<Response> = async (
+const deletePost: (postId: string, accessToken: string | null, blogId: string) => Promise<Response> = async (
     postId: string,
     accessToken: string | null,
-    userIdentifier: string
+    blogId: string
 ): Promise<Response> => {
-    return fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/posts/${postId}`, {
+    return fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/${postId}`, {
         method: "DELETE",
         headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -18,8 +18,8 @@ const deletePost: (postId: string, accessToken: string | null, userIdentifier: s
     });
 };
 
-// 내부함수인 useMutation를 실행할때 postId, userIdentifier, accessToken은 클로져로 참조 가능.
-function useDeletePost(postId: string, userIdentifier: string) {
+// 내부함수인 useMutation를 실행할때 postId, blogId, accessToken은 클로져로 참조 가능.
+function useDeletePost(postId: string, blogId: string) {
     const [accessToken, setAccessToken] = useState<string | null>(null);
 
     useEffect(() => {
@@ -32,13 +32,13 @@ function useDeletePost(postId: string, userIdentifier: string) {
 
             if (accessToken === null) return;
 
-            let response = await deletePost(postId, accessToken, userIdentifier);
+            let response = await deletePost(postId, accessToken, blogId);
 
             if (!response.ok) {
                 if (response.status === 401) {
                     const newAccessToken = await refreshToken();
                     if (newAccessToken) {
-                        response = await deletePost(postId, newAccessToken, userIdentifier);
+                        response = await deletePost(postId, newAccessToken, blogId);
                     }
                 }
             }

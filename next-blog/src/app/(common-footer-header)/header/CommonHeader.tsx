@@ -1,6 +1,8 @@
 "use client";
 
+import LoginModal from "@/app/_components/auth/LoginModal";
 import { logoutUser } from "@/services/api";
+import { useAuthStore } from "@/store/appStore";
 import NextImage from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -29,7 +31,7 @@ export default function CommonHeader() {
 
     const router = useRouter();
 
-    const pathname = usePathname();
+    const { setShowLogin } = useAuthStore();
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -60,7 +62,7 @@ export default function CommonHeader() {
         router.push("/manage/settings/profile");
     };
 
-    const handleAuthClick = async () => {
+    const handleLogoutClick = async () => {
         if (isLoggedIn) {
             try {
                 const logoutSuccessResponse = (await logoutUser()) as string;
@@ -69,24 +71,29 @@ export default function CommonHeader() {
                     setIsMenuOpen(false);
                     setIsLoggedIn(false);
                     console.log("로그아웃 성공 " + logoutSuccessResponse);
-                    window.location.reload();
+                    // window.location.reload(); 이건 UX적으로 별로같다 나중에 필요하면 사용 아니면 router.refresh 및 useAuthstore 리셋. 
                 }
             } catch (error: any) {
                 // 로그아웃 실패의 경우 토스트 메시지로 사용자에게 알릴 순 있지만, 일단 보류
                 console.log("로그아웃 실패: ", error.message);
             }
-        } else {
-
-            // 현재 URL 저장 (로그인 페이지 제외)
-            if (!pathname.includes("/login")) {
-                localStorage.setItem("lastVisitedUrl", pathname);
-            }
-
-            setIsMenuOpen(false);
-           
-            router.push("/login");
-            
         }
+        // else {
+
+        //     // 현재 URL 저장 (로그인 페이지 제외)
+        //     if (!pathname.includes("/login")) {
+        //         localStorage.setItem("lastVisitedUrl", pathname);
+        //     }
+
+        //     setIsMenuOpen(false);
+
+        //     router.push("/login");
+
+        // }
+    };
+
+    const handleLoginClick = () => {
+        setShowLogin(true); // AuthProvider에서 지정한 LoginModal 실행됨.
     };
 
     return (
@@ -102,54 +109,63 @@ export default function CommonHeader() {
                     <h1 className="text-3xl font-bold">글 작성 페이지</h1>
                 )} */}
             </div>
-            <div className='relative' ref={menuRef}>
-                <NextImage
-                    src={"https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-avatar-profile.webp"}
-                    width={36}
-                    height={36}
-                    alt='사용자 계정 이미지'
-                    onClick={toggleMenu}
-                    className='w-9 h-9 rounded-full cursor-pointer'
-                    priority={true}
-                />
-                {isMenuOpen && (
-                    <nav className='absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-4' aria-label='Account menu'>
-                        <div className='border-b pb-4 mb-4'>
-                            <strong className='text-xl font-bold'>홍길동</strong>
+            {isLoggedIn ? (
+                <div className='relative' ref={menuRef}>
+                    <NextImage
+                        src={"https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-avatar-profile.webp"}
+                        width={36}
+                        height={36}
+                        alt='사용자 계정 이미지'
+                        onClick={toggleMenu}
+                        className='w-9 h-9 rounded-full cursor-pointer'
+                        priority={true}
+                    />
+                    {isMenuOpen && (
+                        <nav className='absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-4' aria-label='Account menu'>
+                            <div className='border-b pb-4 mb-4'>
+                                <strong className='text-xl font-bold'>홍길동</strong>
 
-                            <div className='flex items-center justify-between'>
-                                <p className='text-sm text-gray-500'>홍길동@daum.net</p>
-                                <button
-                                    aria-label='프로필 관리 페이지로 이동'
-                                    onClick={handleProfileClick}
-                                    className='text-gray-500 hover:text-gray-700'
-                                >
-                                    프로필 관리
-                                </button>
+                                <div className='flex items-center justify-between'>
+                                    <p className='text-sm text-gray-500'>홍길동@daum.net</p>
+                                    <button
+                                        aria-label='프로필 관리 페이지로 이동'
+                                        onClick={handleProfileClick}
+                                        className='text-gray-500 hover:text-gray-700'
+                                    >
+                                        프로필 관리
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div className='mb-4'>
-                            <div className='flex items-center justify-between'>
-                                <span className='text-gray-800'>길동의 티스토리</span>
-                                <button
-                                    aria-label='블로그 관리 페이지로 이동'
-                                    onClick={handleManageClick}
-                                    className='text-gray-500 hover:text-gray-700'
-                                >
-                                    <FaCog />
-                                </button>
+                            <div className='mb-4'>
+                                <div className='flex items-center justify-between'>
+                                    <span className='text-gray-800'>길동의 티스토리</span>
+                                    <button
+                                        aria-label='블로그 관리 페이지로 이동'
+                                        onClick={handleManageClick}
+                                        className='text-gray-500 hover:text-gray-700'
+                                    >
+                                        <FaCog />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <button
-                            className='w-full text-left text-red-500 hover:text-red-700 font-medium focus:outline-none mt-4'
-                            aria-label='로그아웃 처리'
-                            onClick={handleAuthClick}
-                        >
-                            {isLoggedIn ? "로그아웃" : "로그인"}
-                        </button>
-                    </nav>
-                )}
-            </div>
+                            <button
+                                className='w-full text-left text-red-500 hover:text-red-700 font-medium focus:outline-none mt-4'
+                                aria-label='로그아웃 처리'
+                                onClick={handleLogoutClick}
+                            >
+                                {isLoggedIn && "로그아웃"}
+                            </button>
+                        </nav>
+                    )}
+                </div>
+            ) : (
+                <button
+                    className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                    onClick={handleLoginClick}
+                >
+                    로그인
+                </button>
+            )}
         </header>
     );
 }

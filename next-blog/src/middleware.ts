@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
     if (userIdentifier) {
         try {
             
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/availability`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/blogId/{blogId}`);
 
 
             if (!response.ok) {

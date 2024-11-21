@@ -93,11 +93,11 @@ export const checkAccessToken = async () => {
     }
 };
 
-export const fetchIsAuthor = async (postId: string, userIdentifier: string, accessToken: string | null) => {
+export const fetchIsAuthor = async (postId: string, blogId: string, accessToken: string | null) => {
  
     const verifyPostAuthor = async (accessToken: string | null) => {
         return await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/posts/${postId}/verify-author`,
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/${postId}/verify-author`,
             {
                 method: "GET",
                 headers: {
@@ -127,13 +127,13 @@ export const fetchIsAuthor = async (postId: string, userIdentifier: string, acce
     return data.isAuthor; // 서버에서 isAuthor 값을 반환받아 true or false값을 반환
 };
 
-export const fetchCategories = async (userIdentifier: string) => {
+export const fetchCategories = async (blogId: string) => {
     console.log("실행 펫치 카테고리");
 
     const accessToken = localStorage.getItem("access_token") ?? false;
 
     const getAllCategories: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
-        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/categories`, {
+        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/categories`, {
             method: "GET",
             headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -160,7 +160,7 @@ export const fetchCategories = async (userIdentifier: string) => {
     return await response.json();
 };
  
-export const signupUser = async (newUser: { blogId: string; nickName: string; email: string; password: string;}) => {
+export const signupUser = async (newUser: { blogId: string; userName: string; email: string; password: string;}) => {
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/signup`, {
             method: "POST",

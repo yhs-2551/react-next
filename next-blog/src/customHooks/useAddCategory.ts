@@ -10,7 +10,7 @@ interface CategoryPayload {
     categoryToDelete: string[] | null;
 }
 
-function useAddCategory(userIdentifier: String) {
+function useAddCategory(blogId: String) {
     // const [accessToken, setAccessToken] = useState<string | false>(false);
 
     // // localStorage는 서버사이드 렌더링에서 오류가 나기 때문에 useEffect를 사용해 클라이언트에서만 사용하도록 한다.
@@ -25,7 +25,7 @@ function useAddCategory(userIdentifier: String) {
         console.log("category >>>", category);
 
         const createCategory: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
-            return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/categories`, {
+            return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/categories`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

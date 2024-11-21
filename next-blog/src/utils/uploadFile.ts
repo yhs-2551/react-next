@@ -1,6 +1,6 @@
 import { refreshToken } from "./refreshToken";
 
-export const uploadFile = async (file: File, userIdentifier: string, featured?: string, ): Promise<string> => {
+export const uploadFile = async (file: File, blogId: string, featured?: string, ): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -8,7 +8,7 @@ export const uploadFile = async (file: File, userIdentifier: string, featured?: 
         formData.append("featured", featured);
     }
      const upload = async (token: string | boolean) => {
-        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${userIdentifier}/posts/temp/files/upload`, {
+        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/temp/files/upload`, {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${token}`,
