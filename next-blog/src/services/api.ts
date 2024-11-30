@@ -1,7 +1,8 @@
 // import {
 //     QueryFunctionContext,
 // } from "react-query";
-
+ 
+import { CustomHttpError } from "@/utils/CustomHttpError";
 import { refreshToken } from "@/utils/refreshToken";
 
 // export const fetchPosts = async () => {
@@ -94,18 +95,14 @@ export const checkAccessToken = async () => {
 };
 
 export const fetchIsAuthor = async (postId: string, blogId: string, accessToken: string | null) => {
- 
     const verifyPostAuthor = async (accessToken: string | null) => {
-        return await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/${postId}/verify-author`,
-            {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/${postId}/verify-author`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+            },
+        });
     };
 
     let response = await verifyPostAuthor(accessToken);
@@ -128,8 +125,7 @@ export const fetchIsAuthor = async (postId: string, blogId: string, accessToken:
 };
 
 export const fetchCategories = async (blogId: string) => {
-    console.log("실행 펫치 카테고리");
-
+    
     const accessToken = localStorage.getItem("access_token") ?? false;
 
     const getAllCategories: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
@@ -159,8 +155,73 @@ export const fetchCategories = async (blogId: string) => {
 
     return await response.json();
 };
- 
-export const signupUser = async (newUser: { blogId: string; userName: string; email: string; password: string;}) => {
+
+export const checkAvailabilityRequest = {
+
+    blogId: async (value: string): Promise<{ status: number; isExist: boolean; message: string }> => {
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/blogId/${value}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+        const responseData = await response.json();
+
+        if (response.status === 429 || response.status === 409) {
+            throw new CustomHttpError(response.status, responseData.message);
+        }
+        
+
+        return {
+            status: response.status,
+            isExist: responseData.data,
+            message: responseData.message,
+        };
+    },
+
+    email: async (value: string): Promise<{ status: number; isExist: boolean; message: string }> => {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/email/${value}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+        const responseData = await response.json();
+
+        if (response.status === 429 || response.status === 409) {
+            throw new CustomHttpError(response.status, responseData.message);
+        }
+
+        return {
+            status: response.status,
+            isExist: responseData.data,
+            message: responseData.message,
+        };
+    },
+
+    userName: async (value: string): Promise<{ status: number; isExist: boolean; message: string }> => {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/userName/${value}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+        const responseData = await response.json();
+
+        if (response.status === 429 || response.status === 409) {
+            throw new CustomHttpError(response.status, responseData.message);
+        }
+
+        return {
+            status: response.status,
+            isExist: responseData.data,
+            message: responseData.message,
+        };
+    },
+};
+
+export const signupUser = async (newUser: { blogId: string; userName: string; email: string; password: string }) => {
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/signup`, {
             method: "POST",

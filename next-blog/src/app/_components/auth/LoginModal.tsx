@@ -10,7 +10,7 @@ import { useDebounce } from "use-debounce";
 import { loginUser } from "@/services/api";
 import EmailVerificationModal from "@/app/_components/auth/EmailVerificationModal";
 import { useAuthStore } from "@/store/appStore";
-import { useAvailabilityThrottle } from "@/customHooks/useAvailabilityThrottle";
+// import { useAvailabilityThrottle } from "@/customHooks/useAvailabilityThrottle";
 
 export interface LoginFormData {
     email: string;
@@ -54,7 +54,7 @@ function LoginModal() {
 
     const { setShowLogin, setShowSignUp } = useAuthStore();
 
-    const { canCheckAvailability, isBlocked } = useAvailabilityThrottle();
+    // const { canCheckAvailability, isBlocked } = useAvailabilityThrottle();
 
     const [debouncedEmail] = useDebounce(formData.email, 500);
     const [debouncedPassword] = useDebounce(formData.password, 300);
@@ -102,23 +102,23 @@ function LoginModal() {
     const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if (!canCheckAvailability("login")) {
-            // 새로운 에러 메시지 설정 및 타이머 시작
-            setThrottleErrors((prev) => ({
-                ...prev,
-                login: "잠시 후에 다시 시도해주세요. (1분에 최대 3회까지 시도 가능합니다)",
-            }));
+        // if (!canCheckAvailability("login")) {
+        //     // 새로운 에러 메시지 설정 및 타이머 시작
+        //     setThrottleErrors((prev) => ({
+        //         ...prev,
+        //         login: "잠시 후에 다시 시도해주세요. (1분에 최대 3회까지 시도 가능합니다)",
+        //     }));
 
-            // 1분뒤에 에러 메시지 초기화
-            setTimeout(() => {
-                setThrottleErrors((prev) => ({
-                    ...prev,
-                    login: "",
-                }));
-            }, 60000);
+        //     // 1분뒤에 에러 메시지 초기화
+        //     setTimeout(() => {
+        //         setThrottleErrors((prev) => ({
+        //             ...prev,
+        //             login: "",
+        //         }));
+        //     }, 60000);
 
-            return false;
-        }
+        //     return false;
+        // }
 
         setIsLoading(true);
 

@@ -2,19 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { signupUser } from "@/services/api";
+import { checkAvailabilityRequest } from "@/services/api";
 import { useDebounce } from "use-debounce";
-import { useAvailabilityThrottle } from "@/customHooks/useAvailabilityThrottle";
 import { useAuthStore } from "@/store/appStore";
+import { CustomHttpError } from "@/utils/CustomHttpError";
+import { FaCheck } from "react-icons/fa";
 
 // 폼 필드 타입 정의
 type FormField = "blogId" | "userName" | "email" | "password" | "passwordConfirm";
 type AvailabilityField = "blogId" | "userName" | "email";
-type AvailabilityConfig = {
-    duplicateErrorMessage: string;
-    serverErrorMessage: string;
-};
 
 interface SignUpFormData {
     blogId: string; // URL용 ID
@@ -43,12 +39,6 @@ interface AvailabilityState {
     blogId: boolean;
     userName: boolean;
     email: boolean;
-}
-
-interface ThrottleErrors {
-    blogId: string;
-    userName: string;
-    email: string;
 }
 
 function SignUpModal() {
@@ -81,18 +71,12 @@ function SignUpModal() {
         userName: true,
         email: true,
         password: true,
-        passwordConfirm: true
+        passwordConfirm: true,
     });
 
     // 폼 데이터 관련 상태 끝
 
     // 중복 확인 관련 상태
-
-    const [throttleErrors, setThrottleErrors] = useState<ThrottleErrors>({
-        blogId: "",
-        userName: "",
-        email: "",
-    });
 
     // 중복확인 버튼 클릭 시 중복확인 여부 상태
     const [isAvailabilityChecked, setIsAvailabilityChecked] = useState({
@@ -101,12 +85,17 @@ function SignUpModal() {
         email: false,
     });
 
-    const [isCheckingAvailabilityErrors, setIsCheckingAvailabilityErrors] = useState<AvailabilityErrors>({
+    const [rateLimitErrors, setRateLimitErrors] = useState<AvailabilityErrors>({
         blogId: "",
         userName: "",
         email: "",
     });
 
+    const [duplicateCheckErrors, setDuplicateCheckErrors] = useState<AvailabilityErrors>({
+        blogId: "",
+        userName: "",
+        email: "",
+    });
     // 이메일 및 블로그 ID 중복 확인 중 로딩 상태
     const [isAvailabilityLoading, setIsAvailabilityLoading] = useState<AvailabilityState>({
         blogId: false,
@@ -124,9 +113,6 @@ function SignUpModal() {
     // 최종 회원 가입 관련 상태 끝
 
     const { setShowLogin, setShowSignUp, setShowEmailVerification } = useAuthStore();
-
-    // 중복확인은 서버 부하 방지를 위해 1분에 최대 3회 요청으로 제한
-    const { canCheckAvailability, isBlocked } = useAvailabilityThrottle();
 
     // 폼 입력값이 시작되었는지 여부. 폼 입력이 시작되어야 유효성 검사를 시작한다.
     const [hasInteracted, setHasInteracted] = useState<Record<string, boolean>>({
@@ -199,11 +185,10 @@ function SignUpModal() {
             return;
         }
         setFormValidatorErrors((prev) => ({ ...prev, blogId: "" }));
-        setBeforeValidate(prev => ({
+        setBeforeValidate((prev) => ({
             ...prev,
-            blogId: false
+            blogId: false,
         }));
-
     }, [debouncedBlogId]);
 
     useEffect(() => {
@@ -222,9 +207,9 @@ function SignUpModal() {
             return;
         }
         setFormValidatorErrors((prev) => ({ ...prev, userName: "" }));
-        setBeforeValidate(prev => ({
+        setBeforeValidate((prev) => ({
             ...prev,
-            userName: false
+            userName: false,
         }));
     }, [debouncedUserName]);
 
@@ -240,9 +225,9 @@ function SignUpModal() {
             return;
         }
         setFormValidatorErrors((prev) => ({ ...prev, email: "" }));
-        setBeforeValidate(prev => ({
+        setBeforeValidate((prev) => ({
             ...prev,
-            email: false
+            email: false,
         }));
     }, [debouncedEmail]);
 
@@ -260,9 +245,9 @@ function SignUpModal() {
             return;
         }
         setFormValidatorErrors((prev) => ({ ...prev, password: "" }));
-        setBeforeValidate(prev => ({
+        setBeforeValidate((prev) => ({
             ...prev,
-            password: false
+            password: false,
         }));
     }, [debouncedPassword]);
 
@@ -279,79 +264,57 @@ function SignUpModal() {
             return;
         }
         setFormValidatorErrors((prev) => ({ ...prev, passwordConfirm: "" }));
-        setBeforeValidate(prev => ({
+        setBeforeValidate((prev) => ({
             ...prev,
-            passwordConfirm: false
+            passwordConfirm: false,
         }));
     }, [debouncedPasswordConfirm, formData.password]);
 
     const checkAvailability = async (field: AvailabilityField) => {
         // 중복확인 버튼 클릭 시 포커스 경고 초기화
         setAvailabilityFocusWarning((prev) => ({
-            ...prev, 
-            [field]: false
+            ...prev,
+            [field]: false,
         }));
 
-        if (!canCheckAvailability(field)) {
-            // 새로운 에러 메시지 설정 및 타이머 시작
-            setThrottleErrors((prev) => ({
-                ...prev,
-                [field]: "잠시 후에 다시 시도해주세요. (1분에 최대 3회까지 시도 가능합니다)",
-            }));
-
-            // 1분뒤에 에러 메시지 초기화
-            setTimeout(() => {
-                setThrottleErrors((prev) => ({
-                    ...prev,
-                    [field]: "",
-                }));
-            }, 60000);
-
-            return false;
-        }
-
         setIsAvailabilityLoading((prev) => ({ ...prev, [field]: true }));
-        const configs: Record<AvailabilityField, AvailabilityConfig> = {
-            blogId: {
-                duplicateErrorMessage: "이미 사용 중인 블로그 ID 입니다",
-                serverErrorMessage: "블로그 ID 확인 중 오류가 발생했습니다",
-            },
-            email: {
-                duplicateErrorMessage: "이미 사용 중인 이메일입니다",
-                serverErrorMessage: "이메일 확인 중 오류가 발생했습니다",
-            },
-            userName: {
-                duplicateErrorMessage: "이미 사용 중인 사용자명입니다",
-                serverErrorMessage: "사용자명 확인 중 오류가 발생했습니다",
-            },
-        };
 
         try {
             const apiCalls = {
-                blogId: () => true,
-                email: () => true,
-                userName: () => true,
+                blogId: (value: string) => checkAvailabilityRequest.blogId(value),
+                email: (value: string) => checkAvailabilityRequest.email(value),
+                userName: (value: string) => checkAvailabilityRequest.userName(value),
             };
 
-            const isAvailable = await apiCalls[field]();
+            const response = await apiCalls[field](formData[field]); // 여기서 실패하면 catch문 실행
 
-            if (!isAvailable) {
-                setIsCheckingAvailabilityErrors((prev) => ({
-                    ...prev,
-                    [field]: configs[field].duplicateErrorMessage,
-                }));
-                return false;
+            if (response.status === 200) {
+                console.log("response", response);
+
+                setIsAvailabilityChecked((prev) => ({ ...prev, [field]: true }));
             }
-            
-            setIsAvailabilityChecked((prev) => ({ ...prev, [field]: true }));
-            console.log("중복확인 성공");
+        } catch (error: unknown) {
+            if (error instanceof CustomHttpError) {
+                if (error.status === 429) {
+                    setRateLimitErrors((prev) => ({
+                        ...prev,
+                        [field]: error.message,
+                    }));
 
+                    setTimeout(() => {
+                        setRateLimitErrors((prev) => ({
+                            ...prev,
+                            [field]: "",
+                        }));
+                    }, 60000);
+                } else if (error.status === 409) {
+                    setDuplicateCheckErrors((prev) => ({
+                        ...prev,
+                        [field]: error.message,
+                    }));
+                }
+            }
 
-        } catch (error) {
-            setIsCheckingAvailabilityErrors((prev) => ({
-                ...prev,
-                [field]: configs[field].serverErrorMessage,
-            }));
             return false;
         } finally {
             setIsAvailabilityLoading((prev) => ({ ...prev, [field]: false }));
@@ -370,9 +333,9 @@ function SignUpModal() {
         // 3. 필수 중복확인이 완료되었는지 확인
         const isAllAvailabilityChecked = Object.keys(isAvailabilityChecked).every((field) => isAvailabilityChecked[field as AvailabilityField]);
 
-        // 모든 유효성 검사가 끝난 후에야 회원가입 가능 
+        // 모든 유효성 검사가 끝난 후에야 회원가입 가능
         const isAfterValidate = Object.keys(beforeValidate).every((field) => !beforeValidate[field as FormField]);
-        console.log("isAllFieldsFilled", isAllFieldsFilled);    
+        console.log("isAllFieldsFilled", isAllFieldsFilled);
         console.log("hasNoValidationErrors", hasNoValidationErrors);
         console.log("isAllAvailabilityChecked", isAllAvailabilityChecked);
 
@@ -385,17 +348,18 @@ function SignUpModal() {
 
         setHasInteracted((prev) => ({ ...prev, [name]: true }));
 
-        setBeforeValidate(prev => ({
+        setBeforeValidate((prev) => ({
             ...prev,
-            [name]: true
+            [name]: true,
         }));
 
         // 사용자명 중복 확인을 해주세요 관련 경고 초기화
         setAvailabilityFocusWarning((prev) => ({ ...prev, [name]: false }));
 
         // 특정값을 입력한 후에 중복확인하고, 또 다시 입력 하면 중복 확인 체크 다시 해야함. 즉 값이 변경될때마다 중복확인을 다시 해야함
-        if (name === "blogId" || name === "userName" || name === "email") { 
+        if (name === "blogId" || name === "userName" || name === "email") {
             setIsAvailabilityChecked((prev) => ({ ...prev, [name]: false }));
+            setDuplicateCheckErrors((prev) => ({ ...prev, [name]: "" }));
         }
     };
 
@@ -461,9 +425,15 @@ function SignUpModal() {
 
     // 블로그ID, Email, UserName 중복확인 버튼 비활성화 여부 함수
     const isFieldDisabled = (field: AvailabilityField): boolean => {
-        return formData[field].trim() === "" || isAvailabilityLoading[field] || !(formValidateErrors[field] === "")
-            ? true
-            : false || isBlocked[field] || beforeValidate[field];
+        return (
+            formData[field].trim() === "" ||
+            isAvailabilityLoading[field] ||
+            !(formValidateErrors[field] === "") ||
+            !(rateLimitErrors[field] === "") ||
+            !(duplicateCheckErrors[field] === "") ||
+            isAvailabilityChecked[field] ||
+            beforeValidate[field]
+        );
     };
 
     const isBlogIdButtonDisabled = isFieldDisabled("blogId");
@@ -528,17 +498,24 @@ function SignUpModal() {
                                                     : "cursor-pointer bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800"
                                             } rounded-lg px-4 py-2 font-medium transition-all duration-200 ease-in-out shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
                                         >
-                                            {isAvailabilityLoading.blogId ? "확인중..." : "중복확인"}
+                                            {isAvailabilityLoading.blogId ? (
+                                                "확인중..."
+                                            ) : isAvailabilityChecked.blogId ? (
+                                                <FaCheck size={16} />
+                                            ) : (
+                                                "중복확인"
+                                            )}
                                         </button>
                                     </div>
                                     {formValidateErrors.blogId && <p className='text-red-500 text-sm mt-1'>{formValidateErrors.blogId}</p>}
 
-                                    {isCheckingAvailabilityErrors.blogId && (
-                                        <p className='text-red-500 text-sm mt-1'>{isCheckingAvailabilityErrors.blogId}</p>
-                                    )}
-                                    {throttleErrors.blogId && <div className='text-red-500 text-sm mt-2'>{throttleErrors.blogId}</div>}
+                                    {rateLimitErrors.blogId && <p className='text-red-500 text-sm mt-1'>{rateLimitErrors.blogId}</p>}
 
-                                    {availabilityFocusWarning.blogId && <p className='text-red-500 text-sm mt-2'>블로그 아이디 중복 확인을 해주세요</p>}
+                                    {duplicateCheckErrors.blogId && <p className='text-red-500 text-sm mt-1'>{duplicateCheckErrors.blogId}</p>}
+
+                                    {availabilityFocusWarning.blogId && (
+                                        <p className='text-red-500 text-sm mt-2'>블로그 아이디 중복 확인을 해주세요</p>
+                                    )}
                                 </div>
 
                                 {/* 사용자명 입력 */}
@@ -566,19 +543,22 @@ function SignUpModal() {
                                                     : "cursor-pointer bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800"
                                             } rounded-lg px-4 py-2 font-medium transition-all duration-200 ease-in-out shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
                                         >
-                                            {isAvailabilityLoading.userName ? "확인중..." : "중복확인"}
+                                            {isAvailabilityLoading.userName ? (
+                                                "확인중..."
+                                            ) : isAvailabilityChecked.userName ? (
+                                                <FaCheck size={16} />
+                                            ) : (
+                                                "중복확인"
+                                            )}
                                         </button>
                                     </div>
                                     {/*  폼 벨리데이션 에러 처리 메시지 */}
                                     {formValidateErrors.userName && <p className='text-red-500 text-sm mt-1'>{formValidateErrors.userName}</p>}
 
-                                    {/* 서버측으로 받은 중복확인 처리 에러 메시지 */}
-                                    {isCheckingAvailabilityErrors.userName && (
-                                        <p className='text-red-500 text-sm mt-1'>{isCheckingAvailabilityErrors.userName}</p>
-                                    )}
-
-                                    {/* 중복확인 버튼 너무 3회 초과 클릭 시 에러 메시지 */}
-                                    {throttleErrors.userName && <div className='text-red-500 text-sm mt-2'>{throttleErrors.userName}</div>}
+                                    {/* 서버측으로 받은 중복확인 처리 횟수 초과 에러 메시지 */}
+                                    {rateLimitErrors.userName && <p className='text-red-500 text-sm mt-1'>{rateLimitErrors.userName}</p>}
+                                    {/* 서버측으로 받은 이미 존재하는 경우의 에러 메시지 */}
+                                    {duplicateCheckErrors.userName && <p className='text-red-500 text-sm mt-1'>{duplicateCheckErrors.userName}</p>}
 
                                     {/* 중복확인을 하지 않았을시에 경고  */}
                                     {availabilityFocusWarning.userName && <p className='text-red-500 text-sm mt-2'>사용자명 중복 확인을 해주세요</p>}
@@ -609,16 +589,20 @@ function SignUpModal() {
                                                     : "cursor-pointer bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800"
                                             } rounded-lg px-4 py-2 font-medium transition-all duration-200 ease-in-out shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
                                         >
-                                            {isAvailabilityLoading.email ? "확인중..." : "중복확인"}
+                                            {isAvailabilityLoading.email ? (
+                                                "확인중..."
+                                            ) : isAvailabilityChecked.email ? (
+                                                <FaCheck size={16} />
+                                            ) : (
+                                                "중복확인"
+                                            )}
                                         </button>
                                     </div>
 
                                     {formValidateErrors.email && <p className='text-red-500 text-sm mt-1'>{formValidateErrors.email}</p>}
-                                    {isCheckingAvailabilityErrors.email && (
-                                        <p className='text-red-500 text-sm mt-1'>{isCheckingAvailabilityErrors.email}</p>
-                                    )}
+                                    {rateLimitErrors.email && <p className='text-red-500 text-sm mt-1'>{rateLimitErrors.email}</p>}
 
-                                    {throttleErrors.email && <div className='text-red-500 text-sm mt-2'>{throttleErrors.email}</div>}
+                                    {duplicateCheckErrors.email && <p className='text-red-500 text-sm mt-1'>{duplicateCheckErrors.email}</p>}
 
                                     {availabilityFocusWarning.email && <p className='text-red-500 text-sm mt-2'>이메일 중복 확인을 해주세요</p>}
                                 </div>
