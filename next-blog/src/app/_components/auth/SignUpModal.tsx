@@ -2,19 +2,19 @@
 
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { checkAvailabilityRequest } from "@/services/api";
+import { checkAvailabilityRequest, signupUser } from "@/services/api";
 import { useDebounce } from "use-debounce";
 import { useAuthStore } from "@/store/appStore";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { FaCheck } from "react-icons/fa";
 
 // 폼 필드 타입 정의
-type FormField = "blogId" | "userName" | "email" | "password" | "passwordConfirm";
-type AvailabilityField = "blogId" | "userName" | "email";
+type FormField = "blogId" | "username" | "email" | "password" | "passwordConfirm";
+type AvailabilityField = "blogId" | "username" | "email";
 
 interface SignUpFormData {
     blogId: string; // URL용 ID
-    userName: string; // 표시 이름(닉네임)
+    username: string; // 표시 이름(닉네임)
     email: string;
     password: string;
     passwordConfirm: string;
@@ -22,7 +22,7 @@ interface SignUpFormData {
 
 interface validateState {
     blogId: boolean;
-    userName: boolean;
+    username: boolean;
     email: boolean;
     password: boolean;
     passwordConfirm: boolean;
@@ -30,14 +30,14 @@ interface validateState {
 
 interface AvailabilityErrors {
     blogId: string;
-    userName: string;
+    username: string;
     email: string;
 }
 
 // 중복확인 로딩 상태 및 중복확인 여부 상태 타입
 interface AvailabilityState {
     blogId: boolean;
-    userName: boolean;
+    username: boolean;
     email: boolean;
 }
 
@@ -48,7 +48,7 @@ function SignUpModal() {
 
     const [formData, setFormData] = useState<SignUpFormData>({
         blogId: "", // URL용 ID
-        userName: "", // 표시이름(닉네임)
+        username: "", // 표시이름(닉네임)
         email: "",
         password: "",
         passwordConfirm: "",
@@ -56,7 +56,7 @@ function SignUpModal() {
 
     const [formValidateErrors, setFormValidatorErrors] = useState<SignUpFormData>({
         blogId: "",
-        userName: "",
+        username: "",
         email: "",
         password: "",
         passwordConfirm: "",
@@ -68,7 +68,7 @@ function SignUpModal() {
     // 유효성 검사 전에, 사용자가 초기에 입력할때 중복확인 버튼이 잠깐 활성화 되는 현상 방지
     const [beforeValidate, setBeforeValidate] = useState<validateState>({
         blogId: true,
-        userName: true,
+        username: true,
         email: true,
         password: true,
         passwordConfirm: true,
@@ -81,25 +81,25 @@ function SignUpModal() {
     // 중복확인 버튼 클릭 시 중복확인 여부 상태
     const [isAvailabilityChecked, setIsAvailabilityChecked] = useState({
         blogId: false,
-        userName: false,
+        username: false,
         email: false,
     });
 
     const [rateLimitErrors, setRateLimitErrors] = useState<AvailabilityErrors>({
         blogId: "",
-        userName: "",
+        username: "",
         email: "",
     });
 
     const [duplicateCheckErrors, setDuplicateCheckErrors] = useState<AvailabilityErrors>({
         blogId: "",
-        userName: "",
+        username: "",
         email: "",
     });
     // 이메일 및 블로그 ID 중복 확인 중 로딩 상태
     const [isAvailabilityLoading, setIsAvailabilityLoading] = useState<AvailabilityState>({
         blogId: false,
-        userName: false,
+        username: false,
         email: false,
     });
 
@@ -112,12 +112,12 @@ function SignUpModal() {
     const [isLoading, setIsLoading] = useState(false);
     // 최종 회원 가입 관련 상태 끝
 
-    const { setShowLogin, setShowSignUp, setShowEmailVerification } = useAuthStore();
+    const { setShowLogin, setShowSignUp, setShowEmailVerification, setEmail } = useAuthStore();
 
     // 폼 입력값이 시작되었는지 여부. 폼 입력이 시작되어야 유효성 검사를 시작한다.
     const [hasInteracted, setHasInteracted] = useState<Record<string, boolean>>({
         blogId: false,
-        userName: false,
+        username: false,
         email: false,
         password: false,
         passwordConfirm: false,
@@ -126,13 +126,13 @@ function SignUpModal() {
     // 다음 입력 필드로 넘어갔을때 포커스 되어있는지 확인
     const [availabilityFocusWarning, setAvailabilityFocusWarning] = useState<AvailabilityState>({
         blogId: false,
-        userName: false,
+        username: false,
         email: false,
     });
 
     // 폼 데이터 디바운스 처리
     const [debouncedBlogId] = useDebounce(formData.blogId, 200);
-    const [debouncedUserName] = useDebounce(formData.userName, 200);
+    const [debouncedUsername] = useDebounce(formData.username, 200);
     const [debouncedEmail] = useDebounce(formData.email, 200);
     const [debouncedPassword] = useDebounce(formData.password, 200);
     const [debouncedPasswordConfirm] = useDebounce(formData.passwordConfirm, 200);
@@ -192,26 +192,26 @@ function SignUpModal() {
     }, [debouncedBlogId]);
 
     useEffect(() => {
-        if (!hasInteracted.userName) return;
+        if (!hasInteracted.username) return;
 
-        if (debouncedUserName.trim() === "") {
-            setFormValidatorErrors((prev) => ({ ...prev, userName: "사용자명을 입력해주세요" }));
+        if (debouncedUsername.trim() === "") {
+            setFormValidatorErrors((prev) => ({ ...prev, username: "사용자명을 입력해주세요" }));
             return;
         }
-        if (debouncedUserName.length < 2 || debouncedUserName.length > 10) {
-            setFormValidatorErrors((prev) => ({ ...prev, userName: "사용자명은 2-10자 사이여야 합니다" }));
+        if (debouncedUsername.length < 2 || debouncedUsername.length > 10) {
+            setFormValidatorErrors((prev) => ({ ...prev, username: "사용자명은 2-10자 사이여야 합니다" }));
             return;
         }
-        if (!/^[가-힣a-zA-Z0-9]+$/.test(debouncedUserName)) {
-            setFormValidatorErrors((prev) => ({ ...prev, userName: "사용자명은 한글(자음, 모음 불가), 영문, 숫자만 사용 가능합니다" }));
+        if (!/^[가-힣a-zA-Z0-9]+$/.test(debouncedUsername)) {
+            setFormValidatorErrors((prev) => ({ ...prev, username: "사용자명은 한글(자음, 모음 불가), 영문, 숫자만 사용 가능합니다" }));
             return;
         }
-        setFormValidatorErrors((prev) => ({ ...prev, userName: "" }));
+        setFormValidatorErrors((prev) => ({ ...prev, username: "" }));
         setBeforeValidate((prev) => ({
             ...prev,
-            userName: false,
+            username: false,
         }));
-    }, [debouncedUserName]);
+    }, [debouncedUsername]);
 
     useEffect(() => {
         if (!hasInteracted.email) return;
@@ -271,6 +271,9 @@ function SignUpModal() {
     }, [debouncedPasswordConfirm, formData.password]);
 
     const checkAvailability = async (field: AvailabilityField) => {
+
+        console.log("checkAvailabilit실행");
+
         // 중복확인 버튼 클릭 시 포커스 경고 초기화
         setAvailabilityFocusWarning((prev) => ({
             ...prev,
@@ -283,7 +286,7 @@ function SignUpModal() {
             const apiCalls = {
                 blogId: (value: string) => checkAvailabilityRequest.blogId(value),
                 email: (value: string) => checkAvailabilityRequest.email(value),
-                userName: (value: string) => checkAvailabilityRequest.userName(value),
+                username: (value: string) => checkAvailabilityRequest.username(value),
             };
 
             const response = await apiCalls[field](formData[field]); // 여기서 실패하면 catch문 실행
@@ -357,7 +360,7 @@ function SignUpModal() {
         setAvailabilityFocusWarning((prev) => ({ ...prev, [name]: false }));
 
         // 특정값을 입력한 후에 중복확인하고, 또 다시 입력 하면 중복 확인 체크 다시 해야함. 즉 값이 변경될때마다 중복확인을 다시 해야함
-        if (name === "blogId" || name === "userName" || name === "email") {
+        if (name === "blogId" || name === "username" || name === "email") {
             setIsAvailabilityChecked((prev) => ({ ...prev, [name]: false }));
             setDuplicateCheckErrors((prev) => ({ ...prev, [name]: "" }));
         }
@@ -367,13 +370,13 @@ function SignUpModal() {
         // 이전 포커스 경고 초기화
         // setFocusWarning({
         //     blogId: false,
-        //     userName: false,
+        //     username: false,
         //     email: false,
         // });
 
         // 중복확인 버튼을 누르지 않았을때 "중복 확인을 입력해주세요"메시지를 설정하기 위한 로직
         switch (currentField) {
-            case "userName":
+            case "username":
                 // !beforeValidate.blogId는 폼 유효성 검사에 실패하면서 동시에 사용자명 필드에 포커스가 가게되면 폼 유효성 검사에 실패했는데도 "사용자명 중복확인을 입력해주세요"가 나오는 것을 방지
                 // 즉 사용자명 필드에 포커스가 갔을 때 블로그 고유 ID 필드의 유효성 검사가 끝난 상태여야 그 안에 로직 실행
                 if (!beforeValidate.blogId && !isAvailabilityChecked.blogId && formData.blogId.trim() !== "" && !formValidateErrors.blogId) {
@@ -381,8 +384,8 @@ function SignUpModal() {
                 }
                 break;
             case "email":
-                if (!beforeValidate.userName && !isAvailabilityChecked.userName && formData.userName.trim() !== "" && !formValidateErrors.userName) {
-                    setAvailabilityFocusWarning((prev) => ({ ...prev, userName: true }));
+                if (!beforeValidate.username && !isAvailabilityChecked.username && formData.username.trim() !== "" && !formValidateErrors.username) {
+                    setAvailabilityFocusWarning((prev) => ({ ...prev, username: true }));
                 }
                 break;
             case "password":
@@ -399,21 +402,23 @@ function SignUpModal() {
         setIsLoading(true);
 
         try {
-            // 비밀번호 재확인은 빼고 서버측으로 전송
-            const { passwordConfirm, ...signupPayload } = formData;
+           
 
-            // const response = await signupUser(signupPayload);
-            // console.log("회원가입 성공 SignUp Page", response);
+            const response = await signupUser(formData);
+            
+            setEmail(response.email);
+             
 
             setIsClosing(true);
             setTimeout(() => {
                 setShowSignUp(false);
                 setShowEmailVerification(true);
             }, 300);
-        } catch (error: any) {
-            console.log("회원가입 실패 SignUp Page: ", error);
-            // setErrorMessageSignUpFromServer(error.message);
-            setErrorMessageSignUpFromServer("회원가입 중 오류가 발생했습니다");
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.log("회원가입 실패 SignUp Page: ", error);
+                setErrorMessageSignUpFromServer(error.message);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -423,7 +428,7 @@ function SignUpModal() {
         setIsClosing(true);
     };
 
-    // 블로그ID, Email, UserName 중복확인 버튼 비활성화 여부 함수
+    // 블로그ID, Email, username 중복확인 버튼 비활성화 여부 함수
     const isFieldDisabled = (field: AvailabilityField): boolean => {
         return (
             formData[field].trim() === "" ||
@@ -437,7 +442,7 @@ function SignUpModal() {
     };
 
     const isBlogIdButtonDisabled = isFieldDisabled("blogId");
-    const isUserNameButtonDisabled = isFieldDisabled("userName");
+    const isUsernameButtonDisabled = isFieldDisabled("username");
     const isEmailButtonDisabled = isFieldDisabled("email");
 
     return (
@@ -525,27 +530,27 @@ function SignUpModal() {
                                     </label>
                                     <div className='flex gap-2'>
                                         <input
-                                            name='userName'
+                                            name='username'
                                             type='text'
-                                            value={formData.userName}
+                                            value={formData.username}
                                             onChange={handleChange}
-                                            onFocus={() => handleFieldFocus("userName")}
+                                            onFocus={() => handleFieldFocus("username")}
                                             className='flex-1 p-2 border rounded'
                                             placeholder='한글(자음, 모음 불가), 영문, 숫자만 사용 가능 (2-10자)'
                                         />
                                         <button
                                             type='button'
-                                            onClick={() => checkAvailability("userName")}
-                                            disabled={isUserNameButtonDisabled}
+                                            onClick={() => checkAvailability("username")}
+                                            disabled={isUsernameButtonDisabled}
                                             className={`${
-                                                isUserNameButtonDisabled
+                                                isUsernameButtonDisabled
                                                     ? "cursor-not-allowed bg-gray-100 text-gray-400 border border-gray-200"
                                                     : "cursor-pointer bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800"
                                             } rounded-lg px-4 py-2 font-medium transition-all duration-200 ease-in-out shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
                                         >
-                                            {isAvailabilityLoading.userName ? (
+                                            {isAvailabilityLoading.username ? (
                                                 "확인중..."
-                                            ) : isAvailabilityChecked.userName ? (
+                                            ) : isAvailabilityChecked.username ? (
                                                 <FaCheck size={16} />
                                             ) : (
                                                 "중복확인"
@@ -553,15 +558,15 @@ function SignUpModal() {
                                         </button>
                                     </div>
                                     {/*  폼 벨리데이션 에러 처리 메시지 */}
-                                    {formValidateErrors.userName && <p className='text-red-500 text-sm mt-1'>{formValidateErrors.userName}</p>}
+                                    {formValidateErrors.username && <p className='text-red-500 text-sm mt-1'>{formValidateErrors.username}</p>}
 
                                     {/* 서버측으로 받은 중복확인 처리 횟수 초과 에러 메시지 */}
-                                    {rateLimitErrors.userName && <p className='text-red-500 text-sm mt-1'>{rateLimitErrors.userName}</p>}
+                                    {rateLimitErrors.username && <p className='text-red-500 text-sm mt-1'>{rateLimitErrors.username}</p>}
                                     {/* 서버측으로 받은 이미 존재하는 경우의 에러 메시지 */}
-                                    {duplicateCheckErrors.userName && <p className='text-red-500 text-sm mt-1'>{duplicateCheckErrors.userName}</p>}
+                                    {duplicateCheckErrors.username && <p className='text-red-500 text-sm mt-1'>{duplicateCheckErrors.username}</p>}
 
                                     {/* 중복확인을 하지 않았을시에 경고  */}
-                                    {availabilityFocusWarning.userName && <p className='text-red-500 text-sm mt-2'>사용자명 중복 확인을 해주세요</p>}
+                                    {availabilityFocusWarning.username && <p className='text-red-500 text-sm mt-2'>사용자명 중복 확인을 해주세요</p>}
                                 </div>
 
                                 {/* 이메일 입력  */}

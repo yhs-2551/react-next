@@ -1,21 +1,24 @@
 // app/_components/auth/EmailVerificationModal.tsx
 "use client";
 
+import { verifyEmailCode } from "@/services/api";
 import { useAuthStore } from "@/store/appStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dispatch, SetStateAction, useState } from "react";
+import { toast, ToastContainer } from "react-toastify";
 
 interface EmailVerificationModalProps {
     email: string;
     onClose: (setIsClosing: Dispatch<SetStateAction<boolean>>) => void;
     onVerified: () => void;
 }
-
+{
+}
 export default function EmailVerificationModal({ email, onClose, onVerified }: EmailVerificationModalProps) {
     const [isClosing, setIsClosing] = useState<boolean>(false);
-    const [code, setCode] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState("");
+    const [code, setCode] = useState<string>("");
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string>("");
 
     const { setShowEmailVerification } = useAuthStore();
 
@@ -23,10 +26,30 @@ export default function EmailVerificationModal({ email, onClose, onVerified }: E
         e.preventDefault();
         setIsLoading(true);
         try {
-            // await verifyEmailCode(email, code);
-            onVerified();
-        } catch (error) {
-            setError("인증 코드가 올바르지 않습니다.");
+            const verifyResponse = await verifyEmailCode(email, code);
+            if (verifyResponse.status === 200 || verifyResponse.status === 201) {
+                toast.success(
+                    <span>
+                        <span style={{ fontSize: "1.2rem" }}>!</span>&nbsp;&nbsp;&nbsp;&nbsp;
+                        <span style={{ fontSize: "0.9rem" }}>{verifyResponse.message}</span>
+                    </span>,
+                    {
+                        autoClose: 3000, // 2초
+                        style: {
+                            padding: "16px",
+                        },
+                    }
+                );
+
+                setIsClosing(true);
+                onVerified();
+
+                // <span style={{ fontSize: "1.1rem" }}>!</span>&nbsp;&nbsp;&nbsp;&nbsp;{" "}
+            }
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                setError(error.message);
+            }
         } finally {
             setIsLoading(false);
         }

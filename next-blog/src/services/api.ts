@@ -1,7 +1,7 @@
 // import {
 //     QueryFunctionContext,
 // } from "react-query";
- 
+
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { refreshToken } from "@/utils/refreshToken";
 
@@ -125,7 +125,6 @@ export const fetchIsAuthor = async (postId: string, blogId: string, accessToken:
 };
 
 export const fetchCategories = async (blogId: string) => {
-    
     const accessToken = localStorage.getItem("access_token") ?? false;
 
     const getAllCategories: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
@@ -157,9 +156,7 @@ export const fetchCategories = async (blogId: string) => {
 };
 
 export const checkAvailabilityRequest = {
-
     blogId: async (value: string): Promise<{ status: number; isExist: boolean; message: string }> => {
-
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/blogId/${value}`, {
             method: "GET",
             headers: {
@@ -171,7 +168,6 @@ export const checkAvailabilityRequest = {
         if (response.status === 429 || response.status === 409) {
             throw new CustomHttpError(response.status, responseData.message);
         }
-        
 
         return {
             status: response.status,
@@ -200,14 +196,18 @@ export const checkAvailabilityRequest = {
         };
     },
 
-    userName: async (value: string): Promise<{ status: number; isExist: boolean; message: string }> => {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/userName/${value}`, {
+    username: async (value: string): Promise<{ status: number; isExist: boolean; message: string }> => {
+        console.log("실행 userName 부분");
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/username/${value}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
             },
         });
         const responseData = await response.json();
+
+        console.log("responseDatauserName 부분", responseData);
 
         if (response.status === 429 || response.status === 409) {
             throw new CustomHttpError(response.status, responseData.message);
@@ -221,26 +221,56 @@ export const checkAvailabilityRequest = {
     },
 };
 
-export const signupUser = async (newUser: { blogId: string; userName: string; email: string; password: string }) => {
-    try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/signup`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(newUser),
-        });
+export const signupUser = async (newUser: { blogId: string; username: string; email: string; password: string; passwordConfirm: string }) => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/signup`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newUser),
+    });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "회원가입에 실패했습니다.");
-        }
+    const responseData = await response.json(); // 성공시 JSON 응답 반환
 
-        return await response.json(); // 성공시 JSON 응답 반환
-    } catch (error) {
-        console.error("회원가입 실패:", error);
-        throw error; // 상위 함수로 에러 전달
+    if (!response.ok) {
+        throw new Error(responseData.message);
     }
+
+
+
+    return {
+        status: response.status,
+        message: responseData.message,
+        email: responseData.data,
+    };
+};
+
+export const verifyEmailCode = async (email: string, code: string) => {
+    const verify = {
+        email,
+        code,
+    };
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/verify-email`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(verify),
+    });
+
+    const responseData = await response.json();  
+
+    if (!response.ok) {
+        throw new Error(responseData.message);
+    }
+
+
+    return {
+        status: response.status,
+        message: responseData.message,
+        userData: responseData.data,
+    };
 };
 
 export const loginUser = async (loginData: { email: string; password: string }) => {

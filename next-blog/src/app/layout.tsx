@@ -4,6 +4,8 @@ import "@/app/globals.css";
 import CommonHeader from "./(common-footer-header)/header/CommonHeader";
 import CommonFooter from "./(common-footer-header)/footer/CommonFooter";
 import AuthProvider from "@/providers/AuthProvider";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // import { config } from "@fortawesome/fontawesome-svg-core";
 // import "@fortawesome/fontawesome-svg-core/styles.css";
@@ -29,6 +31,7 @@ export default function RootLayout({
                     <main className='flex-grow'>{children}</main>
                     <CommonFooter />
                     <AuthProvider />
+                    <ToastContainer position='top-center' />
                 </div>
             </body>
         </html>
