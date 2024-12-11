@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useDebounce } from "use-debounce";
@@ -8,9 +8,9 @@ import { useDebounce } from "use-debounce";
 // import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 // import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 import { loginUser } from "@/services/api";
-import EmailVerificationModal from "@/app/_components/auth/EmailVerificationModal";
+
 import { useAuthStore } from "@/store/appStore";
-// import { useAvailabilityThrottle } from "@/customHooks/useAvailabilityThrottle";
+import { CustomHttpError } from "@/utils/CustomHttpError";
 
 export interface LoginFormData {
     email: string;
@@ -21,6 +21,7 @@ export interface LoginFormData {
 type LoginFormDataWithoutRememberMe = Omit<LoginFormData, "rememberMe">;
 
 function LoginModal() {
+
     const [isClosing, setIsClosing] = useState<boolean>(false);
 
     const [formData, setFormData] = useState<LoginFormData>({
@@ -42,11 +43,8 @@ function LoginModal() {
 
     const [showPassword, setShowPassword] = useState(false);
 
-    const [throttleErrors, setThrottleErrors] = useState<{ login: string }>({
-        login: "",
-    });
-
-    const [errorMessageFromServer, setErrorMessageFromServer] = useState<string>("");
+    const [loginErrors, setLoginErrors] = useState<string>("");
+    const [loginRateLimitErrors, setLoginRateLimitErrors] = useState<string>("");
 
     const [isLoading, setIsLoading] = useState(false);
 
@@ -54,13 +52,13 @@ function LoginModal() {
 
     const { setShowLogin, setShowSignUp } = useAuthStore();
 
-    // const { canCheckAvailability, isBlocked } = useAvailabilityThrottle();
-
     const [debouncedEmail] = useDebounce(formData.email, 500);
     const [debouncedPassword] = useDebounce(formData.password, 300);
 
-    useEffect(() => {
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
+    useEffect(() => {
         if (!hasInteracted.email) return;
 
         if (debouncedEmail.trim() === "") {
@@ -75,7 +73,6 @@ function LoginModal() {
     }, [debouncedEmail]);
 
     useEffect(() => {
-
         if (!hasInteracted.password) return;
 
         if (debouncedPassword.trim() === "") {
@@ -94,7 +91,9 @@ function LoginModal() {
             .every((field) => formData[field as keyof LoginFormDataWithoutRememberMe].trim() !== "");
 
         // 2. 유효성 검증 에러가 없는지 확인
-        const hasNoValidationErrors = Object.keys(formValidateErrors).every((field) => formValidateErrors[field as keyof LoginFormDataWithoutRememberMe] === "");
+        const hasNoValidationErrors = Object.keys(formValidateErrors).every(
+            (field) => formValidateErrors[field as keyof LoginFormDataWithoutRememberMe] === ""
+        );
 
         return isAllFieldsFilled && hasNoValidationErrors;
     };
@@ -102,42 +101,40 @@ function LoginModal() {
     const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        // if (!canCheckAvailability("login")) {
-        //     // 새로운 에러 메시지 설정 및 타이머 시작
-        //     setThrottleErrors((prev) => ({
-        //         ...prev,
-        //         login: "잠시 후에 다시 시도해주세요. (1분에 최대 3회까지 시도 가능합니다)",
-        //     }));
-
-        //     // 1분뒤에 에러 메시지 초기화
-        //     setTimeout(() => {
-        //         setThrottleErrors((prev) => ({
-        //             ...prev,
-        //             login: "",
-        //         }));
-        //     }, 60000);
-
-        //     return false;
-        // }
-
         setIsLoading(true);
 
         try {
-            await loginUser(formData);
+            
+             await loginUser(formData);
 
-            if (formData.rememberMe) {
-                localStorage.setItem("rememberedEmail", formData.email);
-            }
 
             // 닫는 애니메이션 효과 시작
             setIsClosing(true);
 
-            setTimeout(() => {
+                // 모달 닫기
+              setTimeout(() => {
                 setShowLogin(false);
-            }, 300);
+              }, 300);
 
-        } catch (error: any) {
-            setErrorMessageFromServer("아이디 또는 비밀번호가 잘못 되었습니다.");
+              setTimeout(() => {
+                  window.location.reload();
+              }, 350);
+                
+
+
+         
+        } catch (error: unknown) {
+            if (error instanceof CustomHttpError) {
+                if (error.status === 429) {
+                    setLoginRateLimitErrors(error.message);
+                    setLoginErrors("");
+                    setTimeout(() => {
+                        setLoginRateLimitErrors("");
+                    }, 60000);
+                } else {
+                    setLoginErrors(error.message);
+                }
+            }
         } finally {
             setIsLoading(false);
         }
@@ -147,6 +144,7 @@ function LoginModal() {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
         setHasInteracted((prev) => ({ ...prev, [name]: true }));
+        setLoginErrors("");
     };
 
     const handleCloseModal = () => {
@@ -154,7 +152,12 @@ function LoginModal() {
     };
 
     const handleGoogleLogin = () => {
-        window.location.assign(`${process.env.NEXT_PUBLIC_BACKEND_URL}/oauth2/authorization/google`);
+
+        const currentPath = pathname + searchParams.toString();
+        localStorage.setItem("lastVisitedPath", currentPath);
+
+        // rememberMe는 boolean인데 template literal에서 자동으로 string으로 변환됨
+        window.location.assign(`${process.env.NEXT_PUBLIC_BACKEND_URL}/oauth2/authorization/google?remember_me=${formData.rememberMe}`);
     };
 
     return (
@@ -198,7 +201,30 @@ function LoginModal() {
                                 </button>
                             </div>
 
+                            
+
                             <p className='text-gray-600 mb-4'>이메일로 로그인</p>
+
+                            
+                            <div className='flex items-center justify-between mb-4'>
+                                    <label className='flex items-center'>
+                                        <input
+                                            type='checkbox'
+                                            checked={formData.rememberMe}
+                                            onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
+                                            className='mr-2'
+                                        />
+                                        <span className='text-sm'>로그인 상태 유지</span>
+                                    </label>
+                                    {/* <button
+                                        type='button'
+                                        onClick={() => router.push("/forgot-password")}
+                                        className='text-sm text-blue-600 hover:underline'
+                                    >
+                                        비밀번호 찾기
+                                    </button> */}
+                                </div>
+
                             <form onSubmit={handleLogin}>
                                 <div className='mb-4'>
                                     <input
@@ -232,40 +258,22 @@ function LoginModal() {
                                     </button>
                                 </div>
 
-                                <div className='flex items-center justify-between'>
-                                    <label className='flex items-center'>
-                                        <input
-                                            type='checkbox'
-                                            checked={formData.rememberMe}
-                                            onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
-                                            className='mr-2'
-                                        />
-                                        <span className='text-sm'>로그인 상태 유지</span>
-                                    </label>
-                                    <button
-                                        type='button'
-                                        onClick={() => router.push("/forgot-password")}
-                                        className='text-sm text-blue-600 hover:underline'
-                                    >
-                                        비밀번호 찾기
-                                    </button>
-                                </div>
-
                                 <button
                                     type='submit'
                                     className={`w-full py-2 mt-2 rounded-lg transition-all duration-200 ${
-                                        isFormValid() ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                        loginRateLimitErrors === "" && isFormValid()
+                                            ? "bg-green-500 hover:bg-green-600 text-white"
+                                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
                                     }`}
-                                    disabled={!isFormValid() || isLoading}
+                                    disabled={!isFormValid() || isLoading || loginRateLimitErrors !== ""}
                                 >
                                     {isLoading ? "로그인 중..." : "로그인"}
                                 </button>
-
-                                {throttleErrors.login && <div className='text-red-500 text-sm mt-2'>{throttleErrors.login}</div>}
                             </form>
 
                             {/* 로그인 실패 시 오류 메시지 표시 아이디 및 패스워드가 잘못되었을 때*/}
-                            {errorMessageFromServer && <p className='text-sm text-red-500 mt-4'>{errorMessageFromServer}</p>}
+                            {loginErrors && <p className='text-sm text-red-500 mt-4'>{loginErrors}</p>}
+                            {loginRateLimitErrors && <p className='text-sm text-red-500 mt-4'>{loginRateLimitErrors}</p>}
 
                             <div className='mt-6 mb-4 text-center'>
                                 <p className='text-gray-600'>소셜 계정으로 로그인</p>
@@ -310,7 +318,6 @@ function LoginModal() {
                 )}
             </AnimatePresence>
 
-            {/* <EmailVerificationModal /> */}
         </div>
     );
 }

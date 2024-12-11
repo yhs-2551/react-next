@@ -1,8 +1,7 @@
+import { CustomHttpError } from "@/utils/CustomHttpError";
 import { refreshToken } from "@/utils/refreshToken";
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "react-query";
-
-import "react-toastify/dist/ReactToastify.css";
+import { useMutation } from "react-query";
 
 const deletePost: (postId: string, accessToken: string | null, blogId: string) => Promise<Response> = async (
     postId: string,
@@ -29,25 +28,34 @@ function useDeletePost(postId: string, blogId: string) {
 
     return useMutation(
         async () => {
-
             if (accessToken === null) return;
 
             let response = await deletePost(postId, accessToken, blogId);
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    const newAccessToken = await refreshToken();
-                    if (newAccessToken) {
-                        response = await deletePost(postId, newAccessToken, blogId);
+                    try {
+                        const newAccessToken = await refreshToken();
+                        if (newAccessToken) {
+                            response = await deletePost(postId, newAccessToken, blogId);
+                        }
+                    } catch (error: unknown) { // 리프레시 토큰 까지 만료되면 재로그인 필요
+                        if (error instanceof CustomHttpError) {
+                            setAccessToken(null);
+                            throw new CustomHttpError(error.status, error.message);
+                        }
                     }
                 }
             }
 
-            if (!response.ok) {
-                throw new Error("Failed to delete post. Please retry again.");
+            if (!response.ok && response.status === 500) {
+                throw new CustomHttpError(response.status, "게시글 삭제에 실패하였습니다. 잠시 뒤에 다시 시도해주세요.");
             }
 
-            return await response.text();
+           const responseData = await response.json();
+           return {
+            message: responseData.message,
+           }
         }
         // {
         //     onSuccess: () => {

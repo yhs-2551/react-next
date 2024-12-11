@@ -48,7 +48,7 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
         <div className='flex py-4'>
             {/* 썸네일 부분  */}
             {
-                <div className='w-[12rem] mr-6 cursor-pointer' onClick={() => router.push(`/${blogId}/posts/${postId}`)}>
+                <div className='w-[12rem] mr-6 cursor-pointer' onClick={() => window.location.assign(`/${blogId}/posts/${postId}`)}>
                     <NextImage
                         src={thumbnailUrl}
                         alt='Post Thumbnail'
@@ -64,7 +64,7 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
             {/* 텍스트 부분 */}
             <div className='flex flex-col justify-center'>
                 <div className='flex items-center mb-2'>
-                    <h3 className='text-xl font-semibold cursor-pointer' onClick={() => router.push(`/${blogId}/posts/${postId}`)}>
+                    <h3 className='text-xl font-semibold cursor-pointer' onClick={() => window.location.assign(`/${blogId}/posts/${postId}`)}>
                         {title}
                     </h3>
                     {/* 공개/비공개 상태 표시 */}
@@ -79,7 +79,7 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
 
                 {/* 내용 부분 - 클릭 가능하도록 수정 완료 */}
                 {textContentWithoutImages && (
-                    <p className='text-gray-700 mb-2 cursor-pointer' onClick={() => router.push(`/${blogId}/posts/${postId}`)}>
+                    <p className='text-gray-700 mb-2 cursor-pointer' onClick={() => window.location.assign(`/${blogId}/posts/${postId}`)}>
                         {textContentWithoutImages.substring(0, 100)}
                         {isContentLong ? "..." : ""}
                     </p>
@@ -89,7 +89,7 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
                 <div className='mt-2'>
                     <button
                         className='text-sm text-white bg-customButtonColor px-3 py-1 rounded cursor-pointer'
-                        onClick={() => router.push(`/${blogId}/posts/${postId}`)}
+                        onClick={() => window.location.assign(`/${blogId}/posts/${postId}`)}
                     >
                         Read More
                     </button>

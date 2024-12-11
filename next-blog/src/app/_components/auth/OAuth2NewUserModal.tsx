@@ -2,46 +2,39 @@
 
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { checkAvailabilityRequest, signupUser } from "@/services/api";
+import { checkAvailabilityRequest, signupOAuth2User } from "@/services/api";
 import { useDebounce } from "use-debounce";
 import { useAuthStore } from "@/store/appStore";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { FaCheck } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 // 폼 필드 타입 정의
-type FormField = "blogId" | "username" | "email" | "password" | "passwordConfirm";
-type AvailabilityField = "blogId" | "username" | "email";
+type FormField = "blogId" | "username";
+type AvailabilityField = "blogId" | "username";
 
 interface SignUpFormData {
     blogId: string; // URL용 ID
     username: string; // 표시 이름(닉네임)
-    email: string;
-    password: string;
-    passwordConfirm: string;
 }
 
 interface validateState {
     blogId: boolean;
     username: boolean;
-    email: boolean;
-    password: boolean;
-    passwordConfirm: boolean;
 }
 
 interface AvailabilityErrors {
     blogId: string;
     username: string;
-    email: string;
 }
 
 // 중복확인 로딩 상태 및 중복확인 여부 상태 타입
 interface AvailabilityState {
     blogId: boolean;
     username: boolean;
-    email: boolean;
 }
 
-function SignUpModal() {
+function OAuth2NewUserModal() {
     const [isClosing, setIsClosing] = useState<boolean>(false);
 
     // 폼 데이터 관련 상태
@@ -49,29 +42,17 @@ function SignUpModal() {
     const [formData, setFormData] = useState<SignUpFormData>({
         blogId: "", // URL용 ID
         username: "", // 표시이름(닉네임)
-        email: "",
-        password: "",
-        passwordConfirm: "",
     });
 
     const [formValidateErrors, setFormValidatorErrors] = useState<SignUpFormData>({
         blogId: "",
         username: "",
-        email: "",
-        password: "",
-        passwordConfirm: "",
     });
-
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // 유효성 검사 전에, 사용자가 초기에 입력할때 중복확인 버튼이 잠깐 활성화 되는 현상 방지
     const [beforeValidate, setBeforeValidate] = useState<validateState>({
         blogId: true,
         username: true,
-        email: true,
-        password: true,
-        passwordConfirm: true,
     });
 
     // 폼 데이터 관련 상태 끝
@@ -82,25 +63,21 @@ function SignUpModal() {
     const [isAvailabilityChecked, setIsAvailabilityChecked] = useState({
         blogId: false,
         username: false,
-        email: false,
     });
 
     const [rateLimitErrors, setRateLimitErrors] = useState<AvailabilityErrors>({
         blogId: "",
         username: "",
-        email: "",
     });
 
     const [duplicateCheckErrors, setDuplicateCheckErrors] = useState<AvailabilityErrors>({
         blogId: "",
         username: "",
-        email: "",
     });
     // 이메일 및 블로그 ID 중복 확인 중 로딩 상태
     const [isAvailabilityLoading, setIsAvailabilityLoading] = useState<AvailabilityState>({
         blogId: false,
         username: false,
-        email: false,
     });
 
     // 중복 확인 관련 상태 끝
@@ -113,66 +90,23 @@ function SignUpModal() {
     const [isLoading, setIsLoading] = useState(false);
     // 최종 회원 가입 관련 상태 끝
 
-    const { setShowLogin, setShowSignUp, setShowEmailVerification, setSignupUser } = useAuthStore();
+    const { setShowLogin, setShowOAuth2NewUserModal, setTempOAuth2UserUniqueId, tempOAuth2UserUniqueId } = useAuthStore();
 
     // 폼 입력값이 시작되었는지 여부. 폼 입력이 시작되어야 유효성 검사를 시작한다.
     const [hasInteracted, setHasInteracted] = useState<Record<string, boolean>>({
         blogId: false,
         username: false,
-        email: false,
-        password: false,
-        passwordConfirm: false,
     });
 
     // 다음 입력 필드로 넘어갔을때 포커스 되어있는지 확인
     const [availabilityFocusWarning, setAvailabilityFocusWarning] = useState<AvailabilityState>({
         blogId: false,
         username: false,
-        email: false,
     });
 
     // 폼 데이터 디바운스 처리
     const [debouncedBlogId] = useDebounce(formData.blogId, 200);
     const [debouncedUsername] = useDebounce(formData.username, 200);
-    const [debouncedEmail] = useDebounce(formData.email, 200);
-    const [debouncedPassword] = useDebounce(formData.password, 200);
-    const [debouncedPasswordConfirm] = useDebounce(formData.passwordConfirm, 200);
-
-    const validatePassword = (password: string) => {
-        if (password.trim() === "") {
-            return ["비밀번호를 입력해주세요"];
-        }
-
-        // 한글 체크
-        if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(password)) {
-            return ["비밀번호에 한글은 사용할 수 없습니다"];
-        }
-
-        // 첫 글자 대문자 체크
-        if (!/^[A-Z]/.test(password)) {
-            return ["첫 글자는 반드시 대문자여야 합니다"];
-        }
-
-        // 길이 체크
-        if (password.length < 8) {
-            return ["비밀번호는 8자 이상이어야 합니다"];
-        }
-
-        // 나머지 조건 체크
-        const conditions = [
-            { test: /[a-z]/, message: "소문자" },
-            { test: /[0-9]/, message: "숫자" },
-            { test: /[!@#$%^&*(),.?":{}|<>]/, message: "특수문자" },
-        ];
-
-        const failedConditions = conditions.filter((condition) => !condition.test.test(password)).map((condition) => condition.message);
-
-        if (failedConditions.length > 0) {
-            return [`비밀번호에 ${failedConditions.join(", ")}를 포함해야 합니다`];
-        }
-
-        return [];
-    };
 
     useEffect(() => {
         if (!hasInteracted.blogId) return;
@@ -214,63 +148,6 @@ function SignUpModal() {
         }));
     }, [debouncedUsername]);
 
-    useEffect(() => {
-        if (!hasInteracted.email) return;
-
-        if (debouncedEmail.trim() === "") {
-            setFormValidatorErrors((prev) => ({ ...prev, email: "이메일을 입력해주세요" }));
-            return;
-        }
-        if (!/\S+@\S+\.\S+/.test(debouncedEmail)) {
-            setFormValidatorErrors((prev) => ({ ...prev, email: "올바른 이메일 형식이 아닙니다" }));
-            return;
-        }
-        setFormValidatorErrors((prev) => ({ ...prev, email: "" }));
-        setBeforeValidate((prev) => ({
-            ...prev,
-            email: false,
-        }));
-    }, [debouncedEmail]);
-
-    useEffect(() => {
-        if (!hasInteracted.password) return;
-
-        if (debouncedPassword.trim() === "") {
-            setFormValidatorErrors((prev) => ({ ...prev, password: "패스워드를 입력해주세요" }));
-            return;
-        }
-
-        const errors = validatePassword(debouncedPassword);
-        if (errors.length > 0) {
-            setFormValidatorErrors((prev) => ({ ...prev, password: errors.join(", ") }));
-            return;
-        }
-        setFormValidatorErrors((prev) => ({ ...prev, password: "" }));
-        setBeforeValidate((prev) => ({
-            ...prev,
-            password: false,
-        }));
-    }, [debouncedPassword]);
-
-    useEffect(() => {
-        if (!hasInteracted.passwordConfirm) return;
-
-        if (debouncedPasswordConfirm.trim() === "") {
-            setFormValidatorErrors((prev) => ({ ...prev, passwordConfirm: "패스워드를 재입력해주세요" }));
-            return;
-        }
-
-        if (debouncedPasswordConfirm !== formData.password) {
-            setFormValidatorErrors((prev) => ({ ...prev, passwordConfirm: "비밀번호가 일치하지 않습니다" }));
-            return;
-        }
-        setFormValidatorErrors((prev) => ({ ...prev, passwordConfirm: "" }));
-        setBeforeValidate((prev) => ({
-            ...prev,
-            passwordConfirm: false,
-        }));
-    }, [debouncedPasswordConfirm, formData.password]);
-
     const checkAvailability = async (field: AvailabilityField) => {
         console.log("checkAvailabilit실행dddd");
 
@@ -285,7 +162,6 @@ function SignUpModal() {
         try {
             const apiCalls = {
                 blogId: (value: string) => checkAvailabilityRequest.blogId(value),
-                email: (value: string) => checkAvailabilityRequest.email(value),
                 username: (value: string) => checkAvailabilityRequest.username(value),
             };
 
@@ -385,11 +261,6 @@ function SignUpModal() {
                     setAvailabilityFocusWarning((prev) => ({ ...prev, username: true }));
                 }
                 break;
-            case "password":
-                if (!beforeValidate.email && !isAvailabilityChecked.email && formData.email.trim() !== "" && !formValidateErrors.email) {
-                    setAvailabilityFocusWarning((prev) => ({ ...prev, email: true }));
-                }
-                break;
         }
     };
 
@@ -399,14 +270,34 @@ function SignUpModal() {
         setIsLoading(true);
 
         try {
-            const response = await signupUser(formData);
-            setSignupUser(response.signupUser);
+            // const response = await signupOAuth2User(formData);
+            await signupOAuth2User(formData, tempOAuth2UserUniqueId);
+
+            setTempOAuth2UserUniqueId("");
 
             setIsClosing(true);
             setTimeout(() => {
-                setShowSignUp(false);
-                setShowEmailVerification(true);
+                setShowOAuth2NewUserModal(false);
             }, 300);
+
+            setTimeout(() => {
+                toast.success(
+                    <span>
+                        {/* OAuth2 신규 사용자 등록에 성공하였습니다. 응답보다 로그인에 성공하였습니다. 응답이 좋은것 같아서 주석처리
+                         <span style={{ fontSize: "0.7rem" }}>{response.message}</span>  */}
+                        <span style={{ fontSize: "0.8rem", whiteSpace: "pre-line" }}>
+                            가입이 완료되었습니다.<br />
+                            블로그를 시작해보세요! ✨
+                        </span>
+                    </span>,
+                    {
+                        autoClose: 2000,
+                        onClose: () => {
+                            window.location.reload();
+                        },
+                    }
+                );
+            }, 350);
         } catch (error: unknown) {
             if (error instanceof CustomHttpError) {
                 if (error.status === 429) {
@@ -415,8 +306,11 @@ function SignUpModal() {
                         setRateLimitErrorsFromServer("");
                     }, 60000);
                 } else {
-                    console.log("회원가입 실패 SignUp Page: ", error);
-                    setErrorMessageSignUpFromServer(error.message);
+                    console.log("OAuth2 회원가입 실패 SignUp Page: ", error);
+
+                    // 서버에서 받은 메시지인 "OAuth2 신규 사용자 등록에 실패하였습니다." 응답보다 아래 응답이 좋은것 같아서 주석처리
+                    //   setErrorMessageSignUpFromServer(error.message);
+                    setErrorMessageSignUpFromServer("가입이 실패하였습니다. 잠시후 다시 시도해주세요.");
                 }
             }
         } finally {
@@ -425,6 +319,7 @@ function SignUpModal() {
     };
 
     const handleCloseModal = () => {
+        setTempOAuth2UserUniqueId("");
         setIsClosing(true);
     };
 
@@ -443,14 +338,13 @@ function SignUpModal() {
 
     const isBlogIdButtonDisabled = isFieldDisabled("blogId");
     const isUsernameButtonDisabled = isFieldDisabled("username");
-    const isEmailButtonDisabled = isFieldDisabled("email");
 
     return (
         <div className='fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black bg-opacity-30'>
             <AnimatePresence
                 mode='wait'
                 onExitComplete={() => {
-                    setShowSignUp(false);
+                    setShowOAuth2NewUserModal(false);
                     setIsClosing(false);
                 }}
             >
@@ -469,7 +363,7 @@ function SignUpModal() {
                         {/* 오른쪽 부분 - 회원가입 폼 */}
                         <div className='w-full p-6'>
                             <div className='flex justify-between items-center mb-6'>
-                                <h2 className='text-2xl font-bold text-gray-800'>회원가입</h2>
+                                <h2 className='text-xl font-bold text-gray-800'>블로그 고유ID 및 사용자명(닉네임) 추가 입력</h2>
                                 <button className='text-gray-600 hover:text-black' onClick={handleCloseModal}>
                                     닫기
                                 </button>
@@ -477,7 +371,7 @@ function SignUpModal() {
 
                             {/* w-full px-4 py-2 text-gray-700 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 */}
 
-                            <p className='text-gray-600 mb-4'>이메일로 회원가입</p>
+                            <p className='text-gray-600 text-sm mb-4'>1시간 이내에 등록 완료해야 합니다.</p>
                             <form onSubmit={handleSignUp}>
                                 {/* 블로그 ID 입력 */}
                                 <div>
@@ -569,101 +463,6 @@ function SignUpModal() {
                                     {availabilityFocusWarning.username && <p className='text-red-500 text-sm mt-2'>사용자명 중복 확인을 해주세요</p>}
                                 </div>
 
-                                {/* 이메일 입력  */}
-                                <div>
-                                    <label className='block text-sm font-medium mb-1'>
-                                        이메일 <span className='text-red-500'>*</span>
-                                    </label>
-                                    <div className='flex gap-2'>
-                                        <input
-                                            name='email'
-                                            type='email'
-                                            value={formData.email}
-                                            onChange={handleChange}
-                                            onFocus={() => handleFieldFocus("email")}
-                                            className='flex-1 p-2 border rounded'
-                                            placeholder='example@email.com'
-                                        />
-                                        <button
-                                            type='button'
-                                            onClick={() => checkAvailability("email")}
-                                            disabled={isEmailButtonDisabled}
-                                            className={`${
-                                                isEmailButtonDisabled
-                                                    ? "cursor-not-allowed bg-gray-100 text-gray-400 border border-gray-200"
-                                                    : "cursor-pointer bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800"
-                                            } rounded-lg px-4 py-2 font-medium transition-all duration-200 ease-in-out shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
-                                        >
-                                            {isAvailabilityLoading.email ? (
-                                                "확인중..."
-                                            ) : isAvailabilityChecked.email ? (
-                                                <FaCheck size={16} />
-                                            ) : (
-                                                "중복확인"
-                                            )}
-                                        </button>
-                                    </div>
-
-                                    {formValidateErrors.email && <p className='text-red-500 text-sm mt-1'>{formValidateErrors.email}</p>}
-                                    {rateLimitErrors.email && <p className='text-red-500 text-sm mt-1'>{rateLimitErrors.email}</p>}
-
-                                    {duplicateCheckErrors.email && <p className='text-red-500 text-sm mt-1'>{duplicateCheckErrors.email}</p>}
-
-                                    {availabilityFocusWarning.email && <p className='text-red-500 text-sm mt-2'>이메일 중복 확인을 해주세요</p>}
-                                </div>
-
-                                {/* 비밀번호 입력  */}
-                                <div>
-                                    <label className='block text-sm font-medium mb-1'>
-                                        비밀번호 <span className='text-red-500'>*</span>
-                                    </label>
-                                    <div className='relative'>
-                                        <input
-                                            name='password'
-                                            type={showPassword ? "text" : "password"}
-                                            value={formData.password}
-                                            onChange={handleChange}
-                                            onFocus={() => handleFieldFocus("password")}
-                                            className='w-full p-2 border rounded'
-                                            placeholder='영문만 사용, 첫 글자 대문자, 8자 이상, 소문자/숫자/특수문자 포함'
-                                        />
-                                        <button
-                                            type='button'
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className='absolute right-2 top-1/2 transform -translate-y-1/2'
-                                        >
-                                            {showPassword ? "숨기기" : "보기"}
-                                        </button>
-                                    </div>
-                                    {formValidateErrors.password && <p className='text-red-500 text-sm mt-1'>{formValidateErrors.password}</p>}
-                                </div>
-
-                                {/* 비밀번호 재확인  */}
-                                <div>
-                                    <label className='block text-sm font-medium mb-1'>
-                                        비밀번호 확인 <span className='text-red-500'>*</span>
-                                    </label>
-                                    <div className='relative'>
-                                        <input
-                                            name='passwordConfirm'
-                                            type={showConfirmPassword ? "text" : "password"}
-                                            value={formData.passwordConfirm}
-                                            onChange={handleChange}
-                                            className='w-full p-2 border rounded'
-                                            placeholder='비밀번호를 다시 입력해주세요'
-                                        />
-                                        <button
-                                            type='button'
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className='absolute right-2 top-1/2 transform -translate-y-1/2'
-                                        >
-                                            {showConfirmPassword ? "숨기기" : "보기"}
-                                        </button>
-                                    </div>
-                                    {formValidateErrors.passwordConfirm && (
-                                        <p className='text-red-500 text-sm mt-1'>{formValidateErrors.passwordConfirm}</p>
-                                    )}
-                                </div>
                                 {/* ? "cursor-pointer shadow-md  bg-[#333] text-white hover:bg-[#505050] hover:shadow-md transition-all"
                                     : "cursor-not-allowed bg-white text-gray-400 border-2 border-manageBgColor" */}
                                 <button
@@ -673,14 +472,14 @@ function SignUpModal() {
                                     }`}
                                     disabled={!isFormValid() || isLoading}
                                 >
-                                    {isLoading ? "처리중..." : "회원가입"}
+                                    {isLoading ? "처리중..." : "등록"}
                                 </button>
 
                                 {errorMessageSignUpFromServer && <p className='text-sm text-red-500 mb-4'>{errorMessageSignUpFromServer}</p>}
                                 {rateLimitErrorsFromServer && <p className='text-sm text-red-500 mb-4'>{rateLimitErrorsFromServer}</p>}
                             </form>
 
-                            <div className='text-center mt-6'>
+                            {/* <div className='text-center mt-6'>
                                 <p className='text-sm text-gray-600'>
                                     계정이 이미 있으신가요?{" "}
                                     <a
@@ -698,7 +497,7 @@ function SignUpModal() {
                                         로그인
                                     </a>
                                 </p>
-                            </div>
+                            </div> */}
                         </div>
                     </motion.div>
                 )}
@@ -707,4 +506,4 @@ function SignUpModal() {
     );
 }
 
-export default SignUpModal;
+export default OAuth2NewUserModal;

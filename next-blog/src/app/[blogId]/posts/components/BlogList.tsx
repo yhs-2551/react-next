@@ -6,14 +6,14 @@ import { useRouter } from "next/navigation";
 
 // import { useGetPosts } from "@/customHooks/useGetPosts";
 // import useCheckAccessToken from "@/customHooks/useCheckAccessToken";
-import ClientWrapper from "@/providers/ClientWrapper";
 
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import PostItem from "./PostItem";
 import { PostResponse } from "@/types/PostTypes";
 import { checkAccessToken } from "@/services/api";
 import { refreshToken } from "@/utils/refreshToken";
+import { useAuthStore } from "@/store/appStore";
+import { CustomHttpError } from "@/utils/CustomHttpError";
+import { toast } from "react-toastify";
 
 interface DecodedToken {
     blogId: string;
@@ -27,28 +27,60 @@ interface BlogListProps {
 function BlogList({ initialData, blogId }: BlogListProps) {
     const [blogIdFromToken, setBlogIdFromToken] = useState<string | null>(null);
     const posts = initialData;
- 
+    const { isInitialized } = useAuthStore();
 
     const TOKEN_KEY = "access_token";
 
     // 여러 사용자가 있을 때 해당 사용자 본인만 글쓰기를 볼 수 있음.
     useEffect(() => {
-        try {
-            const token = localStorage.getItem(TOKEN_KEY);
-            if (token) {
-                const decodedToken = jwtDecode<DecodedToken>(token);
-                setBlogIdFromToken(decodedToken.blogId);
+        if (isInitialized) {
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                if (token) {
+                    const decodedToken = jwtDecode<DecodedToken>(token);
+                    setBlogIdFromToken(decodedToken.blogId);
+                }
+            } catch (error) {
+                console.error("Error decoding token:", error);
             }
-        } catch (error) {
-            console.error("Error decoding token:", error);
         }
+    }, [isInitialized, blogIdFromToken]);
 
-        console.log("blogIdFromToken >>>", blogIdFromToken);
-        console.log("blogId >>>", blogId);
-    }, [blogIdFromToken]);
+    // if (isValidToken) {
+    //     // 토큰이 유효할 때 수정페이지로 접근
+    //     // router.push를 쓰면 클라이언트 측에서 페이지 이동이 일어나기 때문에, 수정 페이지로 접근 시 페이지 전체가 새로고침 되지 않아 에디터 기능이 제대로 작동하지 않는다.
+    //     // 따라서 수정 페이지로 이동할땐 window.location.href를 사용하여 수정 페이지 전체 새로고침이 일어나도록 한다.
+    //     // router.push(`/posts/${postId}/edit`);
+    //     window.location.assign(`/${blogId}/posts/${postId}/edit`);
+    // }
+
+    // if (isValidToken === false) {
+    //     try {
+    //         const newAccessToken = await refreshToken();
+    //         if (newAccessToken) {
+    //             // 토큰이 유효할 때 수정페이지로 접근
+    //             // router.push(`/posts/${postId}/edit`);
+    //             window.location.assign(`/${blogId}/posts/${postId}/edit`);
+    //         }
+    //     } catch (error: unknown) {
+    //         if (error instanceof CustomHttpError) {
+    //             localStorage.removeItem("access_token");
+
+    //             toast.error(
+    //                 <span>
+    //                     <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+    //                 </span>,
+    //                 {
+    //                     onClose: () => {
+    //                         window.location.reload();
+    //                     },
+    //                 }
+    //             );
+    //         }
+    //     }
+    // }
 
     const handleNewPost = async () => {
-
         // 토큰이 있어야만 애초에 글쓰기를 볼 수 있음. 주석처리
         // const token = localStorage.getItem(TOKEN_KEY);
         // if (!token) {
@@ -57,28 +89,41 @@ function BlogList({ initialData, blogId }: BlogListProps) {
         // }
         const isValidToken = await checkAccessToken();
 
-        if (!isValidToken) {
-            const newAccessToken = await refreshToken();
-            if (newAccessToken) {
-                const isValidToken = await checkAccessToken();
-                if (isValidToken) {
-                    // 최종적으로 토큰이 유효할 때 작성 페이지로 접근
+        if (isValidToken === null) {
+            return;
+        }
+
+        if (isValidToken === false) {
+            try {
+                const newAccessToken = await refreshToken();
+                if (newAccessToken) {
                     window.location.assign(`/${blogId}/posts/new`);
                     // router.push("/posts/new");
                 }
-                if (!isValidToken) {
-                    throw new Error("Failed to enter the new post page. please retry again.");
+            } catch (error: unknown) {
+                if (error instanceof CustomHttpError) {
+                    localStorage.removeItem("access_token");
+
+                    toast.error(
+                        <span>
+                            <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                        </span>,
+                        {
+                            onClose: () => {
+                                window.location.reload();
+                            },
+                        }
+                    );
                 }
             }
+        } else if (isValidToken === true) {
+            window.location.assign(`/${blogId}/posts/new`);
         }
 
-        window.location.assign(`/${blogId}/posts/new`);
-        // router.push("/posts/new");
     };
 
     return (
         <>
-            <ToastContainer position='top-center' />
             <div className='container max-w-4xl mx-auto p-6'>
                 <h2 className='text-2xl font-bold text-center mb-8'>전체 글</h2>
 

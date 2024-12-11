@@ -24,6 +24,7 @@ import { FileMetadata, PostRequest, PostResponse } from "@/types/PostTypes";
 import { Tag } from "@/types/TagTypes";
 import { CategoryType } from "@/types/CateogryTypes";
 import { useGetAllCategories } from "@/customHooks/useGetCategories";
+import { CustomHttpError } from "@/utils/CustomHttpError";
 
 // QuillEditor 컴포넌트를 동적으로 임포트하면서 highlight.js도 함께 설정
 const QuillEditor = dynamic(
@@ -149,7 +150,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                 }
             });
 
-            // 수정 페이지에서 초기 카테고리 데이터 지정은 아래쪽 useEffect에서 하는게 아닌, 카테고리 관련된 useEffect에서 같이 처리. 
+            // 수정 페이지에서 초기 카테고리 데이터 지정은 아래쪽 useEffect에서 하는게 아닌, 카테고리 관련된 useEffect에서 같이 처리.
             if (categoryRef.current && initialData?.categoryName) {
                 categoryRef.current.value = initialData.categoryName;
             }
@@ -281,10 +282,18 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
             localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE"); // 글 작성 성공 후 캐시 삭제. 카테고리 페이지로 갔을 떄 새로운 데이터로 불러오기 위함
         };
 
-        const onError = (error: any) => {
-            console.log(isEditingRef.current ? "Blog Edit Form 실패 실행" : "Blog 작성 실패 실행");
-            console.error("Error:", error); // 오류 로그 확인
-            errorMessageRef.current = error.message; // useAddPost 또는 useUpdatePost에서 throw new Error로 던진 에러 메시지가 error.message에서 사용 된다.
+        const onError = (error: unknown) => {
+            if (error instanceof CustomHttpError) {
+                if (error.status === 401) {
+                    toast.error(
+                        <span style={{ whiteSpace: "pre-line" }}>
+                            <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                        </span>
+                    );
+                } else {
+                    errorMessageRef.current = error.message; // useAddPost 또는 useUpdatePost에서 throw new Error로 던진 에러 메시지가 error.message에서 사용 된다.
+                }
+            }
         };
 
         // 글 수정 같은 경우에는 글 작성자 ID와 토큰 Id값을 비교해서 백엔드에서 검증 처리를 할 수 있지만, 글 생성 같은 경우에는 글 작성자 ID가 없기 때문에 경로 파라미터인 blogId를 사용하여 백엔드에서 검증 처리를 한다.

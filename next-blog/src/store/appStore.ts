@@ -1,4 +1,5 @@
-import { create } from 'zustand';
+import { SignupUser } from "@/types/SignupUserTypes";
+import { create } from "zustand";
 
 interface ProfileState {
     blogName: string;
@@ -12,9 +13,9 @@ interface ProfileState {
 }
 
 export const userProfileStore = create<ProfileState>((set) => ({
-    blogName: '아이스아메리카노 블로그',
-    blogNickName: '홍길동',
-    blogDescription: '홍길동 내용 입니다',
+    blogName: "아이스아메리카노 블로그",
+    blogNickName: "홍길동",
+    blogDescription: "홍길동 내용 입니다",
     profileImage: null,
     setBlogName: (name) => set({ blogName: name }),
     setBlogNickName: (userName) => set({ blogNickName: userName }),
@@ -26,31 +27,44 @@ interface AuthState {
     showLogin: boolean;
     showSignUp: boolean;
     showEmailVerification: boolean;
-    email: string;
-    isAuthenticated: boolean;
+    signupUser: SignupUser;
+    isInitialized: boolean;
+    lastVisitedPage: string;
+    isShowOAuth2NewUserModal: boolean;
+    tempOAuth2UserUniqueId: string;
     setShowLogin: (show: boolean) => void;
     setShowSignUp: (show: boolean) => void;
     setShowEmailVerification: (show: boolean) => void;
-    setEmail: (email: string) => void;
-    setIsAuthenticated: (isAuth: boolean) => void;
-    reset: () => void;
-  }
-  
-  export const useAuthStore = create<AuthState>((set) => ({
+    setSignupUser: (signupUser: SignupUser) => void;
+    setInitialized: (status: boolean) => void;
+    setLastVisitedPage: (url: string) => void;
+    setShowOAuth2NewUserModal: (status: boolean) => void;
+    setTempOAuth2UserUniqueId: (id: string) => void;
+    // reset: () => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
     showLogin: false,
     showSignUp: false,
     showEmailVerification: false,
-    email: '',
-    isAuthenticated: false,
+    signupUser: { blogId: "", username: "", email: "", password: "", passwordConfirm: "" },
+    isInitialized: false,
+    lastVisitedPage: '/',
+    isShowOAuth2NewUserModal: false,
+    tempOAuth2UserUniqueId: "",
     setShowLogin: (show) => set({ showLogin: show }),
     setShowSignUp: (show) => set({ showSignUp: show }),
     setShowEmailVerification: (show) => set({ showEmailVerification: show }),
-    setEmail: (email) => set({ email }),
-    setIsAuthenticated: (isAuth) => set({ isAuthenticated: isAuth }),
-    reset: () => set({
-      showLogin: false,
-      showSignUp: false,
-      showEmailVerification: false,
-      email: '',
-    })
-  }));
+    setSignupUser: (signupUser) => set({ signupUser }),
+    setInitialized: (status) => set({ isInitialized: status }),
+    setLastVisitedPage: (url) => set({lastVisitedPage: url}),
+    setShowOAuth2NewUserModal: (status) => set({isShowOAuth2NewUserModal: status}),
+    setTempOAuth2UserUniqueId: (id) => set({tempOAuth2UserUniqueId: id}),
+
+    // reset: () => set({
+    //   showLogin: false,
+    //   showSignUp: false,
+    //   showEmailVerification: false,
+    //   signupUser: {blogId: '', username: '', email: '', password: '', passwordConfirm: ''},
+    // })
+}));

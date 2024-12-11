@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef } from "react";
 
 // import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 
 // import { faFile, faImage, faVideo, faAlignCenter, faAlignLeft, faAlignRight } from "@fortawesome/free-solid-svg-icons";
 

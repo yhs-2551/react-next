@@ -26,11 +26,12 @@ export default function RootLayout({
     return (
         <html lang='en'>
             <body className={inter.className}>
+                <AuthProvider />
                 <div className='page-wrapper min-h-screen flex flex-col'>
                     <CommonHeader />
                     <main className='flex-grow'>{children}</main>
                     <CommonFooter />
-                    <AuthProvider />
+
                     <ToastContainer position='top-center' />
                 </div>
             </body>

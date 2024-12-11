@@ -15,12 +15,12 @@ import { useParams, useRouter } from "next/navigation";
 import { toast, ToastContainer } from "react-toastify";
 import { checkAccessToken, fetchIsAuthor } from "@/services/api";
 
-import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
-
 import NextImage from "next/image";
 import { FileMetadata, PostResponse } from "@/types/PostTypes";
 import { refreshToken } from "@/utils/refreshToken";
 import DOMPurify from "dompurify";
+import { CustomHttpError } from "@/utils/CustomHttpError";
+import { useAuthStore } from "@/store/appStore";
 
 function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId: string }) {
     const [isAuthor, setIsAuthor]: [boolean, React.Dispatch<React.SetStateAction<boolean>>] = useState<boolean>(false); // 작성자 여부 상태
@@ -30,6 +30,8 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     const blogId = params.blogId as string;
 
     const post = initialData;
+
+    const { isInitialized } = useAuthStore();
 
     const parseStyleString = (style: string) => {
         return style.split(";").reduce((acc: { [key: string]: string | number }, styleProperty) => {
@@ -120,18 +122,32 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     //  액세스 토큰이 유효하다면 작성자 인지 확인하는 로직
     // 일부 React Hook 특히 useEffect는 React Strict mode에서 두 번 실행 함. 끄고 싶다면 next.config.mjs에서 스트릭트 모드 off 해야함.
     useEffect(() => {
-        const accessToken: string | null = localStorage.getItem("access_token");
+        if (isInitialized) {
+            const accessToken: string | null = localStorage.getItem("access_token");
 
-        if (!accessToken) return;
+            if (!accessToken) return; // 비로그인 사용자 처리
 
-        const fetchAuthorStatus: () => Promise<void> = async (): Promise<void> => {
-            const isAuthor = await fetchIsAuthor(postId, blogId, accessToken);
+            const fetchAuthorStatus: () => Promise<void> = async (): Promise<void> => {
+                try {
+                    const isAuthor = await fetchIsAuthor(postId, blogId, accessToken);
 
-            if (isAuthor) setIsAuthor(isAuthor);
-        };
+                    if (isAuthor) setIsAuthor(isAuthor);
+                } catch (error: unknown) { // ux측면에서 작성자 확인이 실패하였습니다. 잠시 후 다시 시도해주세요. 할필요가 있을까 일단 보류
+                    if (error instanceof CustomHttpError) {
+                        if (error.status === 500) {
+                            toast.error(
+                                <span>
+                                    <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                                </span>
+                            );
+                        }
+                    }
+                }
+            };
 
-        fetchAuthorStatus();
-    }, []);
+            fetchAuthorStatus();
+        }
+    }, [isInitialized]);
 
     // 아래 상세페이지에서 파일 다운할 수 있게 하는 코드.
 
@@ -174,7 +190,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     }, []);
 
     const handleEdit: () => Promise<void> = async (): Promise<void> => {
-        const isValidToken: boolean | undefined = await checkAccessToken();
+        const isValidToken: boolean | undefined | null = await checkAccessToken();
 
         if (isValidToken) {
             // 토큰이 유효할 때 수정페이지로 접근
@@ -184,32 +200,76 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
             window.location.assign(`/${blogId}/posts/${postId}/edit`);
         }
 
-        if (!isValidToken) {
-            const newAccessToken = await refreshToken();
-            if (newAccessToken) {
-                // 토큰이 유효할 때 수정페이지로 접근
-                // router.push(`/posts/${postId}/edit`);
-                window.location.assign(`/${blogId}/posts/${postId}/edit`);
-            }
-            if (!newAccessToken) {
-                throw new Error("Failed to enter the edit post page. please retry again.");
+        if (isValidToken === false) {
+            try {
+                const newAccessToken = await refreshToken();
+                if (newAccessToken) {
+                    // 토큰이 유효할 때 수정페이지로 접근
+                    // router.push(`/posts/${postId}/edit`);
+                    window.location.assign(`/${blogId}/posts/${postId}/edit`);
+                }
+            } catch (error: unknown) {
+                if (error instanceof CustomHttpError) {
+                    localStorage.removeItem("access_token");
+
+                    toast.error(
+                        <span>
+                            <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                        </span>,
+                        {
+                            onClose: () => {
+                                window.location.reload();
+                            },
+                        }
+                    );
+                }
             }
         }
     };
 
     const handleDelete: () => void = (): void => {
         deletePost.mutate(undefined, {
-            onSuccess: async () => {
+            onSuccess: async (data: { message: string } | undefined, variables: void, context: unknown) => {
                 localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE"); // 글 삭제 성공 후 캐시 삭제. 카테고리 페이지로 갔을 떄 새로운 데이터로 불러오기 위함
 
                 // 이전에 사용한 router관련 push, router.replace, refresh, reload에 대한 주석 설명은 이전 커밋 기록들에서 확인.
                 // 수정 및 삭제시에도 window방식을 사용하기 때문에 일관성 및 앱의 안전성을 위하여 window방식 사용
-                window.location.replace(`/${blogId}/posts`);
-
-                console.log("Post deleted successfully");
+                toast.success(
+                    <span>
+                        <span style={{ fontSize: "0.7rem" }}>{data?.message}</span>
+                    </span>,
+                    {
+                        onClose: () => {
+                            window.location.replace(`/${blogId}/posts`);
+                        },
+                        autoClose: 2000, // 2초 후 자동으로 닫힘
+                    }
+                );
             },
-            onError: (error: any) => {
-                console.error("Error deleting post:", error.message);
+            onError: (error: unknown) => {
+                if (error instanceof CustomHttpError) {
+                    if (error.status === 401) {
+                        // 리프레시 토큰 까지 만료된 경우 재로그인 필요
+
+                        localStorage.removeItem("access_token");
+                        toast.error(
+                            <span>
+                                <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                            </span>,
+                            {
+                                onClose: () => {
+                                    window.location.reload();
+                                },
+                            }
+                        );
+                    } else if (error.status === 500) {
+                        toast.error(
+                            <span>
+                                <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                            </span>
+                        );
+                    }
+                }
             },
         });
     };
@@ -221,7 +281,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
 
     return (
         <>
-            <ToastContainer />
+            <ToastContainer position='top-center' />
             <div className='container mx-auto p-6 max-w-4xl'>
                 {/* Category and Date */}
 

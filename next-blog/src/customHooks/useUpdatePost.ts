@@ -1,13 +1,9 @@
-// import { useRouter } from "next/navigation";
 import { PostRequest } from "@/types/PostTypes";
+import { CustomHttpError } from "@/utils/CustomHttpError";
 import { refreshToken } from "@/utils/refreshToken";
 import { useMutation } from "react-query";
-// import { toast } from "react-toastify";
 
 function useUpdatePost(id: string, blogId: string) {
-    // const queryClient = useQueryClient();
-    // const router = useRouter();
-
     const accessToken = localStorage.getItem("access_token") ?? false;
 
     return useMutation(
@@ -30,21 +26,27 @@ function useUpdatePost(id: string, blogId: string) {
 
             if (!response.ok) {
                 if (response.status === 403) {
-                    throw new Error("Forbidden: You do not have permission to update this post.");
+                    throw new CustomHttpError(response.status, "게시글을 수정할 권한이 없습니다.");
                 } else if (response.status === 401) {
-                    const newAccessToken = await refreshToken();
-                    if (newAccessToken) {
-                        response = await updatePost(id, newAccessToken);
+                    try {
+                        const newAccessToken = await refreshToken();
+                        if (newAccessToken) {
+                            response = await updatePost(id, newAccessToken);
+                        }
+                    } catch (error: unknown) {
+                        if (error instanceof CustomHttpError) { // 리프레시 토큰 까지 만료되어서 재로그인 필요
+                            throw new CustomHttpError(error.status, "세션이 만료되었습니다. \n로그아웃 이후 재로그인 해주세요.");
+                        }
                     }
-                }  
+                }
             }
 
-            if (!response.ok) {
-                throw new Error("Failed to write update post please retry again.");
+            if (!response.ok && response.status === 500) {
+                throw new CustomHttpError(response.status, "서버측 오류로 인해 일시적으로 게시글 수정이 불가능합니다. 잠시 후 다시 시도해주세요.");
             }
 
             return response.json();
-        },
+        }
         // {
         //     // Optimistic Update
         //     onMutate: async (newPost) => {

@@ -24,7 +24,9 @@ export default function CommonHeader() {
                 )} */
     }
 
-    const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); // 작성자 여부 상태
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+
+    const { isInitialized } = useAuthStore();
 
     const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -43,16 +45,24 @@ export default function CommonHeader() {
         }
     };
 
+    // zustand의 상태관리는 휘발성이기 때문에 zustand 전역상태로 로그인을 관리하기 보다 페이지를 새로고침 시키면서 아래 useEffect 재실행 시킴.
+    // 재실행됨에 따라 액세스 토큰 유무로 로그인 상태를 관리.
     useEffect(() => {
-        // useEffect 내부가 아닌 외부에서 실행하면 서버사이드 렌더링에서 브라우저의 localStorage를 정의할 수 없다는 오류 발생.
-        const accessToken = localStorage.getItem("access_token");
-        setIsLoggedIn(!!accessToken);
+        if (isInitialized) {
+            console.log("실행 헤더");
+            // console.log("CommonHeader useEffect 실행");
 
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, []);
+            // useEffect 내부가 아닌 외부에서 실행하면 서버사이드 렌더링에서 브라우저의 localStorage를 정의할 수 없다는 오류 발생.
+            const accessToken = localStorage.getItem("access_token");
+            console.log("accessToken: ", accessToken);
+            setIsLoggedIn(!!accessToken);
+
+            document.addEventListener("mousedown", handleClickOutside);
+            return () => {
+                document.removeEventListener("mousedown", handleClickOutside);
+            };
+        }
+    }, [isInitialized]);
 
     const handleManageClick = () => {
         router.push("/manage");
@@ -70,26 +80,13 @@ export default function CommonHeader() {
                 if (logoutSuccessResponse) {
                     setIsMenuOpen(false);
                     setIsLoggedIn(false);
-                    console.log("로그아웃 성공 " + logoutSuccessResponse);
-                    // window.location.reload(); 이건 UX적으로 별로같다 나중에 필요하면 사용 아니면 router.refresh 및 useAuthstore 리셋. 
+                    window.location.reload();
                 }
             } catch (error: any) {
                 // 로그아웃 실패의 경우 토스트 메시지로 사용자에게 알릴 순 있지만, 일단 보류
                 console.log("로그아웃 실패: ", error.message);
             }
         }
-        // else {
-
-        //     // 현재 URL 저장 (로그인 페이지 제외)
-        //     if (!pathname.includes("/login")) {
-        //         localStorage.setItem("lastVisitedUrl", pathname);
-        //     }
-
-        //     setIsMenuOpen(false);
-
-        //     router.push("/login");
-
-        // }
     };
 
     const handleLoginClick = () => {
@@ -153,7 +150,7 @@ export default function CommonHeader() {
                                 aria-label='로그아웃 처리'
                                 onClick={handleLogoutClick}
                             >
-                                {isLoggedIn && "로그아웃"}
+                               로그아웃
                             </button>
                         </nav>
                     )}
