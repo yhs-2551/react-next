@@ -3,6 +3,9 @@ import { Inter } from "next/font/google";
 import "@/app/globals.css";
 import CommonHeader from "./(common-footer-header)/header/CommonHeader";
 import CommonFooter from "./(common-footer-header)/footer/CommonFooter";
+import AuthProvider from "@/providers/AuthProvider";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // import { config } from "@fortawesome/fontawesome-svg-core";
 // import "@fortawesome/fontawesome-svg-core/styles.css";
@@ -23,13 +26,13 @@ export default function RootLayout({
     return (
         <html lang='en'>
             <body className={inter.className}>
+                <AuthProvider />
                 <div className='page-wrapper min-h-screen flex flex-col'>
-                    {/* <CommonHeader /> */}
-                    <main className='flex-grow'>
-                        {children}
- 
-                    </main>
-                    {/* <CommonFooter /> */}
+                    <CommonHeader />
+                    <main className='flex-grow'>{children}</main>
+                    <CommonFooter />
+
+                    <ToastContainer position='top-center' />
                 </div>
             </body>
         </html>

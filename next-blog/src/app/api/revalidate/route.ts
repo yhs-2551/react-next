@@ -2,10 +2,10 @@
 // import { revalidateTag } from 'next/cache';
 
 // export async function POST(request: Request) {
-//     const { userIdentifier } = await request.json();
+//     const { blogId } = await request.json();
     
 //     // 회원 탈퇴/수정 시 호출
-//     revalidateTag(`user-${userIdentifier}`);
+//     revalidateTag(`user-${blogId}`);
     
 //     return Response.json({ revalidated: true });
 // }

@@ -7,7 +7,7 @@ export const useGetAllCategories = () => {
     const queryClient = useQueryClient();
 
     const params = useParams();
-    const pathUserIdentifier = params.userIdentifier as string;
+    const blogId = params.blogId as string;
 
     const cachedCategories = localStorage.getItem("REACT_QUERY_OFFLINE_CACHE");
 
@@ -15,8 +15,7 @@ export const useGetAllCategories = () => {
 
     const shouldFetch = !cachedCategories;
 
-
-    const query = useQuery(["categories", pathUserIdentifier], fetchCategories, {
+    const query = useQuery(["categories", blogId], () => fetchCategories(blogId), {
         enabled: shouldFetch,
         staleTime: Infinity, // 데이터가 절대 stale하지 않음
         cacheTime: Infinity, // 캐시가 만료되지 않음
@@ -26,7 +25,7 @@ export const useGetAllCategories = () => {
     });
 
     const refetchCategories = () => {
-        queryClient.refetchQueries(["categories", pathUserIdentifier], { exact: true });
+        queryClient.refetchQueries(["categories", blogId], { exact: true });
     };
 
     return { ...query, refetchCategories };

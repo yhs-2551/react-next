@@ -2,9 +2,10 @@
 //     QueryFunctionContext,
 // } from "react-query";
 
+import { OAuth2UserAdditionalInfo, SignupUser } from "@/types/SignupUserTypes";
+import { CustomHttpError } from "@/utils/CustomHttpError";
 import { refreshToken } from "@/utils/refreshToken";
 
- 
 // export const fetchPosts = async () => {
 
 //     console.log("데이터 가져오는 리액트 쿼리 실행");
@@ -43,7 +44,7 @@ import { refreshToken } from "@/utils/refreshToken";
 
 export const fetchAccessToken = async () => {
     // 초기 로그인 시 브라우저 쿠키에 담긴 액세스 토큰을 서버에서 검증한 후, 다시 클라이언트측으로 응답 헤더를 통해 액세스 토큰 전송
-    const response = await fetch("http://localhost:8000/api/token/initial-token", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/token/initial-token`, {
         method: "GET",
         credentials: "include",
     });
@@ -69,12 +70,12 @@ export const checkAccessToken = async () => {
     const accessToken = localStorage.getItem("access_token");
 
     if (!accessToken) {
-        return false;
+        return null;
     }
 
     try {
         if (accessToken) {
-            const response = await fetch("http://localhost:8000/api/token/check-access-token", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/token/check-access-token`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
@@ -94,28 +95,46 @@ export const checkAccessToken = async () => {
     }
 };
 
-export const fetchIsAuthor = async (postId: string) => {
-    const accessToken = localStorage.getItem("access_token");
+// if (response.status === 401) {
+//     try {
+//         const newAccessToken = await refreshToken();
+//         if (newAccessToken) {
+//             response = await deletePost(postId, newAccessToken, blogId);
+//         }
+//     } catch (error: unknown) { // 리프레시 토큰 까지 만료되면 재로그인 필요
+//         if (error instanceof CustomHttpError) {
+//             setAccessToken(null);
+//             throw new CustomHttpError(error.status, error.message);
+//         }
+//     }
+// }
 
-    const response = await fetch(`http://localhost:8000/api/token/${postId}/verify-author`, {
-        method: "GET",
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-        },
-    });
+export const fetchIsAuthor = async (postId: string, blogId: string, accessToken: string | null) => {
+    const verifyPostAuthor = async (accessToken: string | null) => {
+        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/${postId}/verify-author`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+            },
+        });
+    };
+
+    const response = await verifyPostAuthor(accessToken);
+
+    if (!response.ok && response.status === 500) {
+        throw new CustomHttpError(response.status, "작성자 확인에 실패했습니다. 잠시후 다시 시도해주세요.");
+    }
 
     const data = await response.json();
     return data.isAuthor; // 서버에서 isAuthor 값을 반환받아 true or false값을 반환
 };
 
-export const fetchCategories = async () => {
-    console.log("실행 펫치 카테고리");
-    
+export const fetchCategories = async (blogId: string) => {
     const accessToken = localStorage.getItem("access_token") ?? false;
 
     const getAllCategories: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
-        return await fetch("http://localhost:8000/api/categories", {
+        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/categories`, {
             method: "GET",
             headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -142,59 +161,187 @@ export const fetchCategories = async () => {
     return await response.json();
 };
 
-export const signupUser = async (newUser: { username: string; email: string; password: string }) => {
-    try {
-        const response = await fetch("http://localhost:8000/api/user/signup", {
-            method: "POST",
+export const checkAvailabilityRequest = {
+    blogId: async (value: string): Promise<{ status: number; isExist: boolean; message: string }> => {
+        const response = await fetch(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/blog-id/duplicate/${value}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+        const responseData = await response.json();
+
+        if (response.status === 429 || response.status === 409) {
+            throw new CustomHttpError(response.status, responseData.message);
+        }
+
+        return {
+            status: response.status,
+            isExist: responseData.data,
+            message: responseData.message,
+        };
+    },
+
+    email: async (value: string): Promise<{ status: number; isExist: boolean; message: string }> => {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/email/duplicate/${value}`, {
+            method: "GET",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(newUser),
         });
+        const responseData = await response.json();
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "회원가입에 실패했습니다.");
+        if (response.status === 429 || response.status === 409) {
+            throw new CustomHttpError(response.status, responseData.message);
         }
 
-        return await response.json(); // 성공시 JSON 응답 반환
-    } catch (error) {
-        console.error("회원가입 실패:", error);
-        throw error; // 상위 함수로 에러 전달
-    }
+        return {
+            status: response.status,
+            isExist: responseData.data,
+            message: responseData.message,
+        };
+    },
+
+    username: async (value: string): Promise<{ status: number; isExist: boolean; message: string }> => {
+        console.log("실행 userName 부분");
+
+        const response = await fetch(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/username/duplicate/${value}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+        const responseData = await response.json();
+
+        console.log("responseDatauserName 부분", responseData);
+
+        if (response.status === 429 || response.status === 409) {
+            throw new CustomHttpError(response.status, responseData.message);
+        }
+
+        return {
+            status: response.status,
+            isExist: responseData.data,
+            message: responseData.message,
+        };
+    },
 };
 
-export const loginUser = async (loginData: { email: string; password: string }) => {
-    try {
-        const response = await fetch("http://localhost:8000/api/user/login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            credentials: "include", // 쿠키 저장을 위해 사용
-            body: JSON.stringify(loginData),
-        });
+export const signupUser = async (newUser: SignupUser) => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/signup`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newUser),
+    });
 
-        const accessToken = response.headers.get("Authorization")?.split(" ")[1];
+    const responseData = await response.json(); // 성공시 JSON 응답 반환
 
-        if (accessToken) {
-            localStorage.setItem("access_token", accessToken);
-        }
+    if (!response.ok) {
+        throw new CustomHttpError(response.status, responseData.message);
+    }
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "로그인에 실패했습니다.");
-        }
+    return {
+        status: response.status,
+        message: responseData.message,
+        signupUser: responseData.data,
+    };
+};
 
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-            return await response.json(); // JSON 응답 반환
-        } else {
-            return await response.text(); // 문자열 응답 반환
-        }
-    } catch (error) {
-        console.error("로그인 실패:", error);
-        throw error; // 상위 함수로 에러 전달
+export const signupOAuth2User = async (additionalInfo: OAuth2UserAdditionalInfo, tempOAuth2UserUniqueId: string) => {
+    const requestData = {
+        ...additionalInfo,
+        tempOAuth2UserUniqueId,
+    };
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/oauth2/users`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include", // 응답으로 쿠키를 받으려면 필수
+        body: JSON.stringify(requestData),
+    });
+
+    const accessToken = response.headers.get("Authorization")?.split(" ")[1];
+
+    if (accessToken) {
+        localStorage.setItem("access_token", accessToken);
+    }
+
+    const responseData = await response.json(); // 성공시 JSON 응답 반환
+
+    if (!response.ok) {
+        throw new CustomHttpError(response.status, responseData.message);
+    }
+
+    return {
+        status: response.status,
+        message: responseData.message,
+        signupUser: responseData.data,
+    };
+};
+
+export const verifyEmailCode = async (email: string, code: string) => {
+    const verify = {
+        email,
+        code,
+    };
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/verify-email`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(verify),
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+        throw new CustomHttpError(response.status, responseData.message);
+    }
+
+    return {
+        status: response.status,
+        message: responseData.message,
+        userData: responseData.data,
+    };
+};
+
+export const loginUser = async (loginData: { email: string; password: string; rememberMe: boolean }) => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/login`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include", // 쿠키 저장을 위해 사용
+        body: JSON.stringify(loginData),
+    });
+
+    const accessToken = response.headers.get("Authorization")?.split(" ")[1];
+
+    if (accessToken) {
+        localStorage.setItem("access_token", accessToken);
+    }
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new CustomHttpError(response.status, errorData.message);
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+        return await response.json(); // JSON 응답 반환
+    } else {
+        return await response.text(); // 문자열 응답 반환
     }
 };
 
@@ -202,7 +349,11 @@ export const logoutUser = async () => {
     try {
         const accessToken = localStorage.getItem("access_token");
 
-        const response = await fetch("http://localhost:8000/api/user/logout", {
+        if (accessToken === null) {
+            return;
+        }
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/logout`, {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${accessToken}`,
