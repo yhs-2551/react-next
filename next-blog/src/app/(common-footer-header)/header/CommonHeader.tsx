@@ -1,5 +1,6 @@
 "use client";
 
+import Search from "@/app/[blogId]/posts/components/search/Search";
 import LoginModal from "@/app/_components/auth/LoginModal";
 import { logoutUser } from "@/services/api";
 import { useAuthStore } from "@/store/appStore";
@@ -99,6 +100,7 @@ export default function CommonHeader() {
                 <img src='/path/to/logo.png' alt='Logo' className='h-8 w-8 mr-2' />
                 <span className='text-xl font-bold'>YHS의 블로그</span>
             </div>
+            <Search />
             <div className='flex items-center ql-toolbar-container'>
                 {/* {pathname === "/posts" ? (
                     <h1 className="text-3xl font-bold">YHS의 블로그</h1>
@@ -150,7 +152,7 @@ export default function CommonHeader() {
                                 aria-label='로그아웃 처리'
                                 onClick={handleLogoutClick}
                             >
-                               로그아웃
+                                로그아웃
                             </button>
                         </nav>
                     )}

@@ -40,6 +40,11 @@ function BlogList({ initialData, blogId }: BlogListProps) {
                     const decodedToken = jwtDecode<DecodedToken>(token);
                     setBlogIdFromToken(decodedToken.blogId);
                 }
+
+                // 글 삭제 후 목록으로 리턴했을때 세션에 남아있는 isDeleting 삭제
+                if (sessionStorage.getItem("isDeleting")) {
+                    sessionStorage.removeItem("isDeleting");
+                }
             } catch (error) {
                 console.error("Error decoding token:", error);
             }
@@ -101,6 +106,7 @@ function BlogList({ initialData, blogId }: BlogListProps) {
                     // router.push("/posts/new");
                 }
             } catch (error: unknown) {
+                // 리프레시 토큰까지 만료되어서 재로그인 필요
                 if (error instanceof CustomHttpError) {
                     localStorage.removeItem("access_token");
 
@@ -119,7 +125,6 @@ function BlogList({ initialData, blogId }: BlogListProps) {
         } else if (isValidToken === true) {
             window.location.assign(`/${blogId}/posts/new`);
         }
-
     };
 
     return (

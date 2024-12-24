@@ -25,6 +25,8 @@ import { Tag } from "@/types/TagTypes";
 import { CategoryType } from "@/types/CateogryTypes";
 import { useGetAllCategories } from "@/customHooks/useGetCategories";
 import { CustomHttpError } from "@/utils/CustomHttpError";
+import { revalidatePostList } from "../../_actions/revalidate";
+import { invalidateSearchSuggestions, SEARCH_SUGGESTIONS_KEY } from "@/customHooks/useSearchSuggestions";
 
 // QuillEditor 컴포넌트를 동적으로 임포트하면서 highlight.js도 함께 설정
 const QuillEditor = dynamic(
@@ -275,11 +277,19 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                 modalRef.current.style.display = "none";
             }
 
+            // 검색어 추천 캐시 무효화. 실제 데이터 재요청은 백그라운드에서 발생하기 떄문에 빠른 응답을 위해 await 불필요
+            invalidateSearchSuggestions(queryClient, blogId);
+            // 글목록 서버 컴포넌트 캐시 무효화. 변경사항을 적용하기 위해 await 필수
+            // 캐시 무효화 후 아래에서 router.replace로 페이지 이동하면 서버 컴포넌트 재실행
+            await revalidatePostList(blogId);
+
             // window.location.replace사용하기 전인 router push, router refresh관련 주석은 이전 커밋 기록에서 확인
             const replacePath = isEditingRef.current ? `/${blogId}/posts/${postId}` : `/${blogId}/posts`;
-            window.location.replace(replacePath);
+            // window.location.replace(replacePath);
+            router.replace(replacePath);
 
             localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE"); // 글 작성 성공 후 캐시 삭제. 카테고리 페이지로 갔을 떄 새로운 데이터로 불러오기 위함
+            
         };
 
         const onError = (error: unknown) => {
