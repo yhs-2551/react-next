@@ -6,9 +6,6 @@ import { v4 as uuidv4 } from "uuid";
 
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-import PublishModal from "../Modal/PublishModal";
-
 import useAddPost from "@/customHooks/useAddPost";
 import { useParams, useRouter } from "next/navigation";
 import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
@@ -24,9 +21,10 @@ import { FileMetadata, PostRequest, PostResponse } from "@/types/PostTypes";
 import { Tag } from "@/types/TagTypes";
 import { CategoryType } from "@/types/CateogryTypes";
 import { useGetAllCategories } from "@/customHooks/useGetCategories";
-import { CustomHttpError } from "@/utils/CustomHttpError";
-import { revalidatePostList } from "../../_actions/revalidate";
-import { invalidateSearchSuggestions, SEARCH_SUGGESTIONS_KEY } from "@/customHooks/useSearchSuggestions";
+import { CustomHttpError } from "@/utils/CustomHttpError";  
+import { revalidatePostsAndSearchResults } from "@/actions/revalidate";
+import PublishModal from "../modal/PublishModal";
+ 
 
 // QuillEditor 컴포넌트를 동적으로 임포트하면서 highlight.js도 함께 설정
 const QuillEditor = dynamic(
@@ -42,7 +40,7 @@ const QuillEditor = dynamic(
         window.hljs = hljs;
 
         // QuillEditor 컴포넌트 임포트
-        return import("../QuillEditor/QuillEditor");
+        return import("../quillEditor/QuillEditor");
     },
     {
         ssr: false,
@@ -278,10 +276,12 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
             }
 
             // 검색어 추천 캐시 무효화. 실제 데이터 재요청은 백그라운드에서 발생하기 떄문에 빠른 응답을 위해 await 불필요
-            invalidateSearchSuggestions(queryClient, blogId);
+            // 이 부분 무효화가 안돼서 일단 보류. 새로고침으로 적용. 글쓰기 및 글수정 페이지 접근 시 새로고침 되니까
+            // invalidateSearchSuggestions(queryClient);
+
             // 글목록 서버 컴포넌트 캐시 무효화. 변경사항을 적용하기 위해 await 필수
             // 캐시 무효화 후 아래에서 router.replace로 페이지 이동하면 서버 컴포넌트 재실행
-            await revalidatePostList(blogId);
+            await revalidatePostsAndSearchResults(blogId);
 
             // window.location.replace사용하기 전인 router push, router refresh관련 주석은 이전 커밋 기록에서 확인
             const replacePath = isEditingRef.current ? `/${blogId}/posts/${postId}` : `/${blogId}/posts`;

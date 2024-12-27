@@ -1,40 +1,45 @@
 "use client";
 
-import Search from "@/app/[blogId]/posts/components/search/Search";
-import LoginModal from "@/app/_components/auth/LoginModal";
+import SearchContainer from "@/app/_components/search/SearchContainer";
 import { logoutUser } from "@/services/api";
 import { useAuthStore } from "@/store/appStore";
+import { jwtDecode } from "jwt-decode";
 import NextImage from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
 import React, { useEffect, useRef, useState } from "react";
 import { FaCog } from "react-icons/fa";
 
+interface DecodedToken {
+    blogId: string;
+}
+
 export default function CommonHeader() {
-    // const pathname = usePathname();
-
-    {
-        /* {pathname === "/posts" ? (
-                    <h1 className="text-3xl font-bold text-center border-b p-6">
-                        YHS의 블로그
-                    </h1>
-                ) : (
-                    <h1 className="text-3xl font-bold text-center border-b p-6">
-                        글 작성 페이지
-                    </h1>
-                )} */
-    }
-
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
-    const { isInitialized } = useAuthStore();
+    const { isInitialized, setShowLogin, isAuthenticated, setHeaderLogin } = useAuthStore();
 
     const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     const router = useRouter();
 
-    const { setShowLogin } = useAuthStore();
+    const [blogIdFromToken, setBlogIdFromToken] = useState<string | null>(null);
+
+    const TOKEN_KEY = "access_token";
+
+    // 여러 사용자가 있을 때 해당 사용자 본인만 글쓰기를 볼 수 있음.
+    useEffect(() => {
+        try {
+            const token = localStorage.getItem(TOKEN_KEY);
+            if (token) {
+                const decodedToken = jwtDecode<DecodedToken>(token);
+                setBlogIdFromToken(decodedToken.blogId);
+            }
+        } catch (error) {
+            console.error("Error decoding token:", error);
+        }
+    }, []);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -49,28 +54,39 @@ export default function CommonHeader() {
     // zustand의 상태관리는 휘발성이기 때문에 zustand 전역상태로 로그인을 관리하기 보다 페이지를 새로고침 시키면서 아래 useEffect 재실행 시킴.
     // 재실행됨에 따라 액세스 토큰 유무로 로그인 상태를 관리.
     useEffect(() => {
-        if (isInitialized) {
-            console.log("실행 헤더");
-            // console.log("CommonHeader useEffect 실행");
-
+        //isAuthenticated는 일반 form 로그인
+        if (isInitialized || isAuthenticated) {
             // useEffect 내부가 아닌 외부에서 실행하면 서버사이드 렌더링에서 브라우저의 localStorage를 정의할 수 없다는 오류 발생.
             const accessToken = localStorage.getItem("access_token");
-            console.log("accessToken: ", accessToken);
-            setIsLoggedIn(!!accessToken);
+
+            console.log("헤더 accessToken>>>", accessToken);
+
+            const isAccessToken = accessToken && accessToken !== null && accessToken !== undefined && accessToken !== "";
+
+            console.log("헤더 isAccesstoken>>>", isAccessToken);
+
+            if (isAccessToken) {
+                setIsLoggedIn(true);
+                //setHeaderLogin는 AuthCheck부분을 위해. router로 ux향상을 위해 사용
+                setHeaderLogin(true);
+            }
+
+            // 초기화(원래값인 false로)
+            // setInitialized(false);
 
             document.addEventListener("mousedown", handleClickOutside);
             return () => {
                 document.removeEventListener("mousedown", handleClickOutside);
             };
         }
-    }, [isInitialized]);
+    }, [isInitialized, isAuthenticated]);
 
     const handleManageClick = () => {
-        router.push("/manage");
+        router.push(`/${blogIdFromToken}/manage/settings/profile`);
     };
 
     const handleProfileClick = () => {
-        router.push("/manage/settings/profile");
+        router.push(`/${blogIdFromToken}/manage/settings/profile`);
     };
 
     const handleLogoutClick = async () => {
@@ -81,7 +97,7 @@ export default function CommonHeader() {
                 if (logoutSuccessResponse) {
                     setIsMenuOpen(false);
                     setIsLoggedIn(false);
-                    window.location.reload();
+                    // window.location.reload();
                 }
             } catch (error: any) {
                 // 로그아웃 실패의 경우 토스트 메시지로 사용자에게 알릴 순 있지만, 일단 보류
@@ -100,7 +116,7 @@ export default function CommonHeader() {
                 <img src='/path/to/logo.png' alt='Logo' className='h-8 w-8 mr-2' />
                 <span className='text-xl font-bold'>YHS의 블로그</span>
             </div>
-            <Search />
+            <SearchContainer />
             <div className='flex items-center ql-toolbar-container'>
                 {/* {pathname === "/posts" ? (
                     <h1 className="text-3xl font-bold">YHS의 블로그</h1>

@@ -30,8 +30,8 @@ function CommonSideNavigation() {
                     />
                 </Link>
                 <h2 className='text-2xl font-bold mb-2'>{blogName}</h2>
-                <Link href='https://yhsdeveloper2551.tistory.com' className='text-sm text-gray-500' aria-label='블로그 링크'>
-                    yhsdeveloper2551.tistory.com
+                <Link href={`/${blogId}/posts`} className='text-sm text-gray-500' aria-label='블로그 링크'>
+                    {blogName}
                 </Link>
             </div>
 
@@ -59,7 +59,7 @@ function CommonSideNavigation() {
                     <ul className='space-y-1'>
                         <li className='text-gray-700'>글 관리</li>
                         <li className='text-gray-700'>
-                            <Link href='/manage/category'>카테고리 관리</Link>
+                            <Link href={`/${blogId}/manage/category`}>카테고리 관리</Link>
                         </li>
                     </ul>
                 </section>
@@ -80,7 +80,7 @@ function CommonSideNavigation() {
                     </h2>
                     <ul className='space-y-1'>
                         <li className='text-gray-700'>
-                        <Link href='/manage/tag'>태그 관리</Link>
+                        <Link href={`/${blogId}/manage/tag`}>태그 관리</Link>
                         </li>
                         <li className='text-gray-700'>공감 관리</li>
                     </ul>

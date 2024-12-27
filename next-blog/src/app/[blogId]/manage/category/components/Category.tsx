@@ -30,10 +30,10 @@ import CategoryItem from "./CategoryItem";
 
 import useAddCategory from "@/customHooks/useAddCategory";
 import { useGetAllCategories } from "@/customHooks/useGetCategories";
-import { useQueryClient } from "react-query";
-import CommonSideNavigation from "../../(common-side-navigation)/CommonSideNavigation";
+import { useQueryClient } from "react-query"; 
 import { useParams } from "next/navigation";
 import { CategoryType } from "@/types/CateogryTypes";
+import CommonSideNavigation from "@/app/_components/layout/sidebar/CommonSideNavigation";
 
 // 컴포넌트 외부에 헬퍼 함수 정의
 const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {

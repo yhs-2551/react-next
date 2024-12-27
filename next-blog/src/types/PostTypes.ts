@@ -25,18 +25,19 @@ export interface PostRequest {
 // PostResponse 타입은 수정 페이지 및 디테일 페이지에서 사용
 
 export interface PostResponse {
-    id: string;
+    id: string; // 백엔드 Long값은 string으로 받음. number로 받으면 범위가 적을 수 있음(즉 Long값 범위 > Number값 범위가 발생할수도 있음) 
     categoryName: string | null;
     title: string;
     content: string;
     tags?: string[];
     files?: FileMetadata[];  
-    deleteTempImageUrls?: string[];
+    // deleteTempImageUrls?: string[];
     postStatus: "PUBLIC" | "PRIVATE";
     commentsEnabled: "ALLOW" | "DISALLOW";
     featuredImage?: FileMetadata;
     createdAt: string; // 디테일 페이지에서 사용
-    userName: string; // 디테일 페이지에서 사용
+    username: string; // 디테일 페이지에서 사용
+    blogId: string;
     // commentCount?: number;
     // id?: number;
     // replyCount?: number;

@@ -6,12 +6,13 @@ import { useDebounce } from "use-debounce";
 
 interface SearchSuggestion {
     id: number;
+    blogId: string;
     title: string;
     content?: string;
 }
 
 interface SearchInputProps {
-    blogId: string;
+    blogId: string | undefined;
     searchType: string;
     onSearch: (keyword: string) => void;
 }
@@ -67,7 +68,7 @@ export default function SearchInput({ blogId, searchType, onSearch }: SearchInpu
         localStorage.setItem(`recentSearches-${blogId}`, JSON.stringify(updated));
     };
 
-    const handleSuggestionsClick = (e: React.MouseEvent<HTMLLIElement>, id: number) => {
+    const handleSuggestionsClick = (e: React.MouseEvent<HTMLLIElement>, blogId: string, id: number) => {
         e.preventDefault();
         router.push(`/${blogId}/posts/${id}`);
         setShowSuggestions(false);
@@ -100,21 +101,6 @@ export default function SearchInput({ blogId, searchType, onSearch }: SearchInpu
                     검색
                 </button>
 
-                {/* {showSuggestions && suggestions.length > 0 && (
-                    <ul className='absolute z-10 w-full bg-white border rounded-b mt-1 shadow-lg'>
-                        {suggestions.map((suggestion: SearchSuggestion) => (
-                            <li
-                                key={suggestion.id}
-                                className='px-4 py-2 hover:bg-gray-100 cursor-pointer'
-                                onClick={(e) => handleSuggestionsClick(e, suggestion.id)}
-                            >
-                                <div className='font-medium'>{suggestion.title}</div>
-                                {suggestion.content && <div className='text-sm text-gray-600 truncate'>{suggestion.content}</div>}
-                            </li>
-                        ))}
-                    </ul>
-                )}   */}
-
                 {showSuggestions && (
                     <ul className='absolute z-10 w-full bg-white border rounded-b mt-1 shadow-lg'>
                         {suggestions.length > 0 ? (
@@ -124,7 +110,7 @@ export default function SearchInput({ blogId, searchType, onSearch }: SearchInpu
                                     <li
                                         key={suggestion.id}
                                         className='px-4 py-2 hover:bg-gray-100 cursor-pointer'
-                                        onClick={(e) => handleSuggestionsClick(e, suggestion.id)}
+                                        onClick={(e) => handleSuggestionsClick(e, suggestion.blogId, suggestion.id)}
                                     >
                                         <div className='font-medium'>{suggestion.title}</div>
                                         {suggestion.content && <div className='text-sm text-gray-600 truncate'>{suggestion.content}</div>}

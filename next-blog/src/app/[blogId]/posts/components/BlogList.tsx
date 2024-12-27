@@ -14,6 +14,7 @@ import { refreshToken } from "@/utils/refreshToken";
 import { useAuthStore } from "@/store/appStore";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { toast } from "react-toastify";
+import EmptyState from "@/app/_components/search/EmptyState";
 
 interface DecodedToken {
     blogId: string;
@@ -22,9 +23,12 @@ interface DecodedToken {
 interface BlogListProps {
     initialData: PostResponse[];
     blogId: string;
+    keyword?: string;
+    isSearch?: boolean;
+    totalElements?: number;
 }
 
-function BlogList({ initialData, blogId }: BlogListProps) {
+function BlogList({ initialData, blogId, keyword, isSearch, totalElements }: BlogListProps) {
     const [blogIdFromToken, setBlogIdFromToken] = useState<string | null>(null);
     const posts = initialData;
     const { isInitialized } = useAuthStore();
@@ -129,32 +133,39 @@ function BlogList({ initialData, blogId }: BlogListProps) {
 
     return (
         <>
-            <div className='container max-w-4xl mx-auto p-6'>
-                <h2 className='text-2xl font-bold text-center mb-8'>전체 글</h2>
+            {initialData.length === 0 ? (
+                <EmptyState keyword={keyword} isSearch={isSearch} />
+            ) : (
+                <div className='container max-w-4xl mx-auto p-6 mt-20'>
+                    <h2 className='text-2xl font-bold text-center mb-8 text-gray-800'>
+                        {isSearch ? "검색 결과" : "게시글"}
+                        <span className='text-indigo-600'>({totalElements})</span>
+                    </h2>
 
-                {/* any 타입 나중에 수정 */}
-                {posts?.map((post: PostResponse) => (
-                    <PostItem
-                        // 여기서 uuid를 사용하면 컴포넌트가 재렌더링 될때마다 새로운 key값이 생성되어 불필요한 재렌더링이 발생할 수 있기 때문에 uuid 사용 안함.
-                        // 리스트에서 기존의 항목과 새롭게 추가된 항목을 구분함으로써 불필요한 재렌더링 방지를 위함
-                        // uuid를 key값으로 사용하면 모든 리스트 아이템들의 key값이 매번 새롭게 생성되기 때문에, 매번 모든 리스트 요소들이 새롭게 추가되었다고 인식해서 불필요한 재렌더링이 발생하게 된다.
-                        key={post.id}
-                        postId={post.id}
-                        title={post.title}
-                        content={post.content}
-                        createdAt={post.createdAt}
-                        categoryName={post.categoryName}
-                        postStatus={post.postStatus}
-                        thumbnailUrl={
-                            post.featuredImage
-                                ? post.featuredImage.fileUrl
-                                : "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-featured-image.jpg"
-                        }
-                    />
-                ))}
+                    {/* any 타입 나중에 수정 */}
+                    {posts?.map((post: PostResponse) => (
+                        <PostItem
+                            // 여기서 uuid를 사용하면 컴포넌트가 재렌더링 될때마다 새로운 key값이 생성되어 불필요한 재렌더링이 발생할 수 있기 때문에 uuid 사용 안함.
+                            // 리스트에서 기존의 항목과 새롭게 추가된 항목을 구분함으로써 불필요한 재렌더링 방지를 위함
+                            // uuid를 key값으로 사용하면 모든 리스트 아이템들의 key값이 매번 새롭게 생성되기 때문에, 매번 모든 리스트 요소들이 새롭게 추가되었다고 인식해서 불필요한 재렌더링이 발생하게 된다.
+                            key={post.id}
+                            postId={post.id}
+                            title={post.title}
+                            content={post.content}
+                            createdAt={post.createdAt}
+                            categoryName={post.categoryName}
+                            postStatus={post.postStatus}
+                            thumbnailUrl={
+                                post.featuredImage
+                                    ? post.featuredImage.fileUrl
+                                    : "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-featured-image.jpg"
+                            }
+                        />
+                    ))}
 
-                {blogId === blogIdFromToken && <button onClick={handleNewPost}>글쓰기</button>}
-            </div>
+                    {blogId === blogIdFromToken && <button onClick={handleNewPost}>글쓰기</button>}
+                </div>
+            )}
         </>
     );
 }

@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
-import ClientWrapper from "@/providers/ClientWrapper";
-import BlogForm from "../(common-newpost-editpost)/Form/BlogForm";
+import ClientWrapper from "@/providers/ClientWrapper"; 
 import AuthCheck from "../../components/AuthCheck";
+import BlogForm from "@/app/_components/form/BlogForm";
 
 function AddBlogPage() {
     return (

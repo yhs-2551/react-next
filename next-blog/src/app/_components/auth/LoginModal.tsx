@@ -50,7 +50,7 @@ function LoginModal() {
 
     const router = useRouter();
 
-    const { setShowLogin, setShowSignUp } = useAuthStore();
+    const { setShowLogin, setShowSignUp, setAuthenticated } = useAuthStore();
 
     const [debouncedEmail] = useDebounce(formData.email, 500);
     const [debouncedPassword] = useDebounce(formData.password, 300);
@@ -117,7 +117,8 @@ function LoginModal() {
               }, 300);
 
               setTimeout(() => {
-                  window.location.reload();
+                //   window.location.reload();
+                setAuthenticated(true);
               }, 350);
                 
 
@@ -153,8 +154,8 @@ function LoginModal() {
 
     const handleGoogleLogin = () => {
 
-        const currentPath = pathname + searchParams.toString();
-        localStorage.setItem("lastVisitedPath", currentPath);
+        const currentPath = pathname + searchParams.toString(); 
+        sessionStorage.setItem("lastVisitedPath", currentPath);
 
         // rememberMe는 boolean인데 template literal에서 자동으로 string으로 변환됨
         window.location.assign(`${process.env.NEXT_PUBLIC_BACKEND_URL}/oauth2/authorization/google?remember_me=${formData.rememberMe}`);

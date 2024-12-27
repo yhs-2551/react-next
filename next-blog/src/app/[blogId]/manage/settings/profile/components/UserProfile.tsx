@@ -3,9 +3,9 @@
 import { CiCirclePlus } from "react-icons/ci";
 import { FaPlus } from "react-icons/fa6";
 import NextImage from "next/image";
-import React, { useState } from "react";
-import CommonSideNavigation from "../../../(common-side-navigation)/CommonSideNavigation";
+import React, { useState } from "react"; 
 import { userProfileStore } from "@/store/appStore";
+import CommonSideNavigation from "@/app/_components/layout/sidebar/CommonSideNavigation";
 
 const UserProfile = () => {
     const { profileImage, blogName, blogNickName, blogDescription, setProfileImage, setBlogName, setBlogNickName, setBlogDescription } =
