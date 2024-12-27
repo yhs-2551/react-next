@@ -29,17 +29,23 @@ interface AuthState {
     showEmailVerification: boolean;
     signupUser: SignupUser;
     isInitialized: boolean;
+    isAuthenticated: boolean;
+    isHeaderLogin: boolean;
     lastVisitedPage: string;
     isShowOAuth2NewUserModal: boolean;
     tempOAuth2UserUniqueId: string;
+    isOAuth2Redirect: boolean;
     setShowLogin: (show: boolean) => void;
     setShowSignUp: (show: boolean) => void;
     setShowEmailVerification: (show: boolean) => void;
     setSignupUser: (signupUser: SignupUser) => void;
     setInitialized: (status: boolean) => void;
+    setAuthenticated: (status: boolean) => void;
+    setHeaderLogin: (status: boolean) => void;
     setLastVisitedPage: (url: string) => void;
     setShowOAuth2NewUserModal: (status: boolean) => void;
     setTempOAuth2UserUniqueId: (id: string) => void;
+    setOAuth2Redirect: (status: boolean) => void;
     // reset: () => void;
 }
 
@@ -49,17 +55,23 @@ export const useAuthStore = create<AuthState>((set) => ({
     showEmailVerification: false,
     signupUser: { blogId: "", username: "", email: "", password: "", passwordConfirm: "" },
     isInitialized: false,
+    isAuthenticated: false,
+    isHeaderLogin: false,
     lastVisitedPage: '/',
     isShowOAuth2NewUserModal: false,
     tempOAuth2UserUniqueId: "",
+    isOAuth2Redirect: false,
     setShowLogin: (show) => set({ showLogin: show }),
     setShowSignUp: (show) => set({ showSignUp: show }),
     setShowEmailVerification: (show) => set({ showEmailVerification: show }),
     setSignupUser: (signupUser) => set({ signupUser }),
     setInitialized: (status) => set({ isInitialized: status }),
+    setHeaderLogin: (status) => set({ isHeaderLogin: status }),
+    setAuthenticated: (status) => set({ isAuthenticated: status }),
     setLastVisitedPage: (url) => set({lastVisitedPage: url}),
     setShowOAuth2NewUserModal: (status) => set({isShowOAuth2NewUserModal: status}),
     setTempOAuth2UserUniqueId: (id) => set({tempOAuth2UserUniqueId: id}),
+    setOAuth2Redirect: (status) => set({isOAuth2Redirect: status}),
 
     // reset: () => set({
     //   showLogin: false,

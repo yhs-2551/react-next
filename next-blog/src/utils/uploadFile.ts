@@ -8,7 +8,7 @@ export const uploadFile = async (file: File, blogId: string, featured?: string, 
         formData.append("featured", featured);
     }
      const upload = async (token: string | boolean) => {
-        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/temp/files/upload`, {
+        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/temp/files/upload`, {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${token}`,

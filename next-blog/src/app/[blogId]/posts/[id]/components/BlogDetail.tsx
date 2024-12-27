@@ -20,7 +20,10 @@ import { FileMetadata, PostResponse } from "@/types/PostTypes";
 import { refreshToken } from "@/utils/refreshToken";
 import DOMPurify from "dompurify";
 import { CustomHttpError } from "@/utils/CustomHttpError";
-import { useAuthStore } from "@/store/appStore";
+import { useAuthStore } from "@/store/appStore"; 
+import { useQueryClient } from "react-query"; 
+import ToastProvider from "@/providers/ToastProvider"; 
+import { revalidatePostsAndSearchResults } from "@/actions/revalidate";
 
 function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId: string }) {
     const [isAuthor, setIsAuthor]: [boolean, React.Dispatch<React.SetStateAction<boolean>>] = useState<boolean>(false); // 작성자 여부 상태
@@ -30,6 +33,10 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     const blogId = params.blogId as string;
 
     const post = initialData;
+
+    const router = useRouter();
+
+    const queryClient = useQueryClient();
 
     const { isInitialized } = useAuthStore();
 
@@ -132,7 +139,8 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                     const isAuthor = await fetchIsAuthor(postId, blogId, accessToken);
 
                     if (isAuthor) setIsAuthor(isAuthor);
-                } catch (error: unknown) { // ux측면에서 작성자 확인이 실패하였습니다. 잠시 후 다시 시도해주세요. 할필요가 있을까 일단 보류
+                } catch (error: unknown) {
+                    // ux측면에서 작성자 확인이 실패하였습니다. 잠시 후 다시 시도해주세요. 할필요가 있을까 일단 보류
                     if (error instanceof CustomHttpError) {
                         if (error.status === 500) {
                             toast.error(
@@ -205,8 +213,8 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                 const newAccessToken = await refreshToken();
                 if (newAccessToken) {
                     // 토큰이 유효할 때 수정페이지로 접근
-                    // router.push(`/posts/${postId}/edit`);
-                    window.location.assign(`/${blogId}/posts/${postId}/edit`);
+                    router.push(`/posts/${postId}/edit`);
+                    // window.location.assign(`/${blogId}/posts/${postId}/edit`);
                 }
             } catch (error: unknown) {
                 if (error instanceof CustomHttpError) {
@@ -228,50 +236,58 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     };
 
     const handleDelete: () => void = (): void => {
-        deletePost.mutate(undefined, {
-            onSuccess: async (data: { message: string } | undefined, variables: void, context: unknown) => {
-                localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE"); // 글 삭제 성공 후 캐시 삭제. 카테고리 페이지로 갔을 떄 새로운 데이터로 불러오기 위함
+        const onSuccess = async (data: { message: string } | undefined, variables: void, context: unknown) => {
+            console.log("실행ㅇㅇ");
 
-                // 이전에 사용한 router관련 push, router.replace, refresh, reload에 대한 주석 설명은 이전 커밋 기록들에서 확인.
-                // 수정 및 삭제시에도 window방식을 사용하기 때문에 일관성 및 앱의 안전성을 위하여 window방식 사용
-                toast.success(
-                    <span>
-                        <span style={{ fontSize: "0.7rem" }}>{data?.message}</span>
-                    </span>,
-                    {
-                        onClose: () => {
-                            window.location.replace(`/${blogId}/posts`);
-                        },
-                        autoClose: 2000, // 2초 후 자동으로 닫힘
-                    }
-                );
-            },
-            onError: (error: unknown) => {
-                if (error instanceof CustomHttpError) {
-                    if (error.status === 401) {
-                        // 리프레시 토큰 까지 만료된 경우 재로그인 필요
+            // 검색어 추천 캐시 무효화. 실제 데이터 재요청은 백그라운드에서 발생하기 떄문에 빠른 응답을 위해 await 불필요
+            // 캐시 무효화가 안되어서 일단 보류 새로고침으로 적용
+            // invalidateSearchSuggestions(queryClient);
 
-                        localStorage.removeItem("access_token");
-                        toast.error(
-                            <span>
-                                <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
-                            </span>,
-                            {
-                                onClose: () => {
-                                    window.location.reload();
-                                },
-                            }
-                        );
-                    } else if (error.status === 500) {
-                        toast.error(
-                            <span>
-                                <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
-                            </span>
-                        );
-                    }
+            localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE");
+
+            sessionStorage.setItem("isDeleting", "true");
+
+            toast.success(
+                <span>
+                    <span style={{ fontSize: "0.7rem" }}>{data?.message}</span>
+                </span>,
+                {
+                    onClose: async () => {
+                        await revalidatePostsAndSearchResults(blogId);
+                        // router.replace 쓰고 싶은데 invalidateSearchSuggestions(queryClient, blogId);가 안먹음
+                        window.location.replace(`/${blogId}/posts`);
+                        // router.replace(`/${blogId}/posts`);
+                    },
+                    autoClose: 2500,
                 }
-            },
-        });
+            );
+        };
+
+        const onError = (error: unknown) => {
+            if (error instanceof CustomHttpError) {
+                if (error.status === 401) {
+                    localStorage.removeItem("access_token");
+                    toast.error(
+                        <span>
+                            <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                        </span>,
+                        {
+                            onClose: () => {
+                                window.location.reload();
+                            },
+                        }
+                    );
+                } else if (error.status === 500) {
+                    toast.error(
+                        <span>
+                            <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                        </span>
+                    );
+                }
+            }
+        };
+
+        deletePost.mutate(undefined, { onSuccess, onError });
     };
 
     // 비공개로 변경도 클릭 시 토큰 검증 위와 같이 필요
@@ -279,9 +295,13 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         alert(`Change privacy setting from ${post.postStatus}`);
     };
 
+
+    // 아래 ToastProvider 최상위 layout에 있는데, 삭제시에 toast가 작동을 안해서 아래와 같이 추가하니까 작동
     return (
         <>
-            <ToastContainer position='top-center' />
+        
+            <ToastProvider />
+
             <div className='container mx-auto p-6 max-w-4xl'>
                 {/* Category and Date */}
 
@@ -293,7 +313,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                 {/* space-x-4 자식 요소의 x축 간격을 1rem만큼 설정한다. space-x-4에서 4 = 1rem  */}
                 <div className='flex space-x-4 mb-2'>
                     <span className='text-sm text-gray-500'>{formattedDate}</span>
-                    <span className='text-sm text-gray-500'>{post.userName}</span>
+                    <span className='text-sm text-gray-500'>{post.username}</span>
                 </div>
                 {/* Action Buttons */}
                 {isAuthor && (

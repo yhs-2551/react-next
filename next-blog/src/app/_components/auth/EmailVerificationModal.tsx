@@ -11,12 +11,9 @@ import { toast } from "react-toastify";
 
 interface EmailVerificationModalProps {
     user: SignupUser;
-    onClose: (setIsClosing: Dispatch<SetStateAction<boolean>>) => void;
-    onVerified: () => void;
 }
-{
-}
-export default function EmailVerificationModal({ user, onClose, onVerified }: EmailVerificationModalProps) {
+
+export default function EmailVerificationModal({ user }: EmailVerificationModalProps) {
     const [isClosing, setIsClosing] = useState<boolean>(false);
     const [code, setCode] = useState<string>("");
 
@@ -43,12 +40,10 @@ export default function EmailVerificationModal({ user, onClose, onVerified }: Em
         try {
             const verifyResponse = await verifyEmailCode(user.email, code);
             if (verifyResponse.status === 200 || verifyResponse.status === 201) {
-               
-
-                setSignupUser({blogId: '', username: '', email: '', password: '', passwordConfirm: ''});
+                setSignupUser({ blogId: "", username: "", email: "", password: "", passwordConfirm: "" });
                 console.log("signUpUser", user);
-                setIsClosing(true);
-                onVerified();
+
+                handleModalClose();
 
                 setTimeout(() => {
                     toast.success(
@@ -115,6 +110,14 @@ export default function EmailVerificationModal({ user, onClose, onVerified }: Em
         }
     };
 
+    const handleModalClose = () => {
+        setIsClosing(true); // 종료 애니메이션 효과 시작
+        // 종료 애니메이션 효과가 끝나고 실제 이메일 인증 모달을 화면에 보이지 않게함. 아래 코드가 없다면 인증 모달이 다시 위로 올라와서 화면에 남아있게 됨
+        setTimeout(() => {
+            setShowEmailVerification(false);
+        }, 300);
+    };
+
     return (
         <div className='fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-black/30'>
             <AnimatePresence
@@ -138,7 +141,7 @@ export default function EmailVerificationModal({ user, onClose, onVerified }: Em
                     >
                         <div className='flex justify-between items-center mb-6'>
                             <h2 className='text-2xl font-bold text-gray-800'>이메일 인증</h2>
-                            <button className='text-gray-600 hover:text-black' onClick={() => onClose(setIsClosing)}>
+                            <button className='text-gray-600 hover:text-black' onClick={() => handleModalClose()}>
                                 닫기
                             </button>
                         </div>

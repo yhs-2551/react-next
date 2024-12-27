@@ -12,7 +12,7 @@ import DOMPurify from "dompurify";
 
 import "react-quill-new/dist/quill.snow.css"; // Snow 테마 CSS 파일
 
-import "@/app/[blogId]/posts/(common-newpost-editpost)/QuillEditor/QuillEditor.css";
+import "./QuillEditor.css";
 
 import ReactQuill from "react-quill-new";
 

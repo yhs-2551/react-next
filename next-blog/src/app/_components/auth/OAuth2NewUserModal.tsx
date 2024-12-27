@@ -90,7 +90,7 @@ function OAuth2NewUserModal() {
     const [isLoading, setIsLoading] = useState(false);
     // 최종 회원 가입 관련 상태 끝
 
-    const { setShowLogin, setShowOAuth2NewUserModal, setTempOAuth2UserUniqueId, tempOAuth2UserUniqueId } = useAuthStore();
+    const { setShowLogin, setShowOAuth2NewUserModal, setTempOAuth2UserUniqueId, tempOAuth2UserUniqueId, setOAuth2Redirect } = useAuthStore();
 
     // 폼 입력값이 시작되었는지 여부. 폼 입력이 시작되어야 유효성 검사를 시작한다.
     const [hasInteracted, setHasInteracted] = useState<Record<string, boolean>>({
@@ -265,6 +265,9 @@ function OAuth2NewUserModal() {
     };
 
     const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
+
+        console.log("tempOAuth2UserUniqueId>>>", tempOAuth2UserUniqueId);
+
         e.preventDefault();
 
         setIsLoading(true);
@@ -293,7 +296,10 @@ function OAuth2NewUserModal() {
                     {
                         autoClose: 2000,
                         onClose: () => {
-                            window.location.reload();
+                            // AuthProvider에서 OAuth2 신규 사용자 액세스 토큰 발급을 위해 필요
+                            sessionStorage.setItem("OAuth2NewUserIsRegistered", "true");
+                            setOAuth2Redirect(true);
+                            // window.location.reload();
                         },
                     }
                 );

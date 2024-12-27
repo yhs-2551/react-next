@@ -272,6 +272,8 @@ function SignUpModal() {
     }, [debouncedPasswordConfirm, formData.password]);
 
     const checkAvailability = async (field: AvailabilityField) => {
+      
+        
         console.log("checkAvailabilit실행dddd");
 
         // 중복확인 버튼 클릭 시 포커스 경고 초기화
@@ -540,7 +542,7 @@ function SignUpModal() {
                                         />
                                         <button
                                             type='button'
-                                            onClick={() => checkAvailability("username")}
+                                            onClick={(e) => checkAvailability("username")}
                                             disabled={isUsernameButtonDisabled}
                                             className={`${
                                                 isUsernameButtonDisabled

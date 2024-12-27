@@ -15,10 +15,13 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
     const [isChecking, setIsChecking] = useState<boolean>(true);
     const params = useParams();
     const pathBlogId = params.blogId as string;
-    const { isInitialized } = useAuthStore();
+    const { isHeaderLogin, isAuthenticated, isInitialized } = useAuthStore();
 
+    // 비로그인 사용자, 로그인 사용자 모두 검증
     useEffect(() => {
-        if (isInitialized) {
+        if (isHeaderLogin || isInitialized || isAuthenticated) {
+            console.log("isHeaderLogin isHeaderLogin>>>", isHeaderLogin);
+
             try {
                 const accessToken = localStorage.getItem("access_token") ?? false;
                 if (!accessToken) {
@@ -35,7 +38,7 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
                 throw new Error("unauthorized");
             }
         }
-    }, [pathBlogId, isInitialized]);
+    }, [isHeaderLogin]);
 
     if (isChecking) {
         return <LoadingAuth />;

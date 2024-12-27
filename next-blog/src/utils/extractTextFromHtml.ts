@@ -13,4 +13,4 @@ export const extractTextFromHtml = (html: string) => {
     }
 
     return textContent;
-}
+};

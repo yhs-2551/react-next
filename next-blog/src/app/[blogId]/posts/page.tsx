@@ -1,15 +1,29 @@
 import React from "react";
 import BlogList from "./components/BlogList";
+import Pagination from "@/app/_components/pagination/Pagination";
 
-export default async function PostListPage({ params }: { params: { blogId: string } }) {
+export default async function PostListPage({
+    params,
+    searchParams,
+}: {
+    params: Promise<{ blogId: string }>;
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
     const { blogId } = await params;
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts`, {
-        cache: "no-store",
+    const { page } = await searchParams;
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?page=${page}&size=8`, {
+        cache: "force-cache",
     });
 
-    const posts = await res.json();
+    const response = await res.json();
 
-    console.log("블로그 글 목록 페이지 실행 >>>>>>>>>>>", posts);
+    const { totalPages, content, currentPage, totalElements } = response.data;
 
-    return <BlogList initialData={posts} blogId={blogId} />;
+    return (
+        <>
+            <BlogList initialData={content} blogId={blogId} isSearch={false} totalElements={totalElements}/>
+            <Pagination totalPages={totalPages} currentPage={currentPage} blogId={blogId} />
+        </>
+    );
 }

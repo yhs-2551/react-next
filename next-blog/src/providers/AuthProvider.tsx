@@ -9,19 +9,50 @@ import { useAuthStore } from "@/store/appStore";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { refreshToken } from "@/utils/refreshToken";
 import { jwtDecode } from "jwt-decode";
-import React, { Dispatch, SetStateAction, useEffect } from "react";
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 
 export default function AuthProvider() {
-    const { showLogin, showSignUp, showEmailVerification, signupUser, setShowEmailVerification, setInitialized, isShowOAuth2NewUserModal } = useAuthStore();
+    const {
+        showLogin,
+        showSignUp,
+        showEmailVerification,
+        signupUser,
+        setInitialized,
+        isShowOAuth2NewUserModal,
+        isOAuth2Redirect,
+        setOAuth2Redirect,
+    } = useAuthStore();
 
+    // OAUTH2 로그인 처리
     useEffect(() => {
+        const handleOAuth2Login = async () => {
+            if (isOAuth2Redirect) {
+                const OAuth2User = sessionStorage.getItem("OAuth2User");
+                const isRegistered = sessionStorage.getItem("OAuth2NewUserIsRegistered");
 
+                if (OAuth2User === "existingUser" || (OAuth2User === "newUser" && isRegistered === "true")) {
+                    await fetchAccessToken(); // OAUTh2 로그인 사용자 초기 액세스 토큰 발급 처리
+                }
+
+                setOAuth2Redirect(false);  
+                setInitialized(true);
+            }
+        };
+
+        handleOAuth2Login();
+    }, [isOAuth2Redirect]);
+
+    // 새로고침 시 새로운 마운트로 간주되어 재실행
+    useEffect(() => {
         // 다시 방문 시 리프레시 토큰으로 액세스 토큰을 갱신. RememberMe사용자 -> 2주간 로그인 유지, 아닌 사용자 -> 하루간 로그인 유지
         const newAccessToken = async () => {
+            console.log("실행은되나");
 
-            await fetchAccessToken(); // OAUTh2 로그인 사용자 초기 액세스 토큰 발급 처리
-             
             const isValidToken: boolean | undefined | null = await checkAccessToken();
+
+            // 이 코드 없으면 OAUTH2 로그인 진행시에, OAUTH2의 setInitialized보다 아래쪽에 setInitialized(true) 코드가 먼저 실행되어
+            // CommonHeader에서 accessToken이 null로 인식. -> OAuth2 로그인 후 로그인 상태가 유지되지 않음.
+            if (isValidToken === null || isValidToken === undefined) return;
 
             if (isValidToken === false) {
                 try {
@@ -35,37 +66,16 @@ export default function AuthProvider() {
             }
 
             setInitialized(true);
-
         };
 
         newAccessToken();
     }, []);
 
-    const handleVerificationSuccess = () => {
-        // EmailVerificationModal컴포넌트안에서 setIsClosing(true)을 통해 종료 애니메이션 효과 시작
-        setTimeout(() => {
-            setShowEmailVerification(false);
-        }, 300);
-
-        // 2. 인증 상태 업데이트 이건 고려 jwt 사용하는데..
-        // setIsAuthenticated(true);
-
-        // 3. 추가로 필요한 작업 (예: 회원가입 완료, 리다이렉트 등)
-    };
-
-    const handleModalClose = (setIsClosing: Dispatch<SetStateAction<boolean>>) => {
-        setIsClosing(true); // 종료 애니메이션 효과 시작
-        // 종료 애니메이션 효과가 끝나고 실제 이메일 인증 모달을 화면에 보이지 않게함. 아래 코드가 없다면 인증 모달이 다시 위로 올라와서 화면에 남아있게 됨
-        setTimeout(() => {
-            setShowEmailVerification(false);
-        }, 300);
-    };
-
     return (
         <>
             {showLogin && <LoginModal />}
             {showSignUp && <SignUpModal />}
-            {showEmailVerification && <EmailVerificationModal user={signupUser} onClose={handleModalClose} onVerified={handleVerificationSuccess} />}
+            {showEmailVerification && <EmailVerificationModal user={signupUser} />}
             {isShowOAuth2NewUserModal && <OAuth2NewUserModal />}
         </>
     );

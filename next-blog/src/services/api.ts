@@ -61,16 +61,20 @@ export const fetchAccessToken = async () => {
     }
 
     localStorage.setItem("access_token", responseAccessToken);
+
     return true;
 };
 
 export const checkAccessToken = async () => {
-    console.log("checkAccessToken 안쪽 실행");
 
     const accessToken = localStorage.getItem("access_token");
-
+ 
     if (!accessToken) {
         return null;
+    } 
+
+    if (accessToken === "null" || accessToken === "undefined" || accessToken === "") {
+        localStorage.removeItem("access_token");
     }
 
     try {
