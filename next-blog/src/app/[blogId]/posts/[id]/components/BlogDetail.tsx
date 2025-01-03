@@ -20,10 +20,10 @@ import { FileMetadata, PostResponse } from "@/types/PostTypes";
 import { refreshToken } from "@/utils/refreshToken";
 import DOMPurify from "dompurify";
 import { CustomHttpError } from "@/utils/CustomHttpError";
-import { useAuthStore } from "@/store/appStore"; 
-import { useQueryClient } from "react-query"; 
-import ToastProvider from "@/providers/ToastProvider"; 
-import { revalidatePostsAndSearchResults } from "@/actions/revalidate";
+import { useAuthStore } from "@/store/appStore";
+import { useQueryClient } from "react-query";
+import ToastProvider from "@/providers/ToastProvider";
+import { revalidateCategories, revalidateCategoriesPagination, revalidatePagination, revalidatePostsAndSearch } from "@/actions/revalidate";
 
 function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId: string }) {
     const [isAuthor, setIsAuthor]: [boolean, React.Dispatch<React.SetStateAction<boolean>>] = useState<boolean>(false); // 작성자 여부 상태
@@ -253,7 +253,10 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                 </span>,
                 {
                     onClose: async () => {
-                        await revalidatePostsAndSearchResults(blogId);
+                        await revalidatePostsAndSearch(blogId);
+                        await revalidatePagination();
+                        await revalidateCategories();
+                        await revalidateCategoriesPagination();
                         // router.replace 쓰고 싶은데 invalidateSearchSuggestions(queryClient, blogId);가 안먹음
                         window.location.replace(`/${blogId}/posts`);
                         // router.replace(`/${blogId}/posts`);
@@ -295,14 +298,12 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         alert(`Change privacy setting from ${post.postStatus}`);
     };
 
-
     // 아래 ToastProvider 최상위 layout에 있는데, 삭제시에 toast가 작동을 안해서 아래와 같이 추가하니까 작동
     return (
         <>
-        
             <ToastProvider />
 
-            <div className='container mx-auto p-6 max-w-4xl'>
+            <div className='container mx-auto mt-[120px] max-w-4xl'>
                 {/* Category and Date */}
 
                 <span className='text-sm text-gray-500 mb-2'>카테고리: {post.categoryName || "없음"}</span>

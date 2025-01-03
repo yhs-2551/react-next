@@ -11,9 +11,9 @@ export const useGetAllCategories = () => {
 
     const cachedCategories = localStorage.getItem("REACT_QUERY_OFFLINE_CACHE");
 
-    console.log("캐시된 카테고리", cachedCategories);
-
     const shouldFetch = !cachedCategories;
+
+    console.log("shouldFetch", shouldFetch);
 
     const query = useQuery(["categories", blogId], () => fetchCategories(blogId), {
         enabled: shouldFetch,

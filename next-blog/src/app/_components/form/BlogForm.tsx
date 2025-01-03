@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ChangeEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import React, { ChangeEvent, useEffect, useRef } from "react";
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -12,8 +12,6 @@ import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
 import useUpdatePost from "@/customHooks/useUpdatePost";
 import { UseMutationResult, useQueryClient } from "react-query";
 
-import ClipLoader from "react-spinners/ClipLoader";
-
 import "highlight.js/styles/atom-one-dark-reasonable.css";
 
 import dynamic from "next/dynamic";
@@ -21,10 +19,9 @@ import { FileMetadata, PostRequest, PostResponse } from "@/types/PostTypes";
 import { Tag } from "@/types/TagTypes";
 import { CategoryType } from "@/types/CateogryTypes";
 import { useGetAllCategories } from "@/customHooks/useGetCategories";
-import { CustomHttpError } from "@/utils/CustomHttpError";  
-import { revalidatePostsAndSearchResults } from "@/actions/revalidate";
+import { CustomHttpError } from "@/utils/CustomHttpError";
 import PublishModal from "../modal/PublishModal";
- 
+import { revalidateCategories, revalidateCategoriesPagination, revalidatePagination, revalidatePostsAndSearch } from "@/actions/revalidate";
 
 // QuillEditor 컴포넌트를 동적으로 임포트하면서 highlight.js도 함께 설정
 const QuillEditor = dynamic(
@@ -51,8 +48,6 @@ const QuillEditor = dynamic(
 // const CustomEditor = dynamic( () => import( '@/app/posts/new/components/CKEditor/CustomCKEditor' ), { ssr: false } );
 
 function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?: string }) {
-    console.log("실행이다아ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ");
-
     const isEditingRef = useRef<boolean>(!!postId);
 
     const quillContentRef = useRef<() => string>(() => "");
@@ -281,15 +276,18 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 
             // 글목록 서버 컴포넌트 캐시 무효화. 변경사항을 적용하기 위해 await 필수
             // 캐시 무효화 후 아래에서 router.replace로 페이지 이동하면 서버 컴포넌트 재실행
-            await revalidatePostsAndSearchResults(blogId);
-
+            // revalidatePath는 await없어도 되지만 안정성을 위해 추가
+            await revalidatePostsAndSearch(blogId);
+            // 태그 무효화의 경우 await 필수, await 없으면 태그 무효화 적용 안됨
+            await revalidatePagination();
+            await revalidateCategories();
+            await revalidateCategoriesPagination();
             // window.location.replace사용하기 전인 router push, router refresh관련 주석은 이전 커밋 기록에서 확인
             const replacePath = isEditingRef.current ? `/${blogId}/posts/${postId}` : `/${blogId}/posts`;
             // window.location.replace(replacePath);
             router.replace(replacePath);
 
             localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE"); // 글 작성 성공 후 캐시 삭제. 카테고리 페이지로 갔을 떄 새로운 데이터로 불러오기 위함
-            
         };
 
         const onError = (error: unknown) => {
@@ -404,7 +402,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         <>
             <ToastContainer position='top-center' />
 
-            <form onSubmit={(e) => e.preventDefault()} className=''>
+            <form onSubmit={(e) => e.preventDefault()} className='pb-32'>
                 <fieldset className=''>
                     <legend className='sr-only'>새로운 블로그 글 등록 폼</legend>
 
@@ -417,17 +415,24 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                     </div>
 
                     <div className='mb-4 '>
-                        <input
-                            ref={titleInputRef}
-                            className='w-full p-2 focus:outline-none border-b'
-                            type='text'
-                            placeholder='제목을 입력하세요'
-                            onChange={handleTitleChange}
-                        />
+                        <h2>
+                            <input
+                                ref={titleInputRef}
+                                className='w-full pb-4 pt-2 focus:outline-none border-b text-2xl font-medium'
+                                type='text'
+                                placeholder='제목을 입력하세요'
+                                onChange={handleTitleChange}
+                                aria-label='게시글 제목'
+                            />
+                        </h2>
                     </div>
 
-                    {/* mb-4 flex-1 */}
-                    <div className='ql-custom-container relative min-h-[500px]'>
+                    {/* quilleditor 내부의 figure(오버레이) absolute된 부모이기 때문에 해당 figure의 z-index는 이 부모 내에서만 적용
+                        아래쪽 (나가기, 완료) 하단 고정부의 z-index와 올바르게 작동하기 위해서 에디터 컨테이너 자체의 z-index 설정 필요.
+
+                        또한 header가 998인데, QuillEditor의 DropdownMenu가 헤더 위쪽 부분에 보여야 하기 때문에 아래 z-999로 설정
+                    */}
+                    <div className='ql-custom-container relative min-h-[500px] z-[999]'>
                         <QuillEditor
                             contentValue={contentRef.current}
                             fileRef={fileRef}
@@ -442,10 +447,10 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 
                     {/* <CustomEditor /> */}
 
-                    <div className='mb-4'>
+                    <div className=''>
                         <input
                             ref={tagInputRef}
-                            className='w-full p-2 text-xs focus:outline-none'
+                            className='w-full text-xs focus:outline-none'
                             type='text'
                             placeholder='#태그 입력 (,키 및 엔터키로 분리)'
                             onKeyDown={handleTagKeyDown}
@@ -454,13 +459,24 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                     </div>
                 </fieldset>
 
-                <button
-                    type='submit'
-                    className='absolute bottom-0 right-20 px-4 py-2 bg-[#333] text-white rounded-md hover:bg-red-500 focus:outline-none active:bg-red-400'
-                    onClick={handleComplete}
-                >
-                    완료
-                </button>
+                <div className='fixed bottom-0 left-0 right-0 bg-gray-50 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] px-6 py-4 z-[1000]'>
+                    <div className='max-w-screen-xl mx-auto flex justify-between items-center'>
+                        <button
+                            type='button'
+                            className='px-6 py-2.5 bg-gray-800 text-white rounded-md hover:bg-gray-700 focus:outline-none active:bg-gray-800 transition-colors opacity-80'
+                            onClick={() => router.back()}
+                        >
+                            나가기
+                        </button>
+                        <button
+                            type='submit'
+                            className='px-6 py-2.5 bg-gray-800 text-white rounded-md hover:bg-gray-700 focus:outline-none active:bg-gray-800 transition-colors'
+                            onClick={handleComplete}
+                        >
+                            완료
+                        </button>
+                    </div>
+                </div>
 
                 <div ref={modalRef} className='hidden'>
                     <PublishModal

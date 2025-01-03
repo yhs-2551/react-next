@@ -138,7 +138,7 @@ function PublishModal({
     };
 
     return (
-        <div className='fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'>
+        <div className='fixed inset-0 bg-gray-600 bg-opacity-50 z-[1001] flex justify-center items-center'>
             <div className='bg-white p-6 rounded-md shadow-md w-96'>
                 <h2 className='text-2xl font-bold mb-4'>발행</h2>
 
@@ -168,10 +168,9 @@ function PublishModal({
                             <NextImage
                                 src={featuredImage.fileUrl}
                                 alt='Representative Image'
-                                className='rounded-md'
-                                style={{ maxWidth: "100%", height: "auto" }}
-                                width={334}  
-                                height={158}  
+                                className='rounded-md object-cover'
+                                fill
+                                sizes='(max-width: 334px) 100vw'
                                 priority={true}
                             />
                             <button
@@ -194,14 +193,13 @@ function PublishModal({
 
                 <div className='flex justify-end'>
                     <button
-                        className='px-4 py-2 bg-white text-black rounded-lg mr-2 focus:outline-none hover:bg-red-500 hover:text-white active:bg-red-400 border
-                        border-gray-300'
+                        className='px-6 py-2.5 bg-gray-800 text-white rounded-md mr-2 focus:outline-none hover:bg-gray-700 hover:text-white active:bg-gray-800 border border-gray-300 transition-colors opacity-80'
                         onClick={onClose}
                     >
                         취소
                     </button>
                     <button
-                        className='w-[7rem] px-4 py-2 bg-black text-white rounded-md hover:bg-red-500 focus:outline-none active:bg-red-400'
+                        className='px-6 py-2.5 bg-gray-800 text-white rounded-md hover:bg-gray-700 focus:outline-none active:bg-gray-800 transition-colors'
                         onClick={handlePublish}
                     >
                         {postStatus === "PUBLIC" ? "공개 발행" : "비공개 저장"}

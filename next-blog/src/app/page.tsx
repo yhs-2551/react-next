@@ -1,5 +1,5 @@
 import React from "react";
-import Index from "./components/Index";
+import Index from "./components/Index"; 
 
 export default async function IndexPage() {
     // 무한 스크롤을 위해 초기에 20개 가져옴
@@ -10,8 +10,6 @@ export default async function IndexPage() {
     const response = await res.json();
 
     const { content, totalElements } = response.data;
-
-    console.log("content>>>", content);
 
     return (
         <>

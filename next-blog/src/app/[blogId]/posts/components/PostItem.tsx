@@ -42,7 +42,7 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
     }, []);
 
     return (
-        <div className='flex py-4'>
+        <div className='flex mb-10'>
             {/* 썸네일 부분  */}
             {
                 <div

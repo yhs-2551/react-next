@@ -5,8 +5,8 @@ import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useDebounce } from "use-debounce";
 
-// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import { faGoogle } from "@fortawesome/free-brands-svg-icons";
+import { FcGoogle } from "react-icons/fc";
+
 import { loginUser } from "@/services/api";
 
 import { useAuthStore } from "@/store/appStore";
@@ -21,7 +21,6 @@ export interface LoginFormData {
 type LoginFormDataWithoutRememberMe = Omit<LoginFormData, "rememberMe">;
 
 function LoginModal() {
-
     const [isClosing, setIsClosing] = useState<boolean>(false);
 
     const [formData, setFormData] = useState<LoginFormData>({
@@ -104,26 +103,20 @@ function LoginModal() {
         setIsLoading(true);
 
         try {
-            
-             await loginUser(formData);
-
+            await loginUser(formData);
 
             // 닫는 애니메이션 효과 시작
             setIsClosing(true);
 
-                // 모달 닫기
-              setTimeout(() => {
+            // 모달 닫기
+            setTimeout(() => {
                 setShowLogin(false);
-              }, 300);
+            }, 300);
 
-              setTimeout(() => {
+            setTimeout(() => {
                 //   window.location.reload();
                 setAuthenticated(true);
-              }, 350);
-                
-
-
-         
+            }, 350);
         } catch (error: unknown) {
             if (error instanceof CustomHttpError) {
                 if (error.status === 429) {
@@ -153,8 +146,7 @@ function LoginModal() {
     };
 
     const handleGoogleLogin = () => {
-
-        const currentPath = pathname + searchParams.toString(); 
+        const currentPath = pathname + searchParams.toString();
         sessionStorage.setItem("lastVisitedPath", currentPath);
 
         // rememberMe는 boolean인데 template literal에서 자동으로 string으로 변환됨
@@ -162,7 +154,7 @@ function LoginModal() {
     };
 
     return (
-        <div className='fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black bg-opacity-30'>
+        <div className='fixed inset-0 z-[999] flex items-center justify-center overflow-hidden bg-black bg-opacity-30'>
             <AnimatePresence
                 mode='wait'
                 onExitComplete={() => {
@@ -202,29 +194,26 @@ function LoginModal() {
                                 </button>
                             </div>
 
-                            
-
                             <p className='text-gray-600 mb-4'>이메일로 로그인</p>
 
-                            
                             <div className='flex items-center justify-between mb-4'>
-                                    <label className='flex items-center'>
-                                        <input
-                                            type='checkbox'
-                                            checked={formData.rememberMe}
-                                            onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
-                                            className='mr-2'
-                                        />
-                                        <span className='text-sm'>로그인 상태 유지</span>
-                                    </label>
-                                    {/* <button
+                                <label className='flex items-center'>
+                                    <input
+                                        type='checkbox'
+                                        checked={formData.rememberMe}
+                                        onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
+                                        className='mr-2'
+                                    />
+                                    <span className='text-sm'>로그인 상태 유지</span>
+                                </label>
+                                {/* <button
                                         type='button'
                                         onClick={() => router.push("/forgot-password")}
                                         className='text-sm text-blue-600 hover:underline'
                                     >
                                         비밀번호 찾기
                                     </button> */}
-                                </div>
+                            </div>
 
                             <form onSubmit={handleLogin}>
                                 <div className='mb-4'>
@@ -280,19 +269,14 @@ function LoginModal() {
                                 <p className='text-gray-600'>소셜 계정으로 로그인</p>
                             </div>
                             <div className='flex justify-center space-x-4 mb-4'>
-                                <button className='text-black'>
-                                    <i className='fab fa-github fa-2x'></i>
-                                </button>
-                                <button onClick={handleGoogleLogin}>
-                                    {/* <FontAwesomeIcon
-                                        icon={faGoogle}
-                                        size='lg'
-                                        style={{ color: "#74C0FC" }}
-                                    /> */}
-                                    구글 로그인
-                                </button>
-                                <button className='text-blue-700'>
-                                    <i className='fab fa-facebook fa-2x'></i>
+                                <button
+                                    className='flex items-center justify-center gap-3 px-6 py-2.5 border border-gray-300 rounded-lg
+                                    hover:shadow-md hover:border-gray-400 transition-all duration-200 bg-white
+                                    text-gray-700 font-medium text-sm'
+                                    onClick={handleGoogleLogin}
+                                >
+                                    <FcGoogle className="text-xl" />
+                                    <span>Google로 계속하기</span>
                                 </button>
                             </div>
                             <div className='text-center mt-6'>
@@ -318,7 +302,6 @@ function LoginModal() {
                     </motion.div>
                 )}
             </AnimatePresence>
-
         </div>
     );
 }

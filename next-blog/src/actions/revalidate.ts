@@ -1,12 +1,43 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
-export async function revalidatePostsAndSearchResults(blogId: string) {
-    // 높은 우선순위: 특정 사용자 페이지 포스트 페이지 관련. 비동기 처리
-    await Promise.all([revalidatePath(`/${blogId}/posts`), revalidatePath(`/${blogId}/posts/search`)]);
-    // 낮은 우선순위: 메인 페이지 관련 비동기 실행하고 완료 대기하지 않음
-    Promise.all([revalidatePath("/"), revalidatePath("/search")]).catch((error) => {
-        console.error("글로벌 경로 리밸리데이션 실패:", error.message);
-    });
+// 서버액션은 무조건 async function으로 만들어야 함
+export async function revalidatePostsAndSearch(blogId: string) {
+    try {
+        // 특정 사용자 페이지
+        revalidatePath(`/${blogId}/posts`);
+        revalidatePath(`/${blogId}/posts/search`);
+
+        // 메인 페이지지
+        revalidatePath("/");
+        revalidatePath("/search");
+    } catch (error) {
+        console.error("revalidatePostsAndSearch 캐시 무효화 실패:", error);
+    }
 }
+
+export async function revalidatePagination() {
+    try {
+        revalidateTag("posts-pagination");
+    } catch (error) {
+        console.error("revalidatePagination 캐시 무효화 실패:", error);
+    }
+}
+
+export async function revalidateCategories() {
+    try {
+        revalidateTag("posts-categories");
+    } catch (error) {
+        console.error("revalidateCategories 캐시 무효화 실패:", error);
+    }
+}
+ 
+export async function revalidateCategoriesPagination() {
+    try {
+        revalidateTag("posts-categories-pagination");
+    } catch (error) {
+        console.error("revalidateCategoriesPagination 캐시 무효화 실패:", error);
+    }
+}
+

@@ -2,12 +2,11 @@
 
 import { useInView } from "react-intersection-observer";
 import { useInfiniteQuery } from "react-query";
-import PostCard from "./PostCard";
 import { useEffect } from "react";
 import { PostResponse } from "@/types/PostTypes";
 import EmptyState from "../_components/search/EmptyState";
-import { extractImageFromPost } from "@/utils/extractImageFromHtml";
-import { extractTextWithoutImages } from "@/utils/extractTextWithoutImages";
+import PostCardWithContent from "./PostCardWithContent";
+import { AiOutlineClockCircle } from "react-icons/ai";
 
 interface PostsGridProps {
     initialData: PostResponse[];
@@ -24,8 +23,7 @@ export default function PostsGrid({ initialData, totalElements }: PostsGridProps
             return res.json();
         },
         getNextPageParam: (serverResponse) => {
-            console.log("serverResponse>>>", serverResponse);
-
+            3;
             if (serverResponse.data.hasNext) {
                 return serverResponse.data.currentPage + 1; // 반환값이 다음 queryFn의 pageParam으로 전달후 queryFn 실행
             }
@@ -51,37 +49,18 @@ export default function PostsGrid({ initialData, totalElements }: PostsGridProps
                 <EmptyState isSearch={false} />
             ) : (
                 <>
-                    <div className='w-full max-w-[1700px] mx-auto mt-20'>
+                    <div className='w-full max-w-[1700px] mx-auto mt-[120px]'>
                         <div className='flex flex-col items-center'>
-                            <div className='flex items-center gap-2 mb-6'>
-                                <svg
-                                    xmlns='http://www.w3.org/2000/svg'
-                                    className='h-6 w-6 text-indigo-600'
-                                    fill='none'
-                                    viewBox='0 0 24 24'
-                                    stroke='currentColor'
-                                >
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
-                                    />
-                                </svg>
-                                <h2 className='text-2xl font-bold text-gray-800'>
-                                    <span>최신 글</span> <span className='text-indigo-600'>({totalElements})</span>
+                            <div className='flex items-center gap-2 mb-[40px]'>
+                                <AiOutlineClockCircle className='h-6 w-6 text-gray-600' />
+
+                                <h2 className='text-2xl font-semibold text-[#222]'>
+                                    <span>최신 글</span> <span className='text-[#333]'>({totalElements})</span>
                                 </h2>
                             </div>
                             <div className='grid grid-cols-[repeat(auto-fit,19.65rem)] justify-center gap-8 w-full'>
                                 {data?.pages.map((page) =>
-                                    page.data.content.map((post: PostResponse) => {
-                                        console.log("post>>>", post);
-
-                                        const imageUrl = extractImageFromPost(post);
-                                        const content = extractTextWithoutImages(post.content);
-
-                                        return <PostCard key={post.id} {...post} content={content} imageUrl={imageUrl || undefined} />;
-                                    })
+                                    page.data.content.map((post: PostResponse) => <PostCardWithContent key={post.id} {...post} />)
                                 )}
                             </div>
                         </div>

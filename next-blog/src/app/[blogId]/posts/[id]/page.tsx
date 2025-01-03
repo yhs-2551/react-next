@@ -16,8 +16,6 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
 
     const post = await res.json();
 
-    console.log("블로그 디테일 서버 컴포넌트 실행 >>>>>>>>>>>> ", post);
-
     return (
         <ClientWrapper>
             <BlogDetail initialData={post} postId={id} />

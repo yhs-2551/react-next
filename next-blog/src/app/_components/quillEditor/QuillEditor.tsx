@@ -21,6 +21,11 @@ import { FileMetadata } from "@/types/PostTypes";
 import { uploadFile } from "@/utils/uploadFile";
 import { useParams } from "next/navigation";
 
+import { IoMdImages } from "react-icons/io";
+import { FaRegFileAlt } from "react-icons/fa";
+
+import { MdFormatAlignLeft, MdFormatAlignCenter, MdFormatAlignRight } from "react-icons/md";
+
 interface QuillEditorProps {
     contentValue: string | undefined;
     fileRef: React.MutableRefObject<FileMetadata[]>;
@@ -44,8 +49,6 @@ interface DropdownMenuProps {
 // hljs.configure({
 //     languages: ["javascript", "ruby", "python", "java", "cpp", "kotlin", "sql"],
 //   });
- 
-
 
 //React.memo를 통해 부모 컴포넌트가 재렌더링 되어도 자식 컴포넌트의 props값이 변하지 않으면 QuillEditor의 재렌더링을 막는다. 따라서 BlogForm에서 제목의 내용을 변경해도 QuillEditor에는 제목 관련 Props가 없기 때문에 재렌더링 되지 않는다.
 export default React.memo(
@@ -53,7 +56,6 @@ export default React.memo(
         { contentValue, fileRef, totalUploadedImagesUrlRef, deletedImageUrlsInFutureRef, getEditorContent, fetchFileFromServer },
         ref
     ) {
-
         const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
         const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -76,11 +78,12 @@ export default React.memo(
         const dropdownPosition = { top: -9999, left: -9999 };
 
         let savedSelection: number | undefined = undefined; // 사용자가 토글 누르기 전 커서 위치 저장을 위한 변수. state로 할 시 비동기로 예상치 못한 결과를 가져와서 일반 변수로 선언.
-       
+
+        let resizeMouseDownCleanUp: (() => void) | undefined; // 클린업 함수 저장을 위함
+
         const params = useParams();
         const blogId = params.blogId as string;
-    
-       
+
         // quill 에디터의 content를 관리하는 함수. getEditorContent 함수를 실행하면 getEditorContent 함수의 인자로 있는 함수를  BlogForm 컴포넌트에서 quillContentRef.current에 저장한다.
         useEffect(() => {
             const quill = quillRef.current?.getEditor();
@@ -134,9 +137,6 @@ export default React.memo(
                                 }
                             });
 
-                            console.log("업데이트전 이미지 목록:", totalUploadedImagesUrlRef.current);
-                            console.log("currnetIds >>>:", currentImageUrls);
-
                             const currentImageUrlsArr = totalUploadedImagesUrlRef.current.filter((totalUploadedImagesUrl) =>
                                 currentImageUrls.has(totalUploadedImagesUrl)
                             );
@@ -159,9 +159,6 @@ export default React.memo(
                                         ])
                                     ),
                                 ];
-
-                                console.log("updatedImageUrlsRef >>>", fileRef.current);
-                                console.log("deletedImageUrlsInFutureRef >>>", deletedImageUrlsInFutureRef.current);
                             }
                         });
                     }
@@ -256,7 +253,7 @@ export default React.memo(
                     if (contentValue) {
                         console.log("contenvalue>>>", contentValue);
 
-                        // 비제어 방식으로 ql-editor DOM에 직접 삽입 
+                        // 비제어 방식으로 ql-editor DOM에 직접 삽입
                         quill.root.innerHTML = contentValue;
 
                         console.log("quill root >>>", quill.root);
@@ -300,233 +297,140 @@ export default React.memo(
 
         // 오버레이 드래그 진행 시 가로세로 비율 유지하면서 조정
         const handleResizeFunction = (initialImgRect?: DOMRect | null) => {
-            let imgRect = initialImgRect;
-
-            let startX: number;
-            let startY: number;
-            let startWidth: number;
-            let startHeight: number;
-            let aspectRatio: number;
-
-            // requestAnimationFrame을 위한 참조
-            let animationFrameId: number;
-
-            const handleResizeStart = (event: MouseEvent, handlerType: string) => {
-                if (!imgRect || !selectedImageRef.current) return;
-
-                startX = event.clientX;
-                startY = event.clientY;
-                startWidth = imgRect.width;
-                startHeight = imgRect.height;
-                aspectRatio = startWidth / startHeight;
-
-                const handleResizeInProgress = (moveEvent: MouseEvent) => {
-                    if (!selectedImageRef.current) return;
-
-                    selectedImageRef.current.style.opacity = "0.5";
-
-                    let newWidth = startWidth;
-                    let newHeight = startHeight;
-
-                    const container = document.querySelector(".ql-custom-container");
-                    const containerRect = container?.getBoundingClientRect();
-
-                    if (!containerRect) return;
-
-                    // 핸들러에 따라 오버레이 크기 변경
-                    if (handlerType === "bottom-right" || handlerType === "top-right") {
-                        newWidth = startWidth + (moveEvent.clientX - startX);
-                        newHeight = newWidth / aspectRatio;
-
-                        if ((alignmentRef.current === "left" && containerRect) || !alignmentRef.current) {
-                            // 초기에 정렬이 안된 상태일때 기본값으로 왼쪽 정렬 설정.
-                            alignmentRef.current = "left";
-
-                            if (newWidth + selectedImageRef.current.offsetLeft > containerRect.width) {
-                                newWidth = containerRect.width - selectedImageRef.current.offsetLeft - 8;
-                                newHeight = newWidth / aspectRatio;
-                            }
-                        } else if (alignmentRef.current === "center") {
-                            const centerOffset = (containerRect.width - newWidth) / 2;
-                            if (centerOffset + newWidth > containerRect.width) {
-                                newWidth = containerRect.width - 16;
-                                newHeight = newWidth / aspectRatio;
-                            }
-                        } else if (alignmentRef.current === "right" && containerRect) {
-                            const imageRightEdge = selectedImageRef.current.offsetLeft + selectedImageRef.current.offsetWidth;
-                            if (newWidth > imageRightEdge) {
-                                newWidth = imageRightEdge - 8;
-                                newHeight = newWidth / aspectRatio;
-                            }
-                        }
-                    } else if (handlerType === "bottom-left" || handlerType === "top-left") {
-                        newWidth = startWidth - (moveEvent.clientX - startX);
-                        newHeight = newWidth / aspectRatio;
-
-                        if ((alignmentRef.current === "left" && containerRect) || !alignmentRef.current) {
-                            // 초기에 정렬이 안된 상태일때 기본값으로 왼쪽 정렬 설정.
-                            alignmentRef.current = "left";
-
-                            // 왼쪽 정렬 상태에서 오른쪽 부분이 컨테이너를 벗어나지 않도록 제한
-                            if (newWidth + selectedImageRef.current.offsetLeft > containerRect.width) {
-                                newWidth = containerRect.width - selectedImageRef.current.offsetLeft - 8;
-                                newHeight = newWidth / aspectRatio;
-                            }
-                        }
-                        // 중앙 정렬 상태에서 드래그할 때는 중앙에 맞추기
-                        else if (alignmentRef.current === "center") {
-                            const centerOffset = (containerRect.width - newWidth) / 2;
-                            if (centerOffset < 0) {
-                                newWidth = containerRect.width - 16; // 전체 크기를 컨테이너 너비로 고정
-                                newHeight = newWidth / aspectRatio;
-                            }
-                        } else if (alignmentRef.current === "right" && containerRect) {
-                            const imageRightEdge = selectedImageRef.current.offsetLeft + selectedImageRef.current.offsetWidth; // 이미지 오른쪽 끝 좌표 계산
-
-                            // 왼쪽 핸들러로 드래그 시, 컨테이너의 왼쪽 끝을 넘지 않도록 제한
-                            if (newWidth > imageRightEdge) {
-                                newWidth = imageRightEdge - 8; // 오른쪽 끝을 넘지 않도록 제한
-                                newHeight = newWidth / aspectRatio;
-                            }
-                        }
-                    }
-
-                    // 오버레이 업데이트 로직과 같은 크기 제한 로직
-                    const overlay = overlayRef.current;
-                    if (newWidth > 100 && newHeight > 100) {
-                        if (overlay) {
-                            //오버레이 크기 및 위치 업데이트
-                            overlay.style.width = `${newWidth}px`;
-                            overlay.style.height = `${newHeight}px`;
-
-                            if (alignmentRef.current === "center" && containerRect) {
-                                const centerOffset = (containerRect.width - newWidth) / 2;
-                                overlay.style.left = `${centerOffset}px`;
-                                selectedImageRef.current.style.left = `${centerOffset}px`;
-                            } else if (alignmentRef.current === "left") {
-                                overlay.style.left = `${selectedImageRef.current.offsetLeft}px`;
-                            } else if (alignmentRef.current === "right") {
-                                const rightEdge = containerRect.width - newWidth;
-                                overlay.style.left = `${rightEdge - 8}px`;
-                                selectedImageRef.current.style.left = `${rightEdge}px`;
-                            }
-                        }
-
-                        // 이미지 크기 업데이트
-                        const updateImageSize = () => {
-                            if (selectedImageRef.current) {
-                                selectedImageRef.current.style.width = `${newWidth}px`;
-                                selectedImageRef.current.style.height = `${newHeight}px`;
-                            }
-                        };
-
-                        animationFrameId = requestAnimationFrame(updateImageSize);
-                    }
-                };
-
-                const handleResizeEnd = () => {
-                    cancelAnimationFrame(animationFrameId);
-
-                    const overlay = overlayRef.current;
-                    if (overlay && selectedImageRef.current) {
-                        selectedImageRef.current.style.width = overlay.style.width;
-                        selectedImageRef.current.style.height = overlay.style.height;
-                        selectedImageRef.current.style.opacity = "1";
-
-                        // 드래그 한번 조정 후에 조정된 img의 Rect값으로 재 적용.
-                        imgRect = selectedImageRef.current?.getBoundingClientRect();
-
-                        // 서버로 크기가 조정된 이미지의 width, height값을 같이 전송해주기 위함.
-                        // 캡쳐가 아닌 툴바로 삽입하고 이미지 크기 따로 조정 안하면  880 / 495기본값으로 백엔드에서 지정해두었음.
-                        if (imgRect && selectedImageRef.current) {
-                            const width = Math.round(imgRect.width);
-                            const height = Math.round(imgRect.height);
-                            const src = selectedImageRef.current.src;
-
-                            // fileRef.current에서 해당 url과 일치하는 이미지를 찾아 width와 height 값을 추가
-                            const file = fileRef.current.find((file) => file.fileUrl === src);
-                            if (file) {
-                                file.width = width;
-                                file.height = height;
-                                console.log("file >>>>>", file);
-                            }
-                        }
-                    }
-
-                    window.removeEventListener("mousemove", handleResizeInProgress);
-                    window.removeEventListener("mouseup", handleResizeEnd);
-                };
-
-                window.addEventListener("mousemove", handleResizeInProgress);
-                window.addEventListener("mouseup", handleResizeEnd);
+            // Utility functions
+            const calculateNewDimensions = (
+                event: MouseEvent,
+                startX: number,
+                startWidth: number,
+                aspectRatio: number,
+                handlerType: string
+            ): { newWidth: number; newHeight: number } => {
+                const deltaX = handlerType.includes("left") ? -1 : 1;
+                const newWidth = startWidth + deltaX * (event.clientX - startX);
+                return { newWidth, newHeight: newWidth / aspectRatio };
             };
 
-            // 이미지와 오버레이의 위치가 5px 이내면 드래그를 시작하는 handleResizeStart 함수 호출
-            const handleMouseDown = (event: MouseEvent, handlerType: string) => {
-                const overlayRect = overlayRef.current?.getBoundingClientRect();
-                const tolerance = 5;
+            const constrainDimensions = (
+                dimensions: { newWidth: number; newHeight: number },
+                containerRect: DOMRect,
+                alignment: string | null | false
+            ) => {
+                const { newWidth, newHeight } = dimensions;
+                if (!selectedImageRef.current) return dimensions;
 
-                if (
-                    selectedImageRef.current &&
-                    imgRect &&
-                    overlayRect &&
-                    Math.abs(imgRect.left - overlayRect.left) < tolerance &&
-                    Math.abs(imgRect.top - overlayRect.top) < tolerance
-                ) {
-                    handleResizeStart(event, handlerType);
+                if (alignment === "left") {
+                    const maxWidth = containerRect.width - selectedImageRef.current.offsetLeft - 8;
+                    return {
+                        newWidth: Math.min(newWidth, maxWidth),
+                        newHeight: Math.min(newHeight, maxWidth / (newWidth / newHeight)),
+                    };
+                } else if (alignment === "center") {
+                    const maxWidth = containerRect.width - 16;
+                    return {
+                        newWidth: Math.min(newWidth, maxWidth),
+                        newHeight: Math.min(newHeight, maxWidth / (newWidth / newHeight)),
+                    };
+                } else if (alignment === "right") {
+                    const imageRightEdge = selectedImageRef.current.offsetLeft + selectedImageRef.current.offsetWidth;
+                    return {
+                        newWidth: Math.min(newWidth, imageRightEdge - 8),
+                        newHeight: Math.min(newHeight, imageRightEdge / (newWidth / newHeight)),
+                    };
+                }
+                return dimensions;
+            };
+
+            const updateOverlayAndImage = (dimensions: { newWidth: number; newHeight: number }, containerRect: DOMRect) => {
+                const { newWidth, newHeight } = dimensions;
+                if (newWidth <= 100 || newHeight <= 100) return;
+
+                const overlay = overlayRef.current;
+                if (!overlay || !selectedImageRef.current) return;
+
+                overlay.style.width = `${newWidth}px`;
+                overlay.style.height = `${newHeight}px`;
+
+                // Update position based on alignment
+                if (alignmentRef.current === "center") {
+                    const centerOffset = (containerRect.width - newWidth) / 2;
+                    overlay.style.left = `${centerOffset}px`;
+                    selectedImageRef.current.style.left = `${centerOffset}px`;
+                } else if (alignmentRef.current === "right") {
+                    const rightEdge = containerRect.width - newWidth - 8;
+                    overlay.style.left = `${rightEdge}px`;
+                    selectedImageRef.current.style.left = `${rightEdge}px`;
+                } else {
+                    overlay.style.left = `${selectedImageRef.current.offsetLeft}px`;
+                }
+
+                selectedImageRef.current.style.width = `${newWidth}px`;
+                selectedImageRef.current.style.height = `${newHeight}px`;
+            };
+
+            const createResizeHandler = (handlerType: string) => {
+                return (event: MouseEvent) => {
+                    if (!initialImgRect || !selectedImageRef.current) return;
+
+                    const startX = event.clientX;
+                    const startWidth = initialImgRect.width;
+                    const aspectRatio = initialImgRect.width / initialImgRect.height;
+                    let animationFrameId: number;
+
+                    const handleResizeMove = (moveEvent: MouseEvent) => {
+                        if (!selectedImageRef.current) return;
+                        selectedImageRef.current.style.opacity = "0.5";
+
+                        const container = document.querySelector(".ql-custom-container");
+                        const containerRect = container?.getBoundingClientRect();
+                        if (!containerRect) return;
+
+                        const dimensions = calculateNewDimensions(moveEvent, startX, startWidth, aspectRatio, handlerType);
+                        const constrainedDimensions = constrainDimensions(dimensions, containerRect, alignmentRef.current);
+
+                        animationFrameId = requestAnimationFrame(() => {
+                            updateOverlayAndImage(constrainedDimensions, containerRect);
+                        });
+                    };
+
+                    const handleResizeEnd = () => {
+                        cancelAnimationFrame(animationFrameId);
+                        if (selectedImageRef.current) {
+                            selectedImageRef.current.style.opacity = "1";
+                            const newRect = selectedImageRef.current.getBoundingClientRect();
+                            updateFileMetadata(newRect);
+                        }
+                        window.removeEventListener("mousemove", handleResizeMove);
+                        window.removeEventListener("mouseup", handleResizeEnd);
+                    };
+
+                    window.addEventListener("mousemove", handleResizeMove);
+                    window.addEventListener("mouseup", handleResizeEnd);
+                };
+            };
+
+            const updateFileMetadata = (newRect: DOMRect) => {
+                if (!selectedImageRef.current) return;
+                const file = fileRef.current.find((file) => file.fileUrl === selectedImageRef.current?.src);
+                if (file) {
+                    file.width = Math.round(newRect.width);
+                    file.height = Math.round(newRect.height);
                 }
             };
 
-            const overlay = overlayRef.current;
+            // Set up handlers
+            const handlers = ["bottom-right", "bottom-left", "top-left", "top-right"];
+            const cleanup: (() => void)[] = [];
 
-            let bottomRightHandler: HTMLDivElement | null = null;
-            let bottomLeftHandler: HTMLDivElement | null = null;
-            let topLeftHandler: HTMLDivElement | null = null;
-            let topRightHandler: HTMLDivElement | null = null;
-
-            if (overlay) {
-                bottomRightHandler = overlay.querySelector(".bottom-right") as HTMLDivElement;
-                bottomLeftHandler = overlay.querySelector(".bottom-left") as HTMLDivElement;
-                topLeftHandler = overlay.querySelector(".top-left") as HTMLDivElement;
-                topRightHandler = overlay.querySelector(".top-right") as HTMLDivElement;
-
-                const handleMouseDownBottomRight = (event: MouseEvent) => handleMouseDown(event, "bottom-right");
-                const handleMouseDownBottomLeft = (event: MouseEvent) => handleMouseDown(event, "bottom-left");
-                const handleMouseDownTopLeft = (event: MouseEvent) => handleMouseDown(event, "top-left");
-                const handleMouseDownTopRight = (event: MouseEvent) => handleMouseDown(event, "top-right");
-
-                if (bottomRightHandler) {
-                    bottomRightHandler.addEventListener("mousedown", handleMouseDownBottomRight);
+            handlers.forEach((handlerType) => {
+                const handler = overlayRef.current?.querySelector(`.${handlerType}`) as HTMLDivElement;
+                if (handler) {
+                    const resizeHandler = createResizeHandler(handlerType);
+                    handler.addEventListener("mousedown", resizeHandler);
+                    cleanup.push(() => handler.removeEventListener("mousedown", resizeHandler));
                 }
+            });
 
-                if (bottomLeftHandler) {
-                    bottomLeftHandler.addEventListener("mousedown", handleMouseDownBottomLeft);
-                }
-
-                if (topLeftHandler) {
-                    topLeftHandler.addEventListener("mousedown", handleMouseDownTopLeft);
-                }
-
-                if (topRightHandler) {
-                    topRightHandler.addEventListener("mousedown", handleMouseDownTopRight);
-                }
-
-                // 클린업 함수: 이벤트 핸들러 제거
-                return () => {
-                    if (bottomRightHandler) {
-                        bottomRightHandler.removeEventListener("mousedown", handleMouseDownBottomRight);
-                    }
-                    if (bottomLeftHandler) {
-                        bottomLeftHandler.removeEventListener("mousedown", handleMouseDownBottomLeft);
-                    }
-                    if (topLeftHandler) {
-                        topLeftHandler.removeEventListener("mousedown", handleMouseDownTopLeft);
-                    }
-                    if (topRightHandler) {
-                        topRightHandler.removeEventListener("mousedown", handleMouseDownTopRight);
-                    }
-                };
-            }
+            resizeMouseDownCleanUp = () => cleanup.forEach((fn) => fn());
         };
 
         // 이미지가 선택되면 오버레이 위치를 조정
@@ -555,9 +459,6 @@ export default React.memo(
         const handleOverlayClick = (event: MouseEvent) => {
             event.stopPropagation(); // 클릭 이벤트 전파를 막음
         };
-
-        // 클린업 함수 저장을 위함
-        let resizeMouseDownCleanUp: ((initialRect?: DOMRect) => void) | undefined;
 
         // 익명 함수() => {}를 통해 이벤트 리스너를 등록하고, 삭제하는 경우 함수 참조가 일치하지 않아 제대로 이벤트 제거가 안됨. 따라서 아래와 같이 전역적으로 뺀다.
         const scrollHandler = () => updateOverlayOnScrollResize(imgRectRef.current);
@@ -658,7 +559,7 @@ export default React.memo(
                     }
 
                     updateOverlayOnScrollResize(imgRect);
-                    resizeMouseDownCleanUp = handleResizeFunction(imgRect);
+                    handleResizeFunction(imgRect);
                     activateOverlayOutsideClickHandler();
 
                     // document.body.scrollHeight(문서의 전체 높이)가 window.innerHeight(뷰포트의 높이)보다 클 경우, 즉 수직 스크롤바가 있으면 스크롤바 위치까지 고려해 다시 한번 계산.
@@ -689,9 +590,24 @@ export default React.memo(
             const handleKeyDown = (event: KeyboardEvent) => {
                 if (event.key === "Delete" && selectedImageRef.current) {
                     const img: HTMLImageElement = selectedImageRef.current;
+                    const parentElement = img.parentElement;
+
                     const figure = document.querySelector("figure");
 
-                    img.parentElement?.remove();
+                    // 이미지와 부모 요소 처리
+                    img.remove();
+                    if (parentElement) {
+                        // 부모가 p태그이고 내용이 비었거나 줄바꿈만 있는 경우. 부모 삭제
+                        if (
+                            parentElement.tagName.toLowerCase() === "p" &&
+                            (!parentElement.textContent?.trim() || parentElement.innerHTML === "<br>")
+                        ) {
+                            parentElement.remove();
+                        }
+                        // 남아있는 마진 바텀 초기화
+                        parentElement.style.marginBottom = "0";
+                    }
+
                     selectedImageRef.current = null;
                     if (figure) {
                         figure.style.display = "none"; // figure.remove()를 하면 DOM에서도 아예 삭제되어서 안된다.
@@ -752,17 +668,13 @@ export default React.memo(
 
         // handleAlign 함수 이미지를 클릭했을때 오버레이가 선택되면서, 이후에 툴바의 정렬 기능이 제대로 작동되게 하기 위함.
         // react quill의 정렬 툴바에서 왼쪽 정렬은 false값으로 설정해놨기 때문에 아래와 같이 추가적으로 처리함.
-        const handleAlign = (value: false | "left" | "center" | "right") => {
-            console.log("실행요");
+        const handleAlign = (value: "left" | "center" | "right") => {
+            console.log("실행요", value);
 
             const image = selectedImageRef.current; // 최신 이미지 참조
             const overlay = overlayRef.current; // 최신 오버레이 참조
 
             let alignmentValue = value;
-
-            if (alignmentValue === false) {
-                alignmentValue = "left";
-            }
 
             if (image && overlay) {
                 // 정렬 상태 저장
@@ -842,46 +754,42 @@ export default React.memo(
             const anchorTag = quillEditor?.querySelector(`a[href="${fileUrl}"]`) as HTMLAnchorElement;
 
             if (anchorTag) {
-                anchorTag.setAttribute("href", fileUrl); // 올바른 href 값으로 교체
-                anchorTag.setAttribute("data-file", "");
-                anchorTag.classList.add("file-container__item");
+                anchorTag.classList.add("ql-file");
 
-                const parentElement = anchorTag.parentElement;
-                if (parentElement && parentElement.tagName.toLowerCase() === "p") {
-                    parentElement.classList.add("file-container"); // .file-container 클래스 추가
-                }
-
-                const hideTooltip = () => {
-                    const qlToolTip = document.querySelector(".ql-tooltip") as HTMLDivElement;
-                    if (qlToolTip) {
-                        qlToolTip.style.display = "none"; // 툴팁 숨김
+                // 우클릭 시 툴바 보이는 것 방지
+                anchorTag.addEventListener("contextmenu", (event: MouseEvent) => {
+                    const tooltip = document.querySelector(".ql-tooltip");
+                    if (tooltip) {
+                        tooltip.classList.add("ql-hidden");
                     }
-                };
+                });
 
+                // 임시 다운 로드 링크 생성
                 anchorTag.addEventListener("click", (event: MouseEvent) => {
                     event.preventDefault();
-                    hideTooltip();
+
+                    const tooltip = document.querySelector(".ql-tooltip");
+
+                    console.log("tooltip >>>", tooltip);
+
+                    if (tooltip) {
+                        tooltip.classList.add("ql-hidden"); // quill editor 자체적으로 갖고있는 ql-hidden
+                    }
 
                     fetch(fileUrl)
                         .then((response) => response.blob())
                         .then((blob) => {
-                            const blobUrl = window.URL.createObjectURL(blob); // Object URL 생성
-
+                            const blobUrl = window.URL.createObjectURL(blob);
                             const link = document.createElement("a");
                             link.href = blobUrl;
-                            // 한글 깨지는 현상 해결. URL 인코딩된 파일명을 올바른 한글 텍스트로 변환한다.
                             link.download = decodeURIComponent(fileName);
                             document.body.appendChild(link);
                             link.click();
                             document.body.removeChild(link);
-
-                            window.URL.revokeObjectURL(blobUrl); // Object URL 해제
+                            window.URL.revokeObjectURL(blobUrl);
                         })
                         .catch(console.error);
                 });
-
-                // 우클릭 시 툴팁 숨김
-                parentElement?.addEventListener("contextmenu", hideTooltip);
             }
         };
 
@@ -890,7 +798,6 @@ export default React.memo(
 
             // saveSeleciton이 0인 경우 falsy 값이기 때문에 savedSelection으로 조건을 안잡고 아래 처럼 savedSelection != undefined로 조건을 잡음
             if (quill && fileUrl && savedSelection !== null && savedSelection !== undefined) {
-
                 const currentSelection = savedSelection; // 로컬 변수에 저장
 
                 if (type === "image") {
@@ -902,8 +809,14 @@ export default React.memo(
                     }, 100); // 100ms 지연 후 실행
 
                     // 삽입한 이미지의 width, height값을 fileRef에 저장시켜 서버로 전송시키기 위함. 이미지 삽입 후 이미지 크기 조정 안하면 이 사이즈를 서버에서 저장.
-                    const fileMetadata: { fileName: string; fileType: string; fileUrl: string; fileSize: number; width: number; height: number;
-                    } = { fileName: "", fileType: "", fileUrl: "", fileSize: 0, width: 0, height: 0,};
+                    const fileMetadata: { fileName: string; fileType: string; fileUrl: string; fileSize: number; width: number; height: number } = {
+                        fileName: "",
+                        fileType: "",
+                        fileUrl: "",
+                        fileSize: 0,
+                        width: 0,
+                        height: 0,
+                    };
 
                     const imgEl = quill.root.querySelector(`img[src="${fileUrl}"]`) as HTMLImageElement;
 
@@ -912,7 +825,6 @@ export default React.memo(
                     if (imgEl) {
                         // 이미지가 완전히 로드 되어야만 getBoundingClientRect에서 width, height값을 가져올 수 있음. 로드 전에 가져오면 0으로 나옴.
                         imgEl.onload = () => {
-
                             const imgRect = imgEl.getBoundingClientRect() as DOMRect;
 
                             fileMetadata["fileName"] = file.name;
@@ -927,11 +839,11 @@ export default React.memo(
                             }
                         };
                     }
-
                 } else if (type === "file") {
                     const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
 
-                    const fileIconHtml = `<a href="${fileUrl}">${file.name} - ${fileSizeInMB}MB </a>`;
+                    const fileIconHtml = `<a href="${fileUrl}" data-file="true">${file.name} - ${fileSizeInMB}MB (클릭하여 다운로드)</a>`;
+
                     quill.clipboard.dangerouslyPasteHTML(savedSelection, fileIconHtml, Quill.sources.USER);
 
                     setupFileDownloadLink(fileUrl, file.name);
@@ -949,24 +861,20 @@ export default React.memo(
                             // 새로운 블록 요소로 커서를 이동
                             quill.setSelection(nextLineIndex + 1, Quill.sources.SILENT);
                         }
-                    }, 100); // 100ms 지연 후 실행
-
+                    }, 0); // 콜백을 이벤트 루프의 태스크 큐에 추가 후 현재 실행 스택이 비워진 후 실행. 즉 비동기
                     
-                if (fileRef && fileRef.current) {
-                    fileRef.current.push({
-                        fileName: file.name,
-                        fileType: file.type,
-                        fileUrl,
-                        fileSize: file.size,
-                    });
-                }
 
+                    if (fileRef && fileRef.current) {
+                        fileRef.current.push({
+                            fileName: file.name,
+                            fileType: file.type,
+                            fileUrl,
+                            fileSize: file.size,
+                        });
+                    }
                 } else if (type === "video") {
                     // 나중에 추가 예정
                 }
-
-
-                console.log("fileRef >>>>>", fileRef.current);
             }
         };
 
@@ -1058,7 +966,6 @@ export default React.memo(
             }
         }, []);
 
-
         const toolbarConfig = [
             [{ header: [1, 2, 3, 4, false] }],
             [{ font: [] }],
@@ -1078,7 +985,7 @@ export default React.memo(
                     container: toolbarConfig,
                     handlers: {
                         image: toggleDropdown,
-                        align: (value: false | "left" | "center" | "right") => {
+                        align: (value: "left" | "center" | "right") => {
                             const quill = quillRef.current?.getEditor();
                             if (quill) {
                                 const range = quill.getSelection();
@@ -1107,7 +1014,7 @@ export default React.memo(
         const DropdownMenu: React.FC<DropdownMenuProps> = ({ dropdownPosition, handleFileSelection, dropdownRef }) => (
             <div
                 ref={dropdownRef}
-                className='absolute z-10 bg-white border border-gray-300 shadow-md'
+                className='absolute bg-white border border-gray-300 shadow-md'
                 style={{
                     top: dropdownPosition.top,
                     left: dropdownPosition.left,
@@ -1115,17 +1022,17 @@ export default React.memo(
             >
                 <ul>
                     <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("image")}>
-                        {/* <FontAwesomeIcon className='inline-block w-4 h-4 mr-2' icon={faImage} style={{ color: "#a3a3a3" }} /> */}
+                        <IoMdImages className='inline-block w-4 h-4 mr-2 text-gray-400' />
                         사진
                     </li>
                     <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("file")}>
-                        {/* <FontAwesomeIcon className='inline-block w-4 h-4 mr-2' icon={faFile} style={{ color: "#a3a3a3" }} /> */}
+                        <FaRegFileAlt className='inline-block w-4 h-4 mr-2 text-gray-400' />
                         파일
                     </li>
-                    <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("video")}>
-                        {/* <FontAwesomeIcon className='inline-block w-4 h-4 mr-2' icon={faVideo} style={{ color: "#a3a3a3" }} /> */}
+                    {/* <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("video")}>
+                        <MdVideoLibrary className='inline-block w-4 h-4 mr-2 text-gray-400' />
                         동영상
-                    </li>
+                    </li> */}
                 </ul>
             </div>
         );
@@ -1143,15 +1050,15 @@ export default React.memo(
                     {/* 정렬 버튼들 */}
                     <div className='absolute top-[-2.5rem] left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 shadow-md flex space-x-2 p-2 rounded-md'>
                         <button onClick={() => handleAlign("left")}>
-                            왼쪽
+                            <MdFormatAlignLeft />
                             {/* <FontAwesomeIcon icon={faAlignLeft} /> */}
                         </button>
                         <button onClick={() => handleAlign("center")}>
-                            가운데
+                            <MdFormatAlignCenter />
                             {/* <FontAwesomeIcon icon={faAlignCenter} /> */}
                         </button>
                         <button onClick={() => handleAlign("right")}>
-                            오른쪽
+                            <MdFormatAlignRight />
                             {/* <FontAwesomeIcon icon={faAlignRight} /> */}
                         </button>
                     </div>
@@ -1167,6 +1074,7 @@ export default React.memo(
                 <ReactQuill ref={quillRef} theme='snow' modules={modules} />
 
                 {/* 드롭다운 메뉴 */}
+
                 {<DropdownMenu dropdownPosition={dropdownPosition} handleFileSelection={handleFileSelection} dropdownRef={dropdownRef} />}
             </>
         );

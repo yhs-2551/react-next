@@ -1,134 +1,41 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { jwtDecode } from "jwt-decode";
-import { useRouter } from "next/navigation";
-
-// import { useGetPosts } from "@/customHooks/useGetPosts";
-// import useCheckAccessToken from "@/customHooks/useCheckAccessToken";
+import React, { useEffect } from "react";
 
 import PostItem from "./PostItem";
 import { PostResponse } from "@/types/PostTypes";
-import { checkAccessToken } from "@/services/api";
-import { refreshToken } from "@/utils/refreshToken";
 import { useAuthStore } from "@/store/appStore";
-import { CustomHttpError } from "@/utils/CustomHttpError";
-import { toast } from "react-toastify";
 import EmptyState from "@/app/_components/search/EmptyState";
-
-interface DecodedToken {
-    blogId: string;
-}
+import { FiFileText } from "react-icons/fi";
+import { useParams } from "next/navigation";
 
 interface BlogListProps {
     initialData: PostResponse[];
-    blogId: string;
     keyword?: string;
     isSearch?: boolean;
     totalElements?: number;
 }
 
-function BlogList({ initialData, blogId, keyword, isSearch, totalElements }: BlogListProps) {
-    const [blogIdFromToken, setBlogIdFromToken] = useState<string | null>(null);
+function BlogList({ initialData, keyword, isSearch, totalElements }: BlogListProps) {
     const posts = initialData;
     const { isInitialized } = useAuthStore();
 
-    const TOKEN_KEY = "access_token";
+    const params = useParams();
+    const categoryName = params.categoryName as string;
 
-    // 여러 사용자가 있을 때 해당 사용자 본인만 글쓰기를 볼 수 있음.
     useEffect(() => {
         if (isInitialized) {
-            try {
-                const token = localStorage.getItem(TOKEN_KEY);
-                if (token) {
-                    const decodedToken = jwtDecode<DecodedToken>(token);
-                    setBlogIdFromToken(decodedToken.blogId);
-                }
-
-                // 글 삭제 후 목록으로 리턴했을때 세션에 남아있는 isDeleting 삭제
-                if (sessionStorage.getItem("isDeleting")) {
-                    sessionStorage.removeItem("isDeleting");
-                }
-            } catch (error) {
-                console.error("Error decoding token:", error);
+            // 글 삭제 후 목록으로 리턴했을때 세션에 남아있는 isDeleting 삭제
+            if (sessionStorage.getItem("isDeleting")) {
+                sessionStorage.removeItem("isDeleting");
             }
         }
-    }, [isInitialized, blogIdFromToken]);
+    }, [isInitialized]);
 
-    // if (isValidToken) {
-    //     // 토큰이 유효할 때 수정페이지로 접근
-    //     // router.push를 쓰면 클라이언트 측에서 페이지 이동이 일어나기 때문에, 수정 페이지로 접근 시 페이지 전체가 새로고침 되지 않아 에디터 기능이 제대로 작동하지 않는다.
-    //     // 따라서 수정 페이지로 이동할땐 window.location.href를 사용하여 수정 페이지 전체 새로고침이 일어나도록 한다.
-    //     // router.push(`/posts/${postId}/edit`);
-    //     window.location.assign(`/${blogId}/posts/${postId}/edit`);
-    // }
-
-    // if (isValidToken === false) {
-    //     try {
-    //         const newAccessToken = await refreshToken();
-    //         if (newAccessToken) {
-    //             // 토큰이 유효할 때 수정페이지로 접근
-    //             // router.push(`/posts/${postId}/edit`);
-    //             window.location.assign(`/${blogId}/posts/${postId}/edit`);
-    //         }
-    //     } catch (error: unknown) {
-    //         if (error instanceof CustomHttpError) {
-    //             localStorage.removeItem("access_token");
-
-    //             toast.error(
-    //                 <span>
-    //                     <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
-    //                 </span>,
-    //                 {
-    //                     onClose: () => {
-    //                         window.location.reload();
-    //                     },
-    //                 }
-    //             );
-    //         }
-    //     }
-    // }
-
-    const handleNewPost = async () => {
-        // 토큰이 있어야만 애초에 글쓰기를 볼 수 있음. 주석처리
-        // const token = localStorage.getItem(TOKEN_KEY);
-        // if (!token) {
-        //     router.push("/login"); // 로그인 안된 본인 처리
-        //     return;
-        // }
-        const isValidToken = await checkAccessToken();
-
-        if (isValidToken === null) {
-            return;
-        }
-
-        if (isValidToken === false) {
-            try {
-                const newAccessToken = await refreshToken();
-                if (newAccessToken) {
-                    window.location.assign(`/${blogId}/posts/new`);
-                    // router.push("/posts/new");
-                }
-            } catch (error: unknown) {
-                // 리프레시 토큰까지 만료되어서 재로그인 필요
-                if (error instanceof CustomHttpError) {
-                    localStorage.removeItem("access_token");
-
-                    toast.error(
-                        <span>
-                            <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
-                        </span>,
-                        {
-                            onClose: () => {
-                                window.location.reload();
-                            },
-                        }
-                    );
-                }
-            }
-        } else if (isValidToken === true) {
-            window.location.assign(`/${blogId}/posts/new`);
-        }
+    const getListTitle = (categoryName?: string, isSearch?: boolean): string => {
+        if (categoryName) return decodeURIComponent(categoryName); // params.categoryName에서 인코딩 된 상태이기 때문에 추가 디코딩 필요
+        if (isSearch) return "검색 결과";
+        return "게시글";
     };
 
     return (
@@ -136,11 +43,14 @@ function BlogList({ initialData, blogId, keyword, isSearch, totalElements }: Blo
             {initialData.length === 0 ? (
                 <EmptyState keyword={keyword} isSearch={isSearch} />
             ) : (
-                <div className='container max-w-4xl mx-auto p-6 mt-20'>
-                    <h2 className='text-2xl font-bold text-center mb-8 text-gray-800'>
-                        {isSearch ? "검색 결과" : "게시글"}
-                        <span className='text-indigo-600'>({totalElements})</span>
-                    </h2>
+                <div className='container max-w-4xl mx-auto p-10 mt-20'>
+                    <div className='flex justify-center mb-[40px]'>
+                        <h2 className='flex items-center gap-2 text-2xl font-semibold text-[#222]'>
+                            <FiFileText className='w-6 h-6 text-gray-600' />
+                            <span>{getListTitle(categoryName, isSearch)}</span>
+                            <span className='text-[#333]'>({totalElements})</span>
+                        </h2>
+                    </div>
 
                     {/* any 타입 나중에 수정 */}
                     {posts?.map((post: PostResponse) => (
@@ -162,8 +72,6 @@ function BlogList({ initialData, blogId, keyword, isSearch, totalElements }: Blo
                             }
                         />
                     ))}
-
-                    {blogId === blogIdFromToken && <button onClick={handleNewPost}>글쓰기</button>}
                 </div>
             )}
         </>

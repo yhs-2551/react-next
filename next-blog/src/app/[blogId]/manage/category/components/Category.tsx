@@ -99,16 +99,12 @@ const Category: React.FC = () => {
     useEffect(() => {
 
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-
-
-
             // mutation이 로딩중일때 및 mutation 성공 후 리패칭 중일 때 캐시 삭제 -> 아마 뮤테이션 로딩상태는 서버측으로부터 응답데이터를 받아올때까지가 로딩 상태라고 보는 듯 하다.
             if (createCategoryMutation.isLoading || isRefetching) {
                 console.log("캐시 삭제 실행");
                 localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE");
 
                 // 사용자에게 알림 메시지 표시
-   
             }
         };
 
@@ -521,7 +517,7 @@ const Category: React.FC = () => {
                                             className='w-[22rem] px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none'
                                             placeholder='카테고리 이름 입력'
                                         />
-                                        <button className='w-[9rem] font-medium text-sm px-4 py-2 shadow-md bg-customGray text-white hover:bg-[#505050] hover:shadow-md transition-all'>
+                                        <button className='w-[9rem] font-medium text-sm px-4 py-2 shadow-md bg-gray-800 text-white hover:bg-gray-700 hover:shadow-md transition-all'>
                                             새 카테고리 추가
                                         </button>
                                     </fieldset>
@@ -586,7 +582,7 @@ const Category: React.FC = () => {
                                 disabled={isInitialLoad || createCategoryMutation.isLoading || createCategoryMutation.isSuccess || isFetching}
                                 className={`w-[9rem] font-medium text-sm px-4 py-2   ${
                                     isButtonVisible && !createCategoryMutation.isSuccess
-                                        ? "cursor-pointer shadow-md  bg-[#333] text-white hover:bg-[#505050] hover:shadow-md transition-all"
+                                        ? "cursor-pointer shadow-md  bg-gray-800 text-white hover:bg-gray-700 hover:shadow-md transition-all"
                                         : "cursor-not-allowed bg-white text-gray-400 border-2 border-manageBgColor"
                                 }`}
                             >
@@ -689,14 +685,13 @@ const Category: React.FC = () => {
                                     <button
                                         type='button'
                                         onClick={closeModal}
-                                        className='mr-2 px-4 py-2 bg-white text-black rounded-md focus:outline-none hover:bg-red-500 hover:text-white active:bg-red-400 border
-                        border-gray-300'
+                                        className='mr-2 px-4 py-2 bg-white text-black rounded-md focus:outline-none hover:bg-gray-50 active:bg-gray-100 border border-gray-300'
                                     >
                                         취소
                                     </button>
                                     <button
                                         type='submit'
-                                        className='px-4 py-2 bg-[#333] text-white rounded-md hover:bg-red-500 focus:outline-none active:bg-red-400'
+                                        className='px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700 focus:outline-none active:bg-gray-800'
                                     >
                                         저장
                                     </button>

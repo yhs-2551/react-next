@@ -66,12 +66,11 @@ export const fetchAccessToken = async () => {
 };
 
 export const checkAccessToken = async () => {
-
     const accessToken = localStorage.getItem("access_token");
- 
+
     if (!accessToken) {
         return null;
-    } 
+    }
 
     if (accessToken === "null" || accessToken === "undefined" || accessToken === "") {
         localStorage.removeItem("access_token");
@@ -135,34 +134,21 @@ export const fetchIsAuthor = async (postId: string, blogId: string, accessToken:
 };
 
 export const fetchCategories = async (blogId: string) => {
-    const accessToken = localStorage.getItem("access_token") ?? false;
-
-    const getAllCategories: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
+    const getAllCategories: () => Promise<Response> = async () => {
         return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/categories`, {
             method: "GET",
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
-            },
         });
     };
 
-    let response = await getAllCategories(accessToken);
+    const response = await getAllCategories();
+    const responseData = await response.json();
 
     if (!response.ok) {
-        if (response.status === 401) {
-            const newAccessToken = await refreshToken();
-            if (newAccessToken) {
-                response = await getAllCategories(newAccessToken);
-            }
-        }
+        console.error("카테고리 가져오기 실패", responseData.message);
+        throw new Error(responseData.message);
     }
 
-    if (!response.ok) {
-        throw new Error("Failed to categories please retry again.");
-    }
-
-    return await response.json();
+    return responseData;
 };
 
 export const checkAvailabilityRequest = {

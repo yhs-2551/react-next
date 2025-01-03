@@ -8,11 +8,11 @@ export default function EmptyState({ keyword, isSearch = false }: EmptyStateProp
         if (isSearch) {
             return keyword ? `'${keyword}' 검색 결과가 존재하지 않습니다.` : "게시글이 존재하지 않습니다. 검색어를 입력 해주세요.";
         }
-        return "게시글이 존재하지 않습니다.";
+        return "페이지 또는 게시글을 찾을 수 없습니다.";
     };
 
     return (
-        <div className='flex flex-col items-center justify-center py-10'>
+        <div className='flex flex-col items-center justify-center mt-[120px]'>
             <svg className='w-16 h-16 text-gray-400 mb-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path
                     strokeLinecap='round'

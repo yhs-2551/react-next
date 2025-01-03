@@ -1,7 +1,7 @@
 import React from "react";
 import IndexSearchResults from "./components/IndexSearchResults"; 
 import Pagination from "../_components/pagination/Pagination";
-export default async function SearchPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
+export default async function IndexSearchPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
     const { page, searchType, keyword } = await searchParams;
 
     const isValidSearch = searchType && keyword;
@@ -26,11 +26,13 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     const response = await res.json();
 
     const { totalPages, content, currentPage, totalElements } = response.data;
+    
+    const isExistContent = content.length > 0;
 
     return (
         <>
             <IndexSearchResults keyword={keyword} searchData={content} totalElements={totalElements} />
-            <Pagination totalPages={totalPages} currentPage={currentPage} />
+            <Pagination isExistContent={isExistContent} totalPages={totalPages} currentPage={currentPage} />
         </>
     );
 }

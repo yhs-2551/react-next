@@ -4,12 +4,11 @@ import EmailVerificationModal from "@/app/_components/auth/EmailVerificationModa
 import LoginModal from "@/app/_components/auth/LoginModal";
 import OAuth2NewUserModal from "@/app/_components/auth/OAuth2NewUserModal";
 import SignUpModal from "@/app/_components/auth/SignUpModal";
-import { checkAccessToken, fetchAccessToken, logoutUser } from "@/services/api";
+import { checkAccessToken, fetchAccessToken } from "@/services/api";
 import { useAuthStore } from "@/store/appStore";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { refreshToken } from "@/utils/refreshToken";
-import { jwtDecode } from "jwt-decode";
-import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { useEffect } from "react";
 
 export default function AuthProvider() {
     const {
@@ -34,7 +33,7 @@ export default function AuthProvider() {
                     await fetchAccessToken(); // OAUTh2 로그인 사용자 초기 액세스 토큰 발급 처리
                 }
 
-                setOAuth2Redirect(false);  
+                setOAuth2Redirect(false);
                 setInitialized(true);
             }
         };
@@ -46,8 +45,6 @@ export default function AuthProvider() {
     useEffect(() => {
         // 다시 방문 시 리프레시 토큰으로 액세스 토큰을 갱신. RememberMe사용자 -> 2주간 로그인 유지, 아닌 사용자 -> 하루간 로그인 유지
         const newAccessToken = async () => {
-            console.log("실행은되나");
-
             const isValidToken: boolean | undefined | null = await checkAccessToken();
 
             // 이 코드 없으면 OAUTH2 로그인 진행시에, OAUTH2의 setInitialized보다 아래쪽에 setInitialized(true) 코드가 먼저 실행되어

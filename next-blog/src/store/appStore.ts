@@ -3,22 +3,26 @@ import { create } from "zustand";
 
 interface ProfileState {
     blogName: string;
-    blogNickName: string;
+    blogUsername: string;
+    blogId: string;
     blogDescription: string;
     profileImage: string | null;
     setBlogName: (name: string) => void;
-    setBlogNickName: (nick: string) => void;
+    setBlogUsername: (username: string) => void;
+    setBlogId: (id: string) => void;
     setBlogDescription: (description: string) => void;
     setProfileImage: (image: string | null) => void;
 }
 
 export const userProfileStore = create<ProfileState>((set) => ({
-    blogName: "아이스아메리카노 블로그",
-    blogNickName: "홍길동",
-    blogDescription: "홍길동 내용 입니다",
+    blogName: "",
+    blogUsername: "",
+    blogId: "",
+    blogDescription: "블로그 설명을 입력해 주세요.",
     profileImage: null,
     setBlogName: (name) => set({ blogName: name }),
-    setBlogNickName: (userName) => set({ blogNickName: userName }),
+    setBlogUsername: (username) => set({ blogUsername: username }),
+    setBlogId: (id) => set({ blogId: id }),
     setBlogDescription: (description) => set({ blogDescription: description }),
     setProfileImage: (image) => set({ profileImage: image }),
 }));
@@ -80,3 +84,4 @@ export const useAuthStore = create<AuthState>((set) => ({
     //   signupUser: {blogId: '', username: '', email: '', password: '', passwordConfirm: ''},
     // })
 }));
+
