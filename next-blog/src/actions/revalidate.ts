@@ -41,11 +41,19 @@ export async function revalidatePostsCategories() {
         console.error("revalidatePostsCategories 캐시 무효화 실패:", error);
     }
 }
- 
+
 export async function revalidatePostsCategoriesPagination() {
     try {
         revalidateTag("posts-categories-pagination");
     } catch (error) {
         console.error("revalidatePostsCategoriesPagination 캐시 무효화 실패:", error);
+    }
+}
+
+export async function revalidateSearchSuggestions() {
+    try {
+        revalidateTag("search-suggestions");
+    } catch (error) {
+        console.error("search-suggestions 캐시 무효화 실패:", error);
     }
 }
