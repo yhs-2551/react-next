@@ -23,7 +23,7 @@ import { CustomHttpError } from "@/utils/CustomHttpError";
 import { useAuthStore } from "@/store/appStore";
 import { useQueryClient } from "react-query";
 import ToastProvider from "@/providers/ToastProvider";
-import { revalidateCategories, revalidateCategoriesPagination, revalidatePagination, revalidatePostsAndSearch } from "@/actions/revalidate";
+import { revalidatePagination, revalidatePostsAndSearch, revalidatePostsCategories, revalidatePostsCategoriesPagination } from "@/actions/revalidate";
 
 function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId: string }) {
     const [isAuthor, setIsAuthor]: [boolean, React.Dispatch<React.SetStateAction<boolean>>] = useState<boolean>(false); // 작성자 여부 상태
@@ -255,8 +255,8 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                     onClose: async () => {
                         await revalidatePostsAndSearch(blogId);
                         await revalidatePagination();
-                        await revalidateCategories();
-                        await revalidateCategoriesPagination();
+                        await revalidatePostsCategories();
+                        await revalidatePostsCategoriesPagination();
                         // router.replace 쓰고 싶은데 invalidateSearchSuggestions(queryClient, blogId);가 안먹음
                         window.location.replace(`/${blogId}/posts`);
                         // router.replace(`/${blogId}/posts`);

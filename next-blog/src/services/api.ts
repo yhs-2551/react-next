@@ -118,7 +118,6 @@ export const fetchIsAuthor = async (postId: string, blogId: string, accessToken:
             method: "GET",
             headers: {
                 Authorization: `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
             },
         });
     };
@@ -157,9 +156,6 @@ export const checkAvailabilityRequest = {
             `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/blog-id/duplicate/${value}`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
             }
         );
         const responseData = await response.json();
@@ -178,9 +174,6 @@ export const checkAvailabilityRequest = {
     email: async (value: string): Promise<{ status: number; isExist: boolean; message: string }> => {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/email/duplicate/${value}`, {
             method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
         });
         const responseData = await response.json();
 
@@ -202,9 +195,6 @@ export const checkAvailabilityRequest = {
             `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/username/duplicate/${value}`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
             }
         );
         const responseData = await response.json();

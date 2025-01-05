@@ -25,19 +25,27 @@ export async function revalidatePagination() {
     }
 }
 
-export async function revalidateCategories() {
+export async function revalidateCategories(blogId: string) {
     try {
-        revalidateTag("posts-categories");
+        revalidateTag(`${blogId}-categories`);
     } catch (error) {
         console.error("revalidateCategories 캐시 무효화 실패:", error);
     }
 }
+
+export async function revalidatePostsCategories() {
+    try {
+        revalidateTag("posts-categories");
+    } catch (error) {
+        console.error("revalidatePostsCategories 캐시 무효화 실패:", error);
+    }
+}
  
-export async function revalidateCategoriesPagination() {
+export async function revalidatePostsCategoriesPagination() {
     try {
         revalidateTag("posts-categories-pagination");
     } catch (error) {
-        console.error("revalidateCategoriesPagination 캐시 무효화 실패:", error);
+        console.error("revalidatePostsCategoriesPagination 캐시 무효화 실패:", error);
     }
 }
 

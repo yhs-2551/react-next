@@ -21,7 +21,7 @@ import { CategoryType } from "@/types/CateogryTypes";
 import { useGetAllCategories } from "@/customHooks/useGetCategories";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import PublishModal from "../modal/PublishModal";
-import { revalidateCategories, revalidateCategoriesPagination, revalidatePagination, revalidatePostsAndSearch } from "@/actions/revalidate";
+import { revalidatePagination, revalidatePostsAndSearch, revalidatePostsCategories, revalidatePostsCategoriesPagination } from "@/actions/revalidate";
 
 // QuillEditor 컴포넌트를 동적으로 임포트하면서 highlight.js도 함께 설정
 const QuillEditor = dynamic(
@@ -280,8 +280,8 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
             await revalidatePostsAndSearch(blogId);
             // 태그 무효화의 경우 await 필수, await 없으면 태그 무효화 적용 안됨
             await revalidatePagination();
-            await revalidateCategories();
-            await revalidateCategoriesPagination();
+            await revalidatePostsCategories();
+            await revalidatePostsCategoriesPagination();
             // window.location.replace사용하기 전인 router push, router refresh관련 주석은 이전 커밋 기록에서 확인
             const replacePath = isEditingRef.current ? `/${blogId}/posts/${postId}` : `/${blogId}/posts`;
             // window.location.replace(replacePath);

@@ -1,3 +1,4 @@
+import { CategoryType } from "@/types/CateogryTypes";
 import { SignupUser } from "@/types/SignupUserTypes";
 import { create } from "zustand";
 
@@ -25,6 +26,16 @@ export const userProfileStore = create<ProfileState>((set) => ({
     setBlogId: (id) => set({ blogId: id }),
     setBlogDescription: (description) => set({ blogDescription: description }),
     setProfileImage: (image) => set({ profileImage: image }),
+}));
+
+interface CategoryState {
+    categories: CategoryType[];
+    setCategories: (categories: CategoryType[]) => void;
+}
+
+export const useCategoryStore = create<CategoryState>((set) => ({
+    categories: [],
+    setCategories: (categories) => set({ categories }),
 }));
 
 interface AuthState {
@@ -61,7 +72,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     isInitialized: false,
     isAuthenticated: false,
     isHeaderLogin: false,
-    lastVisitedPage: '/',
+    lastVisitedPage: "/",
     isShowOAuth2NewUserModal: false,
     tempOAuth2UserUniqueId: "",
     isOAuth2Redirect: false,
@@ -72,10 +83,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     setInitialized: (status) => set({ isInitialized: status }),
     setHeaderLogin: (status) => set({ isHeaderLogin: status }),
     setAuthenticated: (status) => set({ isAuthenticated: status }),
-    setLastVisitedPage: (url) => set({lastVisitedPage: url}),
-    setShowOAuth2NewUserModal: (status) => set({isShowOAuth2NewUserModal: status}),
-    setTempOAuth2UserUniqueId: (id) => set({tempOAuth2UserUniqueId: id}),
-    setOAuth2Redirect: (status) => set({isOAuth2Redirect: status}),
+    setLastVisitedPage: (url) => set({ lastVisitedPage: url }),
+    setShowOAuth2NewUserModal: (status) => set({ isShowOAuth2NewUserModal: status }),
+    setTempOAuth2UserUniqueId: (id) => set({ tempOAuth2UserUniqueId: id }),
+    setOAuth2Redirect: (status) => set({ isOAuth2Redirect: status }),
 
     // reset: () => set({
     //   showLogin: false,
@@ -84,4 +95,3 @@ export const useAuthStore = create<AuthState>((set) => ({
     //   signupUser: {blogId: '', username: '', email: '', password: '', passwordConfirm: ''},
     // })
 }));
-

@@ -30,10 +30,13 @@ import CategoryItem from "./CategoryItem";
 
 import useAddCategory from "@/customHooks/useAddCategory";
 import { useGetAllCategories } from "@/customHooks/useGetCategories";
-import { useQueryClient } from "react-query"; 
-import { useParams } from "next/navigation";
+import { useQueryClient } from "react-query";
+import { useParams, useRouter } from "next/navigation";
 import { CategoryType } from "@/types/CateogryTypes";
 import CommonSideNavigation from "@/app/_components/layout/sidebar/CommonSideNavigation";
+import { useCategoryStore } from "@/store/appStore";
+import { revalidateCategories } from "@/actions/revalidate";
+import { revalidatePath } from "next/cache";
 
 // 컴포넌트 외부에 헬퍼 함수 정의
 const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
@@ -56,12 +59,11 @@ const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
 };
 
 const Category: React.FC = () => {
-    // categoriesFromServer는 서버로 가져온 요청만이 아닌 캐시로 부터 가져온 데이터도 저장하게 된다.
-    // 즉 리액트 쿼리 Persist Data 로컬스토리지를 사용할 경우 로컬 스토리지 데이터 -> React Query Cache에 저장 -> 캐쉬 데이터로부터 데이터를 가져온다.
-    const { data: categoriesData, refetchCategories, isFetching, isRefetching, isLoading, error } = useGetAllCategories(); // 훅을 호출하여 데이터를 서버로부터 가져옴
+    const { categories: categoriesByStore } = useCategoryStore();
+
     const [isInitialLoad, setIsInitialLoad] = useState(true); // 초기 로드 상태를 추가.
 
-    const [categories, setCategories] = useState<CategoryType[]>([]);
+    const [categories, setCategories] = useState<CategoryType[]>(categoriesByStore);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
     const [newCategoryName, setNewCategoryName] = useState<string>("");
@@ -82,42 +84,14 @@ const Category: React.FC = () => {
     const createCategoryMutation = useAddCategory(blogId);
 
     useEffect(() => {
-        if (categoriesData) {
-            //sealed 클래스에서 객체.data 형식에 실제 데이터가 담김 {idClass: 값, data: 값, message: 값} 형식
-            setCategories(categoriesData.data);
-        }
-    }, [categoriesData]);
-
-    useEffect(() => {
         if (categoryInputRef.current) {
             categoryInputRef.current.focus();
         }
     }, []);
 
-    console.log("categories >>>", categories);
-
-    useEffect(() => {
-
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            // mutation이 로딩중일때 및 mutation 성공 후 리패칭 중일 때 캐시 삭제 -> 아마 뮤테이션 로딩상태는 서버측으로부터 응답데이터를 받아올때까지가 로딩 상태라고 보는 듯 하다.
-            if (createCategoryMutation.isLoading || isRefetching) {
-                console.log("캐시 삭제 실행");
-                localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE");
-
-                // 사용자에게 알림 메시지 표시
-            }
-        };
-
-        window.addEventListener("beforeunload", handleBeforeUnload);
-
-        return () => {
-            window.removeEventListener("beforeunload", handleBeforeUnload);
-        };
-    }, [createCategoryMutation.isLoading, isRefetching]); // 의존성 배열 추가
-
     const categoryTree = buildCategoryTree(categories); // 이 부분은 렌더링 전에 위치
-
-    const resetUIStates = () => {
+ 
+    const resetUIStates = async () => {
         if (isInitialLoad) {
             setIsInitialLoad(false); // 초기 로드 상태 변경. 변경사항 저장 버튼 활성화
         }
@@ -235,6 +209,8 @@ const Category: React.FC = () => {
     };
 
     const handleSaveCategoryToServer = () => {
+        localStorage.setItem("category_revalidation_status", "true");
+
         const categoryPayLoad = {
             categories,
             categoryToDelete: categoryToDeleteRef.current,
@@ -243,12 +219,17 @@ const Category: React.FC = () => {
         const onSuccess = async () => {
             // 카테고리 저장에 성공하면 강제로 리패칭. 저장 성공할때만 리패칭 그 이외에 React Query Persist LocalStorage 사용.
             // 즉 저장 요청 1번 보내고 성공하면 데이터 조회 요청 1번. 총 2번의 요청을 보냄
-            await refetchCategories();
+
+            try {
+                await revalidateCategories(blogId);
+            } finally {
+                localStorage.removeItem("category_revalidation_status");
+            }
         };
 
         const onError = (error: any) => {
             // console.log(isEditingRef.current ? "Blog Edit Form 실패 실행" : "Blog 작성 실패 실행");
-            console.error("Error:", error); // 오류 로그 확인
+            console.error("카테고리 저장 실패 Error:", error); // 오류 로그 확인
             // errorMessageRef.current = error.message;
         };
 
@@ -274,11 +255,9 @@ const Category: React.FC = () => {
         }
 
         // 최상위 카테고리이고 자식을 가진 경우 삭제 중단 및 최상위 카테고리, 자식 카테고리 각각 post를 가진 경우 삭제 중단.
-        // CategoryType에 postCount, childrenCount에 ?를 붙여서 null일 경우를 대비해야 함. 붙인 이유는 postCount, childrenCount속성은 응답시에만 오는 데이터이기 때문.  
+        // CategoryType에 postCount, childrenCount에 ?를 붙여서 null일 경우를 대비해야 함. 붙인 이유는 postCount, childrenCount속성은 응답시에만 오는 데이터이기 때문.
         if (
-            (categoryToDelete &&
-                categoryToDelete.categoryUuidParent === null &&
-                categoryToDelete.childrenCount! > 0) ||
+            (categoryToDelete && categoryToDelete.categoryUuidParent === null && categoryToDelete.childrenCount! > 0) ||
             (categoryToDelete && categoryToDelete.postCount! > 0)
         ) {
             return;
@@ -579,16 +558,16 @@ const Category: React.FC = () => {
                         <div className='px-8 py-5 flex justify-end mt-6 bg-[#FAFBFC]'>
                             <button
                                 onClick={handleSaveCategoryToServer}
-                                disabled={isInitialLoad || createCategoryMutation.isLoading || createCategoryMutation.isSuccess || isFetching}
+                                disabled={isInitialLoad || createCategoryMutation.isLoading || createCategoryMutation.isSuccess}
                                 className={`w-[9rem] font-medium text-sm px-4 py-2   ${
                                     isButtonVisible && !createCategoryMutation.isSuccess
                                         ? "cursor-pointer shadow-md  bg-gray-800 text-white hover:bg-gray-700 hover:shadow-md transition-all"
                                         : "cursor-not-allowed bg-white text-gray-400 border-2 border-manageBgColor"
                                 }`}
                             >
-                                {createCategoryMutation.isSuccess && !isFetching && !isRefetching && !createCategoryMutation.isLoading ? (
+                                {createCategoryMutation.isSuccess && !createCategoryMutation.isLoading ? (
                                     "저장 완료"
-                                ) : createCategoryMutation.isLoading && isFetching && isRefetching ? (
+                                ) : createCategoryMutation.isLoading ? (
                                     <ClipLoader color='#ffffff' size={20} />
                                 ) : (
                                     "변경사항 저장"

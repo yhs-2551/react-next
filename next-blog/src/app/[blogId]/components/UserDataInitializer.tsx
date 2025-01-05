@@ -1,18 +1,19 @@
 "use client";
-import { userProfileStore } from "@/store/appStore";
+import { useCategoryStore, userProfileStore } from "@/store/appStore";
+import { CategoryType } from "@/types/CateogryTypes";
 import { useEffect } from "react";
 
-export default function UserDataInitializer({ username, blogId }: { username: string; blogId: string }) {
+export default function UserDataInitializer({ username, blogId, categories }: { username: string; blogId: string; categories: CategoryType[] }) {
     const { setBlogName, setBlogUsername, setBlogId } = userProfileStore();
+    const { setCategories } = useCategoryStore();
 
     useEffect(() => {
-        // 다른 사용자에게 방문 시 새 카테고리를 불러오기 위함
-        localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE");
-
+        
         setBlogUsername(username);
         setBlogName(`${username}의 DevLog`);
         setBlogId(blogId);
-    }, [username, blogId]);
+        setCategories(categories);
+    }, [username, blogId, categories]);
 
     return null;
 }

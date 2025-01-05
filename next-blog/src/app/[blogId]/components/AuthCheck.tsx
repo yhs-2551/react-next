@@ -23,7 +23,7 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const accessToken = localStorage.getItem("access_token") ?? false;
         if (!accessToken) {
-            throw new Error("unauthorized");
+            throw new Error("접근 권한이 없습니다.");
         }
 
         if (isHeaderLogin || isInitialized || isAuthenticated) {
@@ -32,12 +32,12 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
             try {
                 const decoded = jwtDecode<JwtPayload>(accessToken);
                 if (decoded.blogId !== pathBlogId) {
-                    throw new Error("unauthorized");
+                    throw new Error("접근 권한이 없습니다.");
                 }
 
                 setIsChecking(false);
             } catch (error) {
-                throw new Error("unauthorized");
+                throw new Error("접근 권한이 없습니다.");
             }
         }
     }, [isHeaderLogin, pathBlogId, isAuthenticated, isInitialized]);
