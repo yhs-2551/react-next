@@ -1,6 +1,5 @@
 "use client";
-
-import { revalidateCategories } from "@/actions/revalidate";
+ 
 import EmailVerificationModal from "@/app/_components/auth/EmailVerificationModal";
 import LoginModal from "@/app/_components/auth/LoginModal";
 import OAuth2NewUserModal from "@/app/_components/auth/OAuth2NewUserModal";
@@ -9,7 +8,6 @@ import { checkAccessToken, fetchAccessToken } from "@/services/api";
 import { useAuthStore } from "@/store/appStore";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { refreshToken } from "@/utils/refreshToken";
-import { useParams } from "next/navigation";
 import { useEffect } from "react";
 
 export default function AuthProvider() {
@@ -23,9 +21,6 @@ export default function AuthProvider() {
         isOAuth2Redirect,
         setOAuth2Redirect,
     } = useAuthStore();
-
-    const params = useParams();
-    const blogId = params.blogId as string | undefined;
 
     // OAUTH2 로그인 처리
     useEffect(() => {
@@ -72,25 +67,6 @@ export default function AuthProvider() {
 
         newAccessToken();
     }, []);
-
-    useEffect(() => {
-        const validateCategories = async () => {
-            if (blogId) {
-                const crs = localStorage.getItem("category_revalidation_status");
-
-                console.log("crs >>>>>>>>>", crs);
-
-                if (crs === "true") {
-                    console.log("카테고리 캐시 무효화 진행");
-
-                    await revalidateCategories(blogId);
-                    localStorage.removeItem("category_revalidation_status");
-                }
-            }
-        };
-
-        validateCategories();
-    }, [blogId]);
 
     return (
         <>

@@ -63,7 +63,7 @@ const Category: React.FC = () => {
 
     const [isInitialLoad, setIsInitialLoad] = useState(true); // 초기 로드 상태를 추가.
 
-    const [categories, setCategories] = useState<CategoryType[]>(categoriesByStore);
+    const [categories, setCategories] = useState<CategoryType[]>(categoriesByStore); // 초기 렌더링 시에만 초기값 적용, 이후 재렌더링 시에는 이미 state값이 있으므로 categoriesByStore초기값 무시
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
     const [newCategoryName, setNewCategoryName] = useState<string>("");
@@ -81,7 +81,12 @@ const Category: React.FC = () => {
     const params = useParams();
     const blogId = params.blogId as string;
 
+    const router = useRouter();
+
     const createCategoryMutation = useAddCategory(blogId);
+
+    console.log("categoriesByStore >>>>>>>>", categoriesByStore);
+    console.log("categories >>>>>>>>", categories);
 
     useEffect(() => {
         if (categoryInputRef.current) {
@@ -89,8 +94,34 @@ const Category: React.FC = () => {
         }
     }, []);
 
+    /* 
+    카테고리 변경 후 변경사항 저장버튼 클릭하자마자 새로고침을 하게되면 캐시 무효화 전에 새로고침을 하기 때문에 되면 DB에는 저장되는데,
+     캐시 데이터는 이전 캐시 데이터를 가지고 있게 되어 데이터 결함이 발생하게 됨. 따라서 아래와 같이 useEffect 캐시 무효화 로직 추가
+    */
+    useEffect(() => {
+        const validateCategories = async () => {
+            if (blogId) {
+                const crs = localStorage.getItem("category_revalidation_status");
+
+                if (crs === "pending") {
+                    await revalidateCategories(blogId);
+                    localStorage.removeItem("category_revalidation_status");
+                }
+            }
+        };
+
+        validateCategories();
+    }, []);
+
+    /* 바로 위의 캐시 무효화 로직과 관련있음 위에서 캐시 무효화 revalidateCategories를 하게 되면 해당 revalidateTag(`${blogId}-categories`);를 사용하고 있는 layout.tsx 서버 컴포넌트가 재실행. 
+     이에 따라 전역 스토어에 categories가 업데이트 되어 아래 로직과 같이 전역 스토어에서 최신 categories를 불러서 사용해야 함
+     */
+    useEffect(() => {
+        setCategories(categoriesByStore);
+    }, [categoriesByStore]);
+
     const categoryTree = buildCategoryTree(categories); // 이 부분은 렌더링 전에 위치
- 
+
     const resetUIStates = async () => {
         if (isInitialLoad) {
             setIsInitialLoad(false); // 초기 로드 상태 변경. 변경사항 저장 버튼 활성화
@@ -209,7 +240,7 @@ const Category: React.FC = () => {
     };
 
     const handleSaveCategoryToServer = () => {
-        localStorage.setItem("category_revalidation_status", "true");
+        localStorage.setItem("category_revalidation_status", "pending");
 
         const categoryPayLoad = {
             categories,
@@ -217,11 +248,9 @@ const Category: React.FC = () => {
         };
 
         const onSuccess = async () => {
-            // 카테고리 저장에 성공하면 강제로 리패칭. 저장 성공할때만 리패칭 그 이외에 React Query Persist LocalStorage 사용.
-            // 즉 저장 요청 1번 보내고 성공하면 데이터 조회 요청 1번. 총 2번의 요청을 보냄
-
+  
             try {
-                await revalidateCategories(blogId);
+                await revalidateCategories(blogId); // 성공 후 캐시 무효화9해당 서버컴포넌트 재실행 됨)
             } finally {
                 localStorage.removeItem("category_revalidation_status");
             }

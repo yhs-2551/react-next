@@ -23,7 +23,7 @@ export default async function BlogLayout({ children, params }: { children: React
 
     return (
         <>
-            <UserDataInitializer username={username} blogId={userBlogId} categories={categoryData.data} />
+            <UserDataInitializer username={username} blogId={userBlogId} categories={categoryData.data || []} />
             {children}
         </>
     );

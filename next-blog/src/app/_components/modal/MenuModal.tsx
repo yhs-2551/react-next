@@ -1,10 +1,10 @@
 "use client";
 
 import { useGetAllCategories } from "@/customHooks/useGetCategories";
-import { userProfileStore } from "@/store/appStore";
+import { useCategoryStore, userProfileStore } from "@/store/appStore";
 import { CategoryType } from "@/types/CateogryTypes";
 import { motion } from "framer-motion";
-import Link from "next/link"; 
+import Link from "next/link";
 
 interface MenuModalProps {
     isOpen: boolean;
@@ -13,7 +13,7 @@ interface MenuModalProps {
 
 export default function MenuModal({ isOpen, onClose }: MenuModalProps) {
     // 캐시 메모리에서 가져옴
-    const { data: categoriesData, refetchCategories, isFetching, isRefetching, isLoading, error } = useGetAllCategories();
+    const { categories } = useCategoryStore();
     const { blogId } = userProfileStore();
 
     const renderCategories = (categories: CategoryType[], isChild: boolean = false) => {
@@ -59,7 +59,7 @@ export default function MenuModal({ isOpen, onClose }: MenuModalProps) {
             >
                 <div className='p-6'>
                     <h2 className='text-2xl font-semibold text-gray-800 mb-6 border-b pb-4'>카테고리</h2>
-                    <nav className='space-y-1'>{categoriesData?.data && renderCategories(categoriesData.data)}</nav>
+                    <nav className='space-y-1'>{categories && renderCategories(categories)}</nav>
                 </div>
             </motion.div>
         </>

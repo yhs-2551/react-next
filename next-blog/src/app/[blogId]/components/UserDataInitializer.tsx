@@ -9,6 +9,8 @@ export default function UserDataInitializer({ username, blogId, categories }: { 
 
     useEffect(() => {
         
+        console.log("업데이트 실행");
+
         setBlogUsername(username);
         setBlogName(`${username}의 DevLog`);
         setBlogId(blogId);

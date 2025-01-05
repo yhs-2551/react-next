@@ -23,7 +23,13 @@ import { CustomHttpError } from "@/utils/CustomHttpError";
 import { useAuthStore } from "@/store/appStore";
 import { useQueryClient } from "react-query";
 import ToastProvider from "@/providers/ToastProvider";
-import { revalidatePagination, revalidatePostsAndSearch, revalidatePostsCategories, revalidatePostsCategoriesPagination } from "@/actions/revalidate";
+import {
+    revalidateCategories,
+    revalidatePagination,
+    revalidatePostsAndSearch,
+    revalidatePostsCategories,
+    revalidatePostsCategoriesPagination,
+} from "@/actions/revalidate";
 
 function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId: string }) {
     const [isAuthor, setIsAuthor]: [boolean, React.Dispatch<React.SetStateAction<boolean>>] = useState<boolean>(false); // 작성자 여부 상태
@@ -237,8 +243,6 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
 
     const handleDelete: () => void = (): void => {
         const onSuccess = async (data: { message: string } | undefined, variables: void, context: unknown) => {
-            console.log("실행ㅇㅇ");
-
             // 검색어 추천 캐시 무효화. 실제 데이터 재요청은 백그라운드에서 발생하기 떄문에 빠른 응답을 위해 await 불필요
             // 캐시 무효화가 안되어서 일단 보류 새로고침으로 적용
             // invalidateSearchSuggestions(queryClient);
@@ -255,6 +259,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                     onClose: async () => {
                         await revalidatePostsAndSearch(blogId);
                         await revalidatePagination();
+                        await revalidateCategories(blogId);
                         await revalidatePostsCategories();
                         await revalidatePostsCategoriesPagination();
                         // router.replace 쓰고 싶은데 invalidateSearchSuggestions(queryClient, blogId);가 안먹음

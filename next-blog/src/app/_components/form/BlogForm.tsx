@@ -10,18 +10,18 @@ import useAddPost from "@/customHooks/useAddPost";
 import { useParams, useRouter } from "next/navigation";
 import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
 import useUpdatePost from "@/customHooks/useUpdatePost";
-import { UseMutationResult, useQueryClient } from "react-query";
+import { UseMutationResult } from "react-query";
 
 import "highlight.js/styles/atom-one-dark-reasonable.css";
 
 import dynamic from "next/dynamic";
 import { FileMetadata, PostRequest, PostResponse } from "@/types/PostTypes";
 import { Tag } from "@/types/TagTypes";
-import { CategoryType } from "@/types/CateogryTypes";
-import { useGetAllCategories } from "@/customHooks/useGetCategories";
+import { CategoryType } from "@/types/CateogryTypes"; 
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import PublishModal from "../modal/PublishModal";
-import { revalidatePagination, revalidatePostsAndSearch, revalidatePostsCategories, revalidatePostsCategoriesPagination } from "@/actions/revalidate";
+import { revalidateCategories, revalidatePagination, revalidatePostsAndSearch, revalidatePostsCategories, revalidatePostsCategoriesPagination } from "@/actions/revalidate";
+import { useCategoryStore } from "@/store/appStore";
 
 // QuillEditor 컴포넌트를 동적으로 임포트하면서 highlight.js도 함께 설정
 const QuillEditor = dynamic(
@@ -67,9 +67,6 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 
     const categoryRef = useRef<HTMLSelectElement>(null);
 
-    // const categoriesRef = useRef<CategoryType[]>([]);
-    const categories = useRef<CategoryType[]>([]);
-
     const tags = useRef<Tag[]>([]);
     const tagInputRef = useRef<HTMLInputElement>(null);
     const tagContainerRef = useRef<HTMLDivElement>(null);
@@ -77,8 +74,6 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
     const editPageDeletedTags = useRef<string[]>([]);
 
     const errorMessageRef = useRef<string | null>(null);
-
-    const queryClient = useQueryClient();
 
     const router = useRouter();
 
@@ -93,28 +88,11 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         updatePostMutation = useUpdatePost(postId, blogId);
     }
 
-    // 리액트 쿼리 오프라인 캐시를 가져와서 카테고리 데이터를 캐싱
-    // useMemo(() => {
-    //     const cacheData = localStorage.getItem("REACT_QUERY_OFFLINE_CACHE");
-    //     if (!cacheData)  return [];
-    //     try {
-    //         const parsedData = JSON.parse(cacheData);
-    //         const data = parsedData?.clientState?.queries?.[0]?.state?.data?.data || [];
-    //         // ref의 current에 직접 할당
-    //         categoriesRef.current = data;
-    //         return data;
-    //     } catch (error) {
-    //         console.error("캐시 파싱 에러:", error);
-    //         return [];
-    //     }
-    // }, []);
+    const {categories} = useCategoryStore();
 
-    const { data: categoriesData, refetchCategories, isFetching, isRefetching, isLoading, error } = useGetAllCategories();
+    useEffect(() => { 
 
-    useEffect(() => {
-        console.log("categoriesData >>>>", categoriesData);
-
-        if (categoryRef.current && categoriesData) {
+        if (categoryRef.current && categories) {
             // 기존 옵션 제거
             categoryRef.current.innerHTML = "";
 
@@ -125,7 +103,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
             categoryRef.current.appendChild(defaultOption);
 
             // 카테고리 데이터 렌더링
-            categoriesData.data.forEach((mainCategory: CategoryType) => {
+            categories.forEach((mainCategory: CategoryType) => {
                 // 상위 카테고리 옵션 생성
                 const mainOption = document.createElement("option");
                 mainOption.value = mainCategory.name;
@@ -150,7 +128,8 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                 categoryRef.current.value = initialData.categoryName;
             }
         }
-    }, [categoriesData]); // initialData를 추가적으로 의존성으로 주지 않는 이유는 initialData는 서버사이드렌더링으로 초기에 오고, categoriesData는 클라이언트측 요청으로 그 이후에 오기 때문에 categoriesData만 의존성으로 주어도 된다.
+    }, [categories, initialData]);  
+
     useEffect(() => {
         if (titleInputRef.current && initialData?.title) {
             titleInputRef.current.value = initialData.title;
@@ -280,6 +259,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
             await revalidatePostsAndSearch(blogId);
             // 태그 무효화의 경우 await 필수, await 없으면 태그 무효화 적용 안됨
             await revalidatePagination();
+            await revalidateCategories(blogId);
             await revalidatePostsCategories();
             await revalidatePostsCategoriesPagination();
             // window.location.replace사용하기 전인 router push, router refresh관련 주석은 이전 커밋 기록에서 확인

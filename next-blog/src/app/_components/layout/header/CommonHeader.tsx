@@ -11,11 +11,11 @@ import { useParams, usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { toast } from "react-toastify";
-import { refreshToken } from "@/utils/refreshToken";
-import MenuModalWrapper from "../../modal/MenuModalWrapper";
+import { refreshToken } from "@/utils/refreshToken"; 
 import Link from "next/link";
 import { jwtDecode } from "jwt-decode";
 import SearchContainer from "../../search/SearchContainer";
+import MenuModal from "../../modal/MenuModal";
 
 interface DecodedToken {
     blogId: string;
@@ -168,7 +168,7 @@ export default function CommonHeader() {
             {/* MenuModalWrapper이 없으면 useGetAllCategories함수 내에 localstorage에 접근할 때 서버사이드 렌더링 오류가 발생하게 됨(undefined 오류) */}
             {(isCategoryPage || isPostListPage) && (
                 <div ref={hamburgerMenuModalRef}>
-                    <MenuModalWrapper isOpen={isHamburgerMenuOpen} onClose={() => setIsHamburgerMenuOpen(false)} />
+                    <MenuModal isOpen={isHamburgerMenuOpen} onClose={() => setIsHamburgerMenuOpen(false)} />
                 </div>
             )}
 
@@ -253,7 +253,7 @@ export default function CommonHeader() {
                                         설정
                                         <CiSettings />
                                     </Link>
-                            
+
                                     <button
                                         onClick={handleLogoutClick}
                                         className='w-full pb-2 text-left text-red-600 hover:text-red-300 rounded-lg transition-colors mt-1'
