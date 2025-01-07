@@ -346,7 +346,7 @@ function OAuth2NewUserModal() {
     const isUsernameButtonDisabled = isFieldDisabled("username");
 
     return (
-        <div className='fixed inset-0 z-[999] flex items-center justify-center overflow-hidden bg-black bg-opacity-30'>
+        <div className='fixed inset-0 z-[1500] flex items-center justify-center overflow-hidden bg-black bg-opacity-30'>
             <AnimatePresence
                 mode='wait'
                 onExitComplete={() => {

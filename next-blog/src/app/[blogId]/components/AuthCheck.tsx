@@ -1,23 +1,19 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { jwtDecode } from "jwt-decode";
-import { useEffect, useRef, useState } from "react";
-import { Params } from "next/dist/server/request/params";
-import LoadingAuth from "../LoadingAuth";
-import { useAuthStore } from "@/store/appStore";
-import path from "path";
-import GlobalLoading from "@/app/loading";
 
-interface JwtPayload {
-    blogId: string;
-}
+import { useEffect, useRef, useState } from "react";
+
+import { useAuthStore, userPrivateProfileStore } from "@/store/appStore";
+
+import GlobalLoading from "@/app/loading";
 
 export default function AuthCheck({ children }: { children: React.ReactNode }) {
     const [isChecking, setIsChecking] = useState<boolean>(true);
     const params = useParams();
     const pathBlogId = params.blogId as string;
     const { isHeaderLogin, isAuthenticated, isInitialized } = useAuthStore();
+    const { privateBlogId } = userPrivateProfileStore();
 
     // 비로그인 사용자, 로그인 사용자 모두 검증
     useEffect(() => {
@@ -27,23 +23,20 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
         }
 
         if (isHeaderLogin || isInitialized || isAuthenticated) {
-            console.log("isHeaderLogin isHeaderLogin>>>", isHeaderLogin);
 
-            try {
-                const decoded = jwtDecode<JwtPayload>(accessToken);
-                if (decoded.blogId !== pathBlogId) {
-                    throw new Error("접근 권한이 없습니다.");
-                }
+            console.log("privateBlogId: ", privateBlogId);
+            console.log("pathBlogId: ", pathBlogId);
 
-                setIsChecking(false);
-            } catch (error) {
+            if (privateBlogId !== pathBlogId) {
                 throw new Error("접근 권한이 없습니다.");
             }
+
+            setIsChecking(false);
         }
     }, [isHeaderLogin, pathBlogId, isAuthenticated, isInitialized]);
 
     if (isChecking) {
-        return <GlobalLoading type="auth" message="사용자 인증 진행 중..."/>;
+        return <GlobalLoading type='auth' message='사용자 인증 진행 중...' />;
     }
 
     return <>{children}</>;

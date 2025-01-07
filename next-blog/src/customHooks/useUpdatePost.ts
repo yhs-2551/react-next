@@ -1,13 +1,13 @@
+import { refreshToken } from "@/services/api";
 import { PostRequest } from "@/types/PostTypes";
-import { CustomHttpError } from "@/utils/CustomHttpError";
-import { refreshToken } from "@/utils/refreshToken";
-import { useMutation } from "react-query";
+import { CustomHttpError } from "@/utils/CustomHttpError"; 
+import { useMutation } from "@tanstack/react-query";
 
 function useUpdatePost(id: string, blogId: string) {
     const accessToken = localStorage.getItem("access_token") ?? false;
 
-    return useMutation(
-        async (newPost: PostRequest) => {
+    return useMutation({
+        mutationFn: async (newPost: PostRequest) => {
             const updatePost: (id: string, token: string | boolean) => Promise<Response> = (
                 id: string,
                 token: string | boolean
@@ -34,7 +34,8 @@ function useUpdatePost(id: string, blogId: string) {
                             response = await updatePost(id, newAccessToken);
                         }
                     } catch (error: unknown) {
-                        if (error instanceof CustomHttpError) { // 리프레시 토큰 까지 만료되어서 재로그인 필요
+                        if (error instanceof CustomHttpError) {
+                            // 리프레시 토큰 까지 만료되어서 재로그인 필요
                             throw new CustomHttpError(error.status, "세션이 만료되었습니다. \n로그아웃 이후 재로그인 해주세요.");
                         }
                     }
@@ -46,7 +47,7 @@ function useUpdatePost(id: string, blogId: string) {
             }
 
             return response.json();
-        }
+        },
         // {
         //     // Optimistic Update
         //     onMutate: async (newPost) => {
@@ -83,7 +84,7 @@ function useUpdatePost(id: string, blogId: string) {
         //         queryClient.invalidateQueries(["post", id]);
         //     },
         // }
-    );
+    });
 }
 
 export default useUpdatePost;

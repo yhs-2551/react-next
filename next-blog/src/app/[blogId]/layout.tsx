@@ -19,11 +19,19 @@ export default async function BlogLayout({ children, params }: { children: React
 
     const [userData, categoryData] = await Promise.all([userResponse.json(), categoryResponse.json()]);
 
-    const { blogId: userBlogId, username } = userData.data;
+    console.log("userData", userData);
+
+    const { blogId: userBlogId, blogName, username, profileImageUrl } = userData.data;
 
     return (
         <>
-            <UserDataInitializer username={username} blogId={userBlogId} categories={categoryData.data || []} />
+            <UserDataInitializer
+                publicBlogName={blogName}
+                publicBlogId={userBlogId}
+                publicBlogUsername={username}
+                publicBlogProfileImageUrl={profileImageUrl}
+                categories={categoryData.data || []}
+            />
             {children}
         </>
     );

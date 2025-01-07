@@ -1,7 +1,7 @@
 "use client";
 
 import { useInView } from "react-intersection-observer";
-import { useInfiniteQuery } from "react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { PostResponse } from "@/types/PostTypes";
 import EmptyState from "../_components/search/EmptyState";
@@ -29,6 +29,7 @@ export default function PostsGrid({ initialData, totalElements }: PostsGridProps
             }
             return undefined;
         },
+        initialPageParam: 1,
         // 컴포넌트 마운트 시점에 서버에서 받은 데이터로 초기화
         initialData: {
             pages: [{ data: { content: initialData, currentPage: 1, hasNext: true } }], // hasNext초기값 true 설정 따라서 hasNextPage도 초기에 true

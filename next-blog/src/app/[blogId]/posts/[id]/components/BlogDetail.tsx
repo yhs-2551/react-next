@@ -8,21 +8,20 @@ import parse, { DOMNode, Element } from "html-react-parser";
 
 import useDeletePost from "@/customHooks/useDeletePost";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { useParams, useRouter } from "next/navigation";
 
 import { toast, ToastContainer } from "react-toastify";
-import { checkAccessToken, fetchIsAuthor } from "@/services/api";
+import { checkAccessToken, fetchIsAuthor, refreshToken } from "@/services/api";
 
 import NextImage from "next/image";
-import { FileMetadata, PostResponse } from "@/types/PostTypes";
-import { refreshToken } from "@/utils/refreshToken";
+import { FileMetadata, PostResponse } from "@/types/PostTypes"; 
 import DOMPurify from "dompurify";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { useAuthStore } from "@/store/appStore";
-import { useQueryClient } from "react-query";
 import ToastProvider from "@/providers/ToastProvider";
+
 import {
     revalidateCategories,
     revalidatePagination,
@@ -30,10 +29,14 @@ import {
     revalidatePostsCategories,
     revalidatePostsCategoriesPagination,
 } from "@/actions/revalidate";
+import ConfirmModal from "@/app/_components/modal/ConfirmModal";
+import DeleteModal from "@/app/_components/modal/DeleteModal";
 
 function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId: string }) {
     const [isAuthor, setIsAuthor]: [boolean, React.Dispatch<React.SetStateAction<boolean>>] = useState<boolean>(false); // 작성자 여부 상태
     const [parsedContent, setParsedContent] = useState<React.ReactNode | null>(null);
+
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const params = useParams();
     const blogId = params.blogId as string;
@@ -41,8 +44,6 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     const post = initialData;
 
     const router = useRouter();
-
-    const queryClient = useQueryClient();
 
     const { isInitialized } = useAuthStore();
 
@@ -243,12 +244,6 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
 
     const handleDelete: () => void = (): void => {
         const onSuccess = async (data: { message: string } | undefined, variables: void, context: unknown) => {
-            // 검색어 추천 캐시 무효화. 실제 데이터 재요청은 백그라운드에서 발생하기 떄문에 빠른 응답을 위해 await 불필요
-            // 캐시 무효화가 안되어서 일단 보류 새로고침으로 적용
-            // invalidateSearchSuggestions(queryClient);
-
-            localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE");
-
             sessionStorage.setItem("isDeleting", "true");
 
             toast.success(
@@ -262,9 +257,8 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                         await revalidateCategories(blogId);
                         await revalidatePostsCategories();
                         await revalidatePostsCategoriesPagination();
-                        // router.replace 쓰고 싶은데 invalidateSearchSuggestions(queryClient, blogId);가 안먹음
-                        window.location.replace(`/${blogId}/posts`);
-                        // router.replace(`/${blogId}/posts`);
+                        // window.location.replace(`/${blogId}/posts`);
+                        router.replace(`/${blogId}/posts`);
                     },
                     autoClose: 2500,
                 }
@@ -330,11 +324,20 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                         <button onClick={handlePostStatus} className='text-sm text-gray-500'>
                             {post.postStatus === "PUBLIC" ? "비공개로 변경" : "공개로 변경"}
                         </button>
-                        <button onClick={handleDelete} className='text-sm text-gray-500'>
+                        <button type='button' className='text-sm text-gray-500' onClick={() => setIsDeleteModalOpen(true)}>
                             삭제
                         </button>
                     </div>
                 )}
+
+                <DeleteModal
+                    isOpen={isDeleteModalOpen}
+                    onClose={() => setIsDeleteModalOpen(false)}
+                    onConfirm={() => {
+                        handleDelete();
+                        setIsDeleteModalOpen(false);
+                    }}
+                />
 
                 {/* Content */}
                 <div className='quill'>

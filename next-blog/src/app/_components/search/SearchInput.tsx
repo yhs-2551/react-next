@@ -1,8 +1,9 @@
-import { useSearchSuggestions } from "@/customHooks/useSearchSuggestions";
+import { SEARCH_SUGGESTIONS_KEY, useSearchSuggestions } from "@/customHooks/useSearchSuggestions";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useDebounce } from "use-debounce";
 import { AiOutlineSearch } from "react-icons/ai";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface SearchSuggestion {
     id: number;
@@ -15,6 +16,8 @@ interface SearchInputProps {
     blogId: string | undefined;
     searchType: string;
     onSearch: (keyword: string) => void;
+    categoryName: string | undefined;
+    categoryNameByQueryParams: string | null;
 }
 
 interface RecentSearch {
@@ -23,7 +26,7 @@ interface RecentSearch {
     timestamp: number;
 }
 
-export default function SearchInput({ blogId, searchType, onSearch }: SearchInputProps) {
+export default function SearchInput({ blogId, searchType, onSearch, categoryName, categoryNameByQueryParams }: SearchInputProps) {
     const [keyword, setKeyword] = useState<string>("");
     const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
     const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
@@ -33,8 +36,8 @@ export default function SearchInput({ blogId, searchType, onSearch }: SearchInpu
 
     const [debouncedKeyword] = useDebounce(keyword, 300);
 
-    // keyword가 변경될때마다 상태가 업데이트 되고, 재렌더링 -> debouncedKeyword가 변경될때마다 새로운 캐시키로 인해 새로운 쿼리가 실행됨
-    const { data: suggestions = [], isLoading } = useSearchSuggestions(blogId, debouncedKeyword, searchType);
+    // keyword가 변경될때마다 상태가 업데이트 되고, 재렌더링 -> debouncedKeyword 및 searchType이 변경될때마다 새로운 캐시키로 인해 새로운 쿼리가 실행됨
+    const { data: suggestions = [], isLoading } = useSearchSuggestions(blogId, debouncedKeyword, searchType, categoryName, categoryNameByQueryParams);
 
     const router = useRouter();
 

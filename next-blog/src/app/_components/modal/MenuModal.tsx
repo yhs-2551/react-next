@@ -1,6 +1,5 @@
 "use client";
 
-import { useGetAllCategories } from "@/customHooks/useGetCategories";
 import { useCategoryStore, userProfileStore } from "@/store/appStore";
 import { CategoryType } from "@/types/CateogryTypes";
 import { motion } from "framer-motion";

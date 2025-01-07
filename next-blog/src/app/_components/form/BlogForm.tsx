@@ -10,18 +10,25 @@ import useAddPost from "@/customHooks/useAddPost";
 import { useParams, useRouter } from "next/navigation";
 import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
 import useUpdatePost from "@/customHooks/useUpdatePost";
-import { UseMutationResult } from "react-query";
+import { UseMutationResult } from "@tanstack/react-query";
 
 import "highlight.js/styles/atom-one-dark-reasonable.css";
 
 import dynamic from "next/dynamic";
 import { FileMetadata, PostRequest, PostResponse } from "@/types/PostTypes";
 import { Tag } from "@/types/TagTypes";
-import { CategoryType } from "@/types/CateogryTypes"; 
+import { CategoryType } from "@/types/CateogryTypes";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import PublishModal from "../modal/PublishModal";
-import { revalidateCategories, revalidatePagination, revalidatePostsAndSearch, revalidatePostsCategories, revalidatePostsCategoriesPagination } from "@/actions/revalidate";
+import {
+    revalidateCategories,
+    revalidatePagination,
+    revalidatePostsAndSearch,
+    revalidatePostsCategories,
+    revalidatePostsCategoriesPagination,
+} from "@/actions/revalidate";
 import { useCategoryStore } from "@/store/appStore";
+import ConfirmModal from "../modal/ConfirmModal";
 
 // QuillEditor 컴포넌트를 동적으로 임포트하면서 highlight.js도 함께 설정
 const QuillEditor = dynamic(
@@ -75,6 +82,8 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 
     const errorMessageRef = useRef<string | null>(null);
 
+    const confirmModalRef = useRef<HTMLDivElement>(null);
+
     const router = useRouter();
 
     const params = useParams();
@@ -88,10 +97,9 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         updatePostMutation = useUpdatePost(postId, blogId);
     }
 
-    const {categories} = useCategoryStore();
+    const { categories } = useCategoryStore();
 
-    useEffect(() => { 
-
+    useEffect(() => {
         if (categoryRef.current && categories) {
             // 기존 옵션 제거
             categoryRef.current.innerHTML = "";
@@ -128,7 +136,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                 categoryRef.current.value = initialData.categoryName;
             }
         }
-    }, [categories, initialData]);  
+    }, [categories, initialData]);
 
     useEffect(() => {
         if (titleInputRef.current && initialData?.title) {
@@ -266,8 +274,6 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
             const replacePath = isEditingRef.current ? `/${blogId}/posts/${postId}` : `/${blogId}/posts`;
             // window.location.replace(replacePath);
             router.replace(replacePath);
-
-            localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE"); // 글 작성 성공 후 캐시 삭제. 카테고리 페이지로 갔을 떄 새로운 데이터로 불러오기 위함
         };
 
         const onError = (error: unknown) => {
@@ -374,6 +380,18 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         }
     };
 
+    const showModal = () => {
+        if (confirmModalRef.current) {
+            confirmModalRef.current.classList.remove("hidden");
+        }
+    };
+
+    const hideModal = () => {
+        if (confirmModalRef.current) {
+            confirmModalRef.current.classList.add("hidden");
+        }
+    };
+
     // const handleCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
     //     setCategory(e.target.value);
     // };
@@ -443,8 +461,8 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                     <div className='max-w-screen-xl mx-auto flex justify-between items-center'>
                         <button
                             type='button'
-                            className='px-6 py-2.5 bg-gray-800 text-white rounded-md hover:bg-gray-700 focus:outline-none active:bg-gray-800 transition-colors opacity-80'
-                            onClick={() => router.back()}
+                            className='px-6 py-2.5 bg-gray-800 text-white rounded-md hover:bg-gray-700 focus:outline-none active:bg-gray-800 transition-colors'
+                            onClick={showModal}
                         >
                             나가기
                         </button>
@@ -457,6 +475,15 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                         </button>
                     </div>
                 </div>
+
+                <ConfirmModal
+                    modalRef={confirmModalRef}
+                    onClose={hideModal}
+                    onConfirm={() => {
+                        hideModal();
+                        router.back();
+                    }}
+                />
 
                 <div ref={modalRef} className='hidden'>
                     <PublishModal

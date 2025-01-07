@@ -40,8 +40,15 @@ export default function Pagination({ isExistContent, totalPages, currentPage, bl
         const params = new URLSearchParams();
         params.set("page", pageNum.toString());
 
+        const categoryByQueryParams = searchParams.get("category");
+
+        if (categoryByQueryParams) {
+            params.set("category", categoryByQueryParams);
+        }
+
         // 검색 파라미터가 있는 경우
         if (searchParams.has("searchType") && searchParams.has("keyword")) {
+
             params.set("searchType", searchParams.get("searchType")!);
             params.set("keyword", searchParams.get("keyword")!);
 

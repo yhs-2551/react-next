@@ -29,6 +29,7 @@ export default async function PostSearchResultsPage({
         keyword,
         size: "8",
     });
+    
     const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?${queryParams}`, {
         cache: "force-cache"
     });
@@ -38,6 +39,10 @@ export default async function PostSearchResultsPage({
     }
 
     const response = await res.json();
+
+    
+    console.log("response>>>>>>>>>>>>", response);
+
 
     const { totalPages, content, currentPage, totalElements } = response.data;
 

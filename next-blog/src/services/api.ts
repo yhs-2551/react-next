@@ -1,46 +1,5 @@
-// import {
-//     QueryFunctionContext,
-// } from "react-query";
-
 import { OAuth2UserAdditionalInfo, SignupUser } from "@/types/SignupUserTypes";
 import { CustomHttpError } from "@/utils/CustomHttpError";
-import { refreshToken } from "@/utils/refreshToken";
-
-// export const fetchPosts = async () => {
-
-//     console.log("데이터 가져오는 리액트 쿼리 실행");
-
-//     const response = await fetch("http://localhost:8000/api/posts", {
-//         method: "GET",
-//         headers: {
-//             "Content-Type": "application/json",
-//         },
-//     });
-
-//     if (!response.ok) {
-//         throw new Error("Failed to fetch posts");
-//     }
-
-//     return await response.json();
-// };
-
-// export const fetchPost = async ({ queryKey }: QueryFunctionContext) => {
-//     const [, id] = queryKey;
-
-//     const response = await fetch(`http://localhost:8000/api/posts/${id}`, {
-//         method: "GET",
-//         headers: {
-//             "Content-Type": "application/json"
-//         }
-//     });
-
-//     if (!response.ok) {
-//         throw new Error(`Failed to fetch post with id ${id}`);
-//     }
-
-//     const data = await response.json();
-//     return data;
-// };
 
 export const fetchAccessToken = async () => {
     // 초기 로그인 시 브라우저 쿠키에 담긴 액세스 토큰을 서버에서 검증한 후, 다시 클라이언트측으로 응답 헤더를 통해 액세스 토큰 전송
@@ -361,4 +320,78 @@ export const logoutUser = async () => {
         console.error("로그아웃 실패:", error);
         throw error; // 상위 함수로 에러 전달
     }
+};
+
+export const refreshToken: () => Promise<string | null> = async (): Promise<string | null> => {
+    const newTokenResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/token/new-token`, {
+        method: "GET",
+        credentials: "include", // 쿠키를 포함하여 요청
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (newTokenResponse.ok) {
+        const responseAccessToken = newTokenResponse.headers.get("Authorization")?.split(" ")[1];
+        if (responseAccessToken) {
+            localStorage.setItem("access_token", responseAccessToken);
+            return responseAccessToken;
+        }
+    } else {
+        const errorData = await newTokenResponse.json();
+
+        throw new CustomHttpError(newTokenResponse.status, errorData.message); // 리프레시 토큰도 만료될 시 재로그인이 필요합니다. 메시지 응답 받음.
+    }
+
+    return null;
+};
+
+export const uploadFile = async (file: File, blogId: string, featuredOrProfile?: "featured" | "profile"): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    if (featuredOrProfile && featuredOrProfile === "featured") {
+        formData.append("featured", featuredOrProfile);
+    } else if (featuredOrProfile && featuredOrProfile === "profile") {
+        formData.append("profile", featuredOrProfile);
+    }
+    const upload = async (token: string | boolean) => {
+        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/temp/files/upload`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+        });
+    };
+
+    const accessToken: string | false = localStorage.getItem("access_token") ?? false;
+    let response = await upload(accessToken);
+
+    // 토큰이 유효하지 않다면, 리프레시 토큰을 통해 토큰 재발급
+    if (!response.ok && response.status === 401) {
+        // 만약 리프레시 토큰이 만료되었을 경우 만료된 액세스 토큰 사용해서 액세스 토큰 재발급
+        // 리프레시 토큰이 만료되지 않았다면 리프레시 토큰으로 액세스 토큰 재발급
+        const newAccessToken = await refreshToken();
+
+        if (newAccessToken) {
+            response = await upload(newAccessToken);
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error("Failed to upload file, please retry again.");
+    }
+
+    const contentType = response.headers.get("content-type");
+    let data;
+    if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+    } else {
+        data = await response.text();
+    }
+
+    const fileUrl = typeof data === "string" ? data : data.url;
+
+    return fileUrl;
 };

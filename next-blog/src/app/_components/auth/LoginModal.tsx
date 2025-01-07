@@ -154,7 +154,7 @@ function LoginModal() {
     };
 
     return (
-        <div className='fixed inset-0 z-[999] flex items-center justify-center overflow-hidden bg-black bg-opacity-30'>
+        <div className='fixed inset-0 z-[1500] flex items-center justify-center overflow-hidden bg-black bg-opacity-30'>
             <AnimatePresence
                 mode='wait'
                 onExitComplete={() => {
@@ -275,7 +275,7 @@ function LoginModal() {
                                     text-gray-700 font-medium text-sm'
                                     onClick={handleGoogleLogin}
                                 >
-                                    <FcGoogle className="text-xl" />
+                                    <FcGoogle className='text-xl' />
                                     <span>Google로 계속하기</span>
                                 </button>
                             </div>

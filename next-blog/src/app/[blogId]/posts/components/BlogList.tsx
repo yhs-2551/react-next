@@ -7,7 +7,7 @@ import { PostResponse } from "@/types/PostTypes";
 import { useAuthStore } from "@/store/appStore";
 import EmptyState from "@/app/_components/search/EmptyState";
 import { FiFileText } from "react-icons/fi";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 interface BlogListProps {
     initialData: PostResponse[];
@@ -21,7 +21,9 @@ function BlogList({ initialData, keyword, isSearch, totalElements }: BlogListPro
     const { isInitialized } = useAuthStore();
 
     const params = useParams();
-    const categoryName = params.categoryName as string;
+    const categoryName = params.categoryName as string | undefined;
+    const searchParams = useSearchParams();
+    const categoryNameByQueryParams = searchParams.get("category");
 
     useEffect(() => {
         if (isInitialized) {
@@ -32,10 +34,17 @@ function BlogList({ initialData, keyword, isSearch, totalElements }: BlogListPro
         }
     }, [isInitialized]);
 
-    const getListTitle = (categoryName?: string, isSearch?: boolean): string => {
-        if (categoryName) return decodeURIComponent(categoryName); // params.categoryName에서 인코딩 된 상태이기 때문에 추가 디코딩 필요
-        if (isSearch) return "검색 결과";
-        return "게시글";
+    const getListTitle = (categoryNameByQueryParams?: string | null, categoryName?: string | undefined ,keyword?: string, isSearch?: boolean): string => {
+        if (isSearch && categoryNameByQueryParams && keyword) {
+            return `카테고리 ${decodeURIComponent(categoryNameByQueryParams)} / "${keyword}" 검색 결과`;
+        }
+        if (isSearch && keyword) {
+            return `"${keyword}" 검색결과`;
+        }
+        if (categoryName) {
+            return `카테고리 ${decodeURIComponent(categoryName)} / 게시글`;
+        }
+        return "전체 게시글";
     };
 
     return (
@@ -47,7 +56,7 @@ function BlogList({ initialData, keyword, isSearch, totalElements }: BlogListPro
                     <div className='flex justify-center mb-[40px]'>
                         <h2 className='flex items-center gap-2 text-2xl font-semibold text-[#222]'>
                             <FiFileText className='w-6 h-6 text-gray-600' />
-                            <span>{getListTitle(categoryName, isSearch)}</span>
+                            <span>{getListTitle(categoryNameByQueryParams, categoryName, keyword, isSearch)}</span>
                             <span className='text-[#333]'>({totalElements})</span>
                         </h2>
                     </div>

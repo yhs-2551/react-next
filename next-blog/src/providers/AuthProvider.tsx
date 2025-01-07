@@ -4,10 +4,9 @@ import EmailVerificationModal from "@/app/_components/auth/EmailVerificationModa
 import LoginModal from "@/app/_components/auth/LoginModal";
 import OAuth2NewUserModal from "@/app/_components/auth/OAuth2NewUserModal";
 import SignUpModal from "@/app/_components/auth/SignUpModal";
-import { checkAccessToken, fetchAccessToken } from "@/services/api";
+import { checkAccessToken, fetchAccessToken, refreshToken } from "@/services/api";
 import { useAuthStore } from "@/store/appStore";
-import { CustomHttpError } from "@/utils/CustomHttpError";
-import { refreshToken } from "@/utils/refreshToken";
+import { CustomHttpError } from "@/utils/CustomHttpError"; 
 import { useEffect } from "react";
 
 export default function AuthProvider() {
@@ -43,6 +42,7 @@ export default function AuthProvider() {
 
     // 새로고침 시 새로운 마운트로 간주되어 재실행
     useEffect(() => {
+
         // 다시 방문 시 리프레시 토큰으로 액세스 토큰을 갱신. RememberMe사용자 -> 2주간 로그인 유지, 아닌 사용자 -> 하루간 로그인 유지
         const newAccessToken = async () => {
             const isValidToken: boolean | undefined | null = await checkAccessToken();

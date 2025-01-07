@@ -19,8 +19,6 @@ export default async function PostListByCategoryPaginationPage({
         }
     );
 
-    console.log("re>>>>s", res);
-
     if (!res.ok) {
         notFound();
     }

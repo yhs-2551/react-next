@@ -17,14 +17,14 @@ import "./QuillEditor.css";
 import ReactQuill from "react-quill-new";
 
 import Quill, { Range } from "quill";
-import { FileMetadata } from "@/types/PostTypes";
-import { uploadFile } from "@/utils/uploadFile";
+import { FileMetadata } from "@/types/PostTypes"; 
 import { useParams } from "next/navigation";
 
 import { IoMdImages } from "react-icons/io";
 import { FaRegFileAlt } from "react-icons/fa";
 
 import { MdFormatAlignLeft, MdFormatAlignCenter, MdFormatAlignRight } from "react-icons/md";
+import { uploadFile } from "@/services/api";
 
 interface QuillEditorProps {
     contentValue: string | undefined;
@@ -356,7 +356,7 @@ export default React.memo(
                     overlay.style.left = `${centerOffset}px`;
                     selectedImageRef.current.style.left = `${centerOffset}px`;
                 } else if (alignmentRef.current === "right") {
-                    const rightEdge = containerRect.width - newWidth - 8;
+                    const rightEdge = containerRect.width - newWidth;
                     overlay.style.left = `${rightEdge}px`;
                     selectedImageRef.current.style.left = `${rightEdge}px`;
                 } else {
