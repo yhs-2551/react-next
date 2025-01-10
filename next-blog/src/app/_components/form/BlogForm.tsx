@@ -22,7 +22,10 @@ import { CustomHttpError } from "@/utils/CustomHttpError";
 import PublishModal from "../modal/PublishModal";
 import {
     revalidateCategories,
+    revalidateInfiniteScroll,
     revalidatePagination,
+    revalidatePostDetailPage,
+    revalidatePostEditPage,
     revalidatePostsAndSearch,
     revalidatePostsCategories,
     revalidatePostsCategoriesPagination,
@@ -251,26 +254,27 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         };
 
         const onSuccess = async () => {
-            console.log(isEditingRef.current ? "Blog Edit Form 성공 실행" : "Blog 작성 성공 실행");
 
-            if (modalRef.current) {
-                modalRef.current.style.display = "none";
+            sessionStorage.removeItem("cached-users-posts");
+
+            if (isEditingRef.current && postId) {
+                await revalidatePostDetailPage(blogId, postId);
+                await revalidatePostEditPage(blogId, postId);
             }
 
-            // 검색어 추천 캐시 무효화. 실제 데이터 재요청은 백그라운드에서 발생하기 떄문에 빠른 응답을 위해 await 불필요
-            // 이 부분 무효화가 안돼서 일단 보류. 새로고침으로 적용. 글쓰기 및 글수정 페이지 접근 시 새로고침 되니까
-            // invalidateSearchSuggestions(queryClient);
-
-            // 글목록 서버 컴포넌트 캐시 무효화. 변경사항을 적용하기 위해 await 필수
-            // 캐시 무효화 후 아래에서 router.replace로 페이지 이동하면 서버 컴포넌트 재실행
             // revalidatePath는 await없어도 되지만 안정성을 위해 추가
             await revalidatePostsAndSearch(blogId);
+            // 무한 스크롤 무효화
+            await revalidateInfiniteScroll();
             // 태그 무효화의 경우 await 필수, await 없으면 태그 무효화 적용 안됨
             await revalidatePagination();
             await revalidateCategories(blogId);
             await revalidatePostsCategories();
             await revalidatePostsCategoriesPagination();
-            // window.location.replace사용하기 전인 router push, router refresh관련 주석은 이전 커밋 기록에서 확인
+
+            if (modalRef.current) {
+                modalRef.current.style.display = "none";
+            }
             const replacePath = isEditingRef.current ? `/${blogId}/posts/${postId}` : `/${blogId}/posts`;
             // window.location.replace(replacePath);
             router.replace(replacePath);
@@ -430,7 +434,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 
                         또한 header가 998인데, QuillEditor의 DropdownMenu가 헤더 위쪽 부분에 보여야 하기 때문에 아래 z-999로 설정
                     */}
-                    <div className='ql-custom-container relative min-h-[500px] z-[999]'>
+                    <div className='ql-custom-container relative min-h-[500px] z-[1200]'>
                         <QuillEditor
                             contentValue={contentRef.current}
                             fileRef={fileRef}
@@ -457,7 +461,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                     </div>
                 </fieldset>
 
-                <div className='fixed bottom-0 left-0 right-0 bg-gray-50 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] px-6 py-4 z-[1000]'>
+                <div className='fixed bottom-0 left-0 right-0 bg-gray-50 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] px-6 py-4 z-[1300]'>
                     <div className='max-w-screen-xl mx-auto flex justify-between items-center'>
                         <button
                             type='button'

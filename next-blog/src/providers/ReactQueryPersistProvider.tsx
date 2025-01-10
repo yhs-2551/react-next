@@ -17,7 +17,7 @@ export default function ReactQueryPersistProvider({ children }: { children: Reac
 
     if (typeof window !== "undefined") {
         const persister = createSyncStoragePersister({
-            storage: window.localStorage,
+            storage: window.sessionStorage,
         });
 
         persistQueryClient({

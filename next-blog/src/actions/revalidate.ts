@@ -18,6 +18,14 @@ export async function revalidatePostsAndSearch(blogId: string) {
     }
 }
 
+export async function revalidateInfiniteScroll() {
+    try {
+        revalidateTag("infinite-scroll-posts");
+    } catch (error) {
+        console.error("revalidateInfiniteScroll 캐시 무효화 실패:", error);
+    }
+}
+
 export async function revalidatePagination() {
     try {
         revalidateTag("posts-pagination");
@@ -49,3 +57,20 @@ export async function revalidatePostsCategoriesPagination() {
         console.error("revalidatePostsCategoriesPagination 캐시 무효화 실패:", error);
     }
 }
+
+export async function revalidatePostDetailPage(blogId: string, postId: string) {
+    try {
+        revalidateTag(`${blogId}-post-${postId}-detail`);
+    } catch (error) {
+        console.error("revalidatePostDetailPage 캐시 무효화 실패:", error);
+    }
+}
+
+export async function revalidatePostEditPage(blogId: string, postId: string) {
+    try {
+        revalidateTag(`${blogId}-post-${postId}-edit`);
+    } catch (error) {
+        console.error("revalidatePostDetailPage 캐시 무효화 실패:", error);
+    }
+}
+ 

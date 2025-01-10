@@ -44,7 +44,7 @@ export default function AuthProvider() {
     useEffect(() => {
 
         // 다시 방문 시 리프레시 토큰으로 액세스 토큰을 갱신. RememberMe사용자 -> 2주간 로그인 유지, 아닌 사용자 -> 하루간 로그인 유지
-        const newAccessToken = async () => {
+        const authenticationToken = async () => {
             const isValidToken: boolean | undefined | null = await checkAccessToken();
 
             // 이 코드 없으면 OAUTH2 로그인 진행시에, OAUTH2의 setInitialized보다 아래쪽에 setInitialized(true) 코드가 먼저 실행되어
@@ -65,7 +65,7 @@ export default function AuthProvider() {
             setInitialized(true);
         };
 
-        newAccessToken();
+        authenticationToken();
     }, []);
 
     return (

@@ -346,6 +346,7 @@ export const refreshToken: () => Promise<string | null> = async (): Promise<stri
     return null;
 };
 
+// FormData 사용시 Content-Type multipart/form-data 수동 설정 불필요
 export const uploadFile = async (file: File, blogId: string, featuredOrProfile?: "featured" | "profile"): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);

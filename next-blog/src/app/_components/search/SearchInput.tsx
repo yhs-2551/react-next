@@ -1,9 +1,8 @@
-import { SEARCH_SUGGESTIONS_KEY, useSearchSuggestions } from "@/customHooks/useSearchSuggestions";
+import { useSearchSuggestions } from "@/customHooks/useSearchSuggestions";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useDebounce } from "use-debounce";
-import { AiOutlineSearch } from "react-icons/ai";
-import { useQueryClient } from "@tanstack/react-query";
+import { AiOutlineSearch } from "react-icons/ai"; 
 
 interface SearchSuggestion {
     id: number;

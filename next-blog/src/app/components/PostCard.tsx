@@ -2,6 +2,7 @@
 
 import { FileMetadata } from "@/types/PostTypes";
 import NextImage from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 interface PostCardProps {
@@ -21,10 +22,10 @@ export default function PostCard({ title, content, createdAt, username, imageUrl
     const router = useRouter();
 
     return (
-        <div
-            onClick={() => router.push(`/${blogId}/posts/${id}`)}
-            className='h-[23.125rem] w-[19.65rem] cursor-pointer bg-white rounded-lg 
-            shadow-md overflow-hidden hover:shadow-lg transition-all duration-500 ease-out hover:-translate-y-3'
+        <Link
+            href={`/${blogId}/posts/${id}`}
+            className='block h-[23.125rem] w-[19.65rem] cursor-pointer bg-white rounded-lg 
+        shadow-md overflow-hidden hover:shadow-lg transition-all duration-500 ease-out hover:-translate-y-3'
         >
             <div className='flex flex-col h-full'>
                 {imageUrl && (
@@ -52,6 +53,6 @@ export default function PostCard({ title, content, createdAt, username, imageUrl
                     </div>
                 </div>
             </div>
-        </div>
+        </Link>
     );
 }

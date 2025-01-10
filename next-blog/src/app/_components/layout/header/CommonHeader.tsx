@@ -6,7 +6,7 @@ import { CiSettings } from "react-icons/ci";
 
 import NextImage from "next/image";
 
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 
 import React, { useEffect, useRef, useState } from "react";
 import { CustomHttpError } from "@/utils/CustomHttpError";
@@ -28,7 +28,7 @@ export default function CommonHeader() {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
     const { isInitialized, setShowLogin, isAuthenticated, setHeaderLogin } = useAuthStore();
-    const { blogName } = userProfileStore();
+    const { blogName, blogUsername, profileImage } = userProfileStore();
 
     const [userPrivateProfile, setUserPrivateProfile] = useState<UserPrivateProfile>({
         blogId: "",
@@ -45,6 +45,9 @@ export default function CommonHeader() {
     const hamburgerMenuModalRef = useRef<HTMLDivElement>(null);
     const hamburgerMenuButtonRef = useRef<HTMLButtonElement>(null);
 
+    
+    const router = useRouter();
+
     const params = useParams();
     const pathBlogId = params.blogId as string | undefined;
 
@@ -57,6 +60,7 @@ export default function CommonHeader() {
     const isPostListPage = pathname === `/${pathBlogId}/posts` || pathname.includes(`/${pathBlogId}/posts/page`);
     const isCategoryPage = pathname?.includes(`/${pathBlogId}/categories`);
     const isSearchPage = pathname?.includes(`/${pathBlogId}/posts/search`);
+
 
     // zustand의 상태관리는 휘발성이기 때문에 zustand 전역상태로 로그인을 관리하기 보다 페이지를 새로고침 시키면서 아래 useEffect 재실행 시킴.
     // 재실행됨에 따라 액세스 토큰 유무로 로그인 상태를 관리.
@@ -93,6 +97,9 @@ export default function CommonHeader() {
                 const fetchUserProfile = async () => {
                     try {
                         const response = await getUserPrivateProfile(accessToken);
+
+                        console.log("헤더에서 프로필 조회 성공:", response.data);
+
                         setUserPrivateProfile(response.data);
                     } catch (error) {
                         console.error("프로필 조회 실패:", error);
@@ -111,7 +118,7 @@ export default function CommonHeader() {
             };
         }
     }, [isInitialized, isAuthenticated]);
-
+ 
     const handleLogoutClick = async () => {
         if (isLoggedIn) {
             try {
@@ -140,7 +147,7 @@ export default function CommonHeader() {
             try {
                 const newAccessToken = await refreshToken();
                 if (newAccessToken) {
-                    window.location.assign(`/${userPrivateProfile.blogId}/posts/new`);
+                    router.push(`/${userPrivateProfile.blogId}/posts/new`);
                     // router.push("/posts/new");
                 }
             } catch (error: unknown) {
@@ -161,7 +168,7 @@ export default function CommonHeader() {
                 }
             }
         } else if (isValidToken === true) {
-            window.location.assign(`/${userPrivateProfile.blogId}/posts/new`);
+            router.push(`/${userPrivateProfile.blogId}/posts/new`);
         }
     };
 
@@ -174,7 +181,7 @@ export default function CommonHeader() {
             )}
 
             {/* 로그인 모달의 z-index는 999 헤더는 998로 해야 로그인 모달이 띄워지면서 백드랍 효과 발생 */}
-            <header className='bg-white flex items-center justify-between h-[5rem] fixed top-0 left-0 w-full z-[1000] border-b-2 px-12'>
+            <header className='bg-white flex items-center justify-between h-[5rem] fixed top-0 left-0 w-full z-[1300] border-b-2 px-12'>
                 {/* 왼쪽: 로고와 검색창 */}
                 <div className='flex items-center gap-6'>
                     <div className='flex items-center gap-2'>
@@ -207,14 +214,14 @@ export default function CommonHeader() {
                     </div>
                 )}
 
-                {isWriteOrEditPage && <div className='flex items-center ql-toolbar-container' role='toolbar' aria-label='에디터 툴바'></div>}
+                {isWriteOrEditPage && <div className='relative flex items-center ql-toolbar-container' role='toolbar' aria-label='에디터 툴바'></div>}
 
                 {isLoggedIn ? (
                     <div className='relative' ref={menuRef}>
                         <div className='flex items-center gap-4'>
                             {!isWriteOrEditPage && (
                                 <button
-                                    className='px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-full  hover:bg-gray-700 transition-colors duration-200 ease-in-out focus:outline-none'
+                                    className='px-5 py-2 text-sm font-medium text-white bg-gray-800 rounded-full  hover:bg-gray-700 transition-colors duration-200 ease-in-out focus:outline-none'
                                     onClick={handleNewPost}
                                 >
                                     새 글 작성
@@ -222,19 +229,21 @@ export default function CommonHeader() {
                             )}
 
                             <NextImage
-                                src={"https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-avatar-profile.webp"}
+                                src={profileImage ||userPrivateProfile.profileImageUrl || "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-avatar-profile.webp"}
                                 width={36}
                                 height={36}
                                 alt='사용자 계정 이미지'
                                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                                className='w-9 h-9 rounded-full cursor-pointer hover:ring-2 hover:ring-gray-300 transition-all'
-                                priority={true}
+                                quality={100}
+                                sizes="(max-width: 160px) 100vw, 36px"  
+                                className='w-11 h-11 object-cover rounded-full cursor-pointer hover:ring-2 hover:ring-gray-300 transition-all'
+                              
                             />
                         </div>
                         {isUserMenuOpen && (
                             <div className='absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100'>
                                 <div className='px-4 py-2'>
-                                    <p className='pt-2 text-gray-800'>{userPrivateProfile.username}</p>
+                                    <p className='pt-2 text-gray-800'>{blogUsername || userPrivateProfile.username}</p>
                                     <p className='text-sm text-gray-800 pt-2'>{userPrivateProfile.email}</p>
                                 </div>
                                 <div className='px-4 pb-2 flex flex-col gap-2'>
@@ -243,7 +252,7 @@ export default function CommonHeader() {
                                         className='w-full text-left rounded-lg transition-colors text-gray-800 hover:text-gray-500'
                                         onClick={() => setIsUserMenuOpen(false)}
                                     >
-                                        {`${userPrivateProfile.blogName}`}
+                                        {blogName || `${userPrivateProfile.blogName}`}
                                     </Link>
 
                                     <Link

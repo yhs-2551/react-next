@@ -3,18 +3,20 @@
 import { CiCirclePlus } from "react-icons/ci";
 import { FaPlus } from "react-icons/fa6";
 import NextImage from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import CommonSideNavigation from "@/app/_components/layout/sidebar/CommonSideNavigation";
-import { uploadFile } from "@/services/api";
 import { useDebounce } from "use-debounce";
 import { updateProfile } from "@/actions/user-actions";
 import { userProfileStore } from "@/store/appStore";
+import { ClipLoader } from "react-spinners";
 
 const UserManage = () => {
-    const { profileImage, blogName, blogId, blogUsername } = userProfileStore();
+    const { profileImage, blogName, blogId, blogUsername, defaultProfileImage } = userProfileStore();
     const [updateProfileImage, setUpdateProfileImage] = useState<string>(profileImage);
     const [updateBlogName, setUpdateBlogName] = useState<string>(blogName);
     const [updateBlogUsername, setUpdateBlogUsername] = useState<string>(blogUsername);
+
+    const imageFileRef = useRef<File | null>(null);
 
     const [hasInteracted, setHasInteracted] = useState({
         blogName: false,
@@ -25,8 +27,13 @@ const UserManage = () => {
         username: "",
     });
 
+    const [updateSuccess, setUpdateSuccess] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+
     const [debouncedBlogName] = useDebounce(updateBlogName, 300);
     const [debouncedUsername] = useDebounce(updateBlogUsername, 300);
+
+    console.log("userProfileStore", blogName);
 
     useEffect(() => {
         if (!hasInteracted.blogName) return;
@@ -60,10 +67,19 @@ const UserManage = () => {
         setFormValidatorErrors((prev) => ({ ...prev, username: "" }));
     }, [debouncedUsername]);
 
+    useEffect(() => {
+
+        // 새로운 useEffect가 실행되기전에 이전 클린업 함수 먼저 실행
+        return () => {
+            if (updateProfileImage.startsWith('blob:')) {
+                URL.revokeObjectURL(updateProfileImage);
+            }
+        };
+    }, [updateProfileImage]);
+
     const isFormValid = () => {
         // 하나라도 수정됐는지 체크(기존값과 동일하면 요청x)
-        const isModified =
-            updateBlogName !== blogName || updateBlogUsername !== blogUsername || updateProfileImage !== profileImage;
+        const isModified = updateBlogName !== blogName || updateBlogUsername !== blogUsername || updateProfileImage !== profileImage;
 
         // 유효성 검사 통과 확인
         const isValid =
@@ -75,14 +91,21 @@ const UserManage = () => {
         return isModified && isValid;
     };
 
+    const setInitialize = () => {
+        setUpdateSuccess(false);
+        setIsLoading(false);
+    }
+
     const handleBlogNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setUpdateBlogName(e.target.value);
         setHasInteracted((prev) => ({ ...prev, blogName: true }));
+        setInitialize();
     };
 
     const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setUpdateBlogUsername(e.target.value);
         setHasInteracted((prev) => ({ ...prev, username: true }));
+        setInitialize();
     };
 
     // 이미지 업로드 핸들러
@@ -90,25 +113,47 @@ const UserManage = () => {
         const file = e.target.files?.[0];
 
         if (file) {
-            // const imageUrl = await uploadFile(file, blogId, "profile");
-            // // setProfileImage(imageUrl); // 업로드된 이미지를 전역 상태로 관리
-            // setTempProfileImage(imageUrl);
+            imageFileRef.current = file;
             const localPreviewUrl = URL.createObjectURL(file);
             setUpdateProfileImage(localPreviewUrl);
         }
+
+        setInitialize();
     };
 
-    const handleSave = () => {
-        const access_token = localStorage.getItem("access_token") as string;
+    const handleSave = async () => {
+        try {
+            setIsLoading(true);
 
-        const profileData = {
-            blogName: updateBlogName,
-            blogUsername: updateBlogUsername,
-            profileImageUrl: updateProfileImage,
-        };
+            const access_token = localStorage.getItem("access_token") as string;
 
-        const response = updateProfile(access_token, blogId, profileData);
+            const formData = new FormData();
+
+            if (imageFileRef.current) {
+                formData.append("profileImage", imageFileRef.current);
+            }
+
+            formData.append("blogName", updateBlogName);
+            formData.append("username", updateBlogUsername);
+
+            // 나중에 blogId도 바꿀 수 있으면 blogId 체크하는 users-${blogId}-checks 태그 무효화 필요 
+            await updateProfile(access_token, blogId, formData);
+
+            setUpdateSuccess(true);
+        } catch (error) {
+            console.error("프로필 업데이트 실패 ", error);
+            setUpdateSuccess(false);
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+    const handleDeleteImage =(e:  React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        e.preventDefault();
+        imageFileRef.current = null;
+        setUpdateProfileImage(defaultProfileImage);
+        setInitialize();
+    }
 
     return (
         // 컨텐츠 부분 전체 문서에 수평, 수직 정렬을 위해 profile-wrapper 사용
@@ -121,14 +166,19 @@ const UserManage = () => {
                     <h2 className='text-2xl font-bold mb-8 text-gray-800 flex justify-center'>블로그 관리</h2>
 
                     <form className='space-y-4 max-w-2xl mx-auto'>
-                        <div className='mx-auto h-40 w-40 relative group'>
+                        <div className='mx-auto h-44 w-44 relative group'>
+                            <button className='absolute right-0 top-0 w-8 h-8 bg-gray-800 hover:bg-gray-700 flex items-center justify-center z-10 cursor-pointer'
+                            onClick={handleDeleteImage}
+                            >
+                                <span className='text-white text-xl font-medium'>-</span>
+                            </button>
                             <NextImage
                                 width={160}
                                 height={160}
                                 src={updateProfileImage}
                                 alt='사용자 프로필 이미지'
                                 priority={true}
-                                className='h-full w-full object-cover rounded-full transition-opacity'
+                                className='h-full w-full object-cover transition-opacity'
                             />
 
                             <div className='absolute inset-0 flex items-center justify-center'>
@@ -186,18 +236,18 @@ const UserManage = () => {
                         </div>
                     </form>
                 </div>
-                <div className='px-8 py-5 flex justify-end mt-6 bg-[#FAFBFC]'>
+                <div className='min-h-[85px] px-8 py-5 flex justify-end mt-6 bg-[#FAFBFC]'>
                     <button
                         type='submit'
-                        disabled={!isFormValid()}
+                        disabled={!isFormValid() || updateSuccess || isLoading}
                         className={`w-[9rem] font-medium text-sm px-4 py-2 ${
-                            isFormValid()
-                                ? "cursor-pointer shadow-md bg-gray-800 text-white hover:bg-gray-700 hover:shadow-md transition-all"
-                                : "cursor-not-allowed bg-white text-gray-400 border-2 border-manageBgColor"
+                            !isFormValid() || updateSuccess
+                                ? "cursor-not-allowed bg-white text-gray-400 border-2 border-manageBgColor"
+                                : "cursor-pointer shadow-md  bg-gray-800 text-white hover:bg-gray-700 hover:shadow-md transition-all"
                         }`}
                         onClick={handleSave}
                     >
-                        변경사항 저장
+                        {isLoading ? <ClipLoader color='#ffffff' size={20} /> : updateSuccess ? "저장 완료" : "변경사항 저장"}
                     </button>
                 </div>
             </section>
@@ -205,5 +255,13 @@ const UserManage = () => {
         </div>
     );
 };
+
+// {createCategoryMutation.isSuccess && !createCategoryMutation.isPending ? (
+//     "저장 완료"
+// ) : createCategoryMutation.isPending ? (
+//     <ClipLoader color='#ffffff' size={20} />
+// ) : (
+//     "변경사항 저장"
+// )}
 
 export default UserManage;

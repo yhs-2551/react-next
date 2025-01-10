@@ -150,7 +150,7 @@ function LoginModal() {
         sessionStorage.setItem("lastVisitedPath", currentPath);
 
         // rememberMe는 boolean인데 template literal에서 자동으로 string으로 변환됨
-        window.location.assign(`${process.env.NEXT_PUBLIC_BACKEND_URL}/oauth2/authorization/google?remember_me=${formData.rememberMe}`);
+        router.push(`${process.env.NEXT_PUBLIC_BACKEND_URL}/oauth2/authorization/google?remember_me=${formData.rememberMe}`);
     };
 
     return (

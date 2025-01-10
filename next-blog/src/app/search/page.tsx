@@ -1,6 +1,7 @@
 import React from "react";
 import IndexSearchResults from "./components/IndexSearchResults"; 
 import Pagination from "../_components/pagination/Pagination";
+import { CacheTimes } from "@/constants/cache-constants";
 export default async function IndexSearchPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
     const { page, searchType, keyword } = await searchParams;
 
@@ -21,6 +22,9 @@ export default async function IndexSearchPage({ searchParams }: { searchParams: 
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/posts?${queryParams}`, {
         cache: "force-cache",
+        next: {
+            revalidate: CacheTimes.FREQUENT.INDEX_POSTS_SEARCH_RESULTS,
+        }
     });
 
     const response = await res.json();

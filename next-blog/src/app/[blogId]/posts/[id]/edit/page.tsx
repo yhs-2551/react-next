@@ -3,12 +3,17 @@ import React from "react";
 import ClientWrapper from "@/providers/ClientWrapper";
 import AuthCheck from "@/app/[blogId]/components/AuthCheck";
 import BlogForm from "@/app/_components/form/BlogForm";
+import { CacheTimes } from "@/constants/cache-constants";
 
 export default async function PostEditPage({ params }: { params: Promise<{ id: string; blogId: string }> }) {
     const { blogId, id } = await params;
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/${id}`, {
-        cache: "no-store",
+        cache: "force-cache",
+        next: {
+            tags: [`${blogId}-post-${id}-edit`],
+            revalidate: CacheTimes.MODERATE.POST_DETAIL,
+        },
     });
 
     const post = await res.json();

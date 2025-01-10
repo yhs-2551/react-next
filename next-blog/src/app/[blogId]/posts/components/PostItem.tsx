@@ -58,6 +58,8 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
                         width={192} // 12rem = 192px
                         height={192} // 12rem = 192px
                         className='object-cover rounded'
+                        quality={100}
+                        sizes='(max-width: 334px) 100vw 192px'
                         style={{ minWidth: "12rem", minHeight: "12rem" }}
                         priority={true}
                     />

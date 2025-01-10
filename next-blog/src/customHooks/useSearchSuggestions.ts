@@ -8,7 +8,9 @@ interface SearchSuggestion {
     content?: string;
 }
 
-export const SEARCH_SUGGESTIONS_KEY = "searchSuggestions";
+const SEARCH_SUGGESTIONS_KEY = "searchSuggestions";
+const ONE_MINUTE = 1000 * 60; // 1000 = ms로 1s
+const ONE_HOUR = ONE_MINUTE * 60;
 
 // 아래 로직은 따로 무효화 안해도, 브라우저 뒤로가기 앞으로가기만으로도 캐시가 무효화 됨(router.push, replace도 당연히 무효화). 이유는 못찾았음..
 export const useSearchSuggestions = (
@@ -30,7 +32,9 @@ export const useSearchSuggestions = (
             if (blogId) {
                 if (categoryName || categoryNameByQueryParams) {
                     res = await fetch(
-                        `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?category=${categoryName || categoryNameByQueryParams}&keyword=${keyword}&searchType=${searchType}&size=5`
+                        `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?category=${
+                            categoryName || categoryNameByQueryParams
+                        }&keyword=${keyword}&searchType=${searchType}&size=5`
                     );
                 } else {
                     res = await fetch(
@@ -57,8 +61,8 @@ export const useSearchSuggestions = (
             );
         },
         enabled: keyword.length > 0,
-        staleTime: Infinity,
-        gcTime: Infinity,
+        staleTime: ONE_MINUTE * 30, // 30분
+        gcTime: ONE_HOUR, // 1시간
         refetchOnWindowFocus: false,
         refetchOnMount: false,
         refetchOnReconnect: true,

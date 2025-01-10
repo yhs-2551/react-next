@@ -6,6 +6,8 @@ import "react-quill-new/dist/quill.snow.css"; // Snow 테마 CSS 파일
 
 import parse, { DOMNode, Element } from "html-react-parser";
 
+import Zoom from "react-medium-image-zoom";
+
 import useDeletePost from "@/customHooks/useDeletePost";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -16,7 +18,7 @@ import { toast, ToastContainer } from "react-toastify";
 import { checkAccessToken, fetchIsAuthor, refreshToken } from "@/services/api";
 
 import NextImage from "next/image";
-import { FileMetadata, PostResponse } from "@/types/PostTypes"; 
+import { FileMetadata, PostResponse } from "@/types/PostTypes";
 import DOMPurify from "dompurify";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { useAuthStore } from "@/store/appStore";
@@ -24,7 +26,10 @@ import ToastProvider from "@/providers/ToastProvider";
 
 import {
     revalidateCategories,
+    revalidateInfiniteScroll,
     revalidatePagination,
+    revalidatePostDetailPage,
+    revalidatePostEditPage,
     revalidatePostsAndSearch,
     revalidatePostsCategories,
     revalidatePostsCategoriesPagination,
@@ -104,15 +109,19 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                         console.log("finalStyle >>>", finalStyle);
 
                         return (
-                            <NextImage
-                                key={src}
-                                src={src}
-                                alt={alt || "detail page image"}
-                                width={width} // 서버에서 받은 크기 사용
-                                height={height} // 서버에서 받은 크기 사용
-                                style={finalStyle} // 서버에서 받은 기존 스타일 유지
-                                loading='lazy'
-                            />
+                            <Zoom>
+                                <NextImage
+                                    key={src}
+                                    src={src}
+                                    alt={alt || "detail page image"}
+                                    width={width} // 서버에서 받은 크기 사용
+                                    height={height} // 서버에서 받은 크기 사용
+                                    style={finalStyle} // 서버에서 받은 기존 스타일 유지
+                                    quality={100}
+                                    sizes={`(max-width: 334px) 100vw, ${width}px`}
+                                    loading='lazy'
+                                />
+                            </Zoom>
                         );
                     }
                 },
@@ -212,7 +221,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
             // router.push를 쓰면 클라이언트 측에서 페이지 이동이 일어나기 때문에, 수정 페이지로 접근 시 페이지 전체가 새로고침 되지 않아 에디터 기능이 제대로 작동하지 않는다.
             // 따라서 수정 페이지로 이동할땐 window.location.href를 사용하여 수정 페이지 전체 새로고침이 일어나도록 한다.
             // router.push(`/posts/${postId}/edit`);
-            window.location.assign(`/${blogId}/posts/${postId}/edit`);
+            router.push(`/${blogId}/posts/${postId}/edit`);
         }
 
         if (isValidToken === false) {
@@ -244,25 +253,30 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
 
     const handleDelete: () => void = (): void => {
         const onSuccess = async (data: { message: string } | undefined, variables: void, context: unknown) => {
+          
             sessionStorage.setItem("isDeleting", "true");
+
+            sessionStorage.removeItem("cached-users-posts");
 
             toast.success(
                 <span>
                     <span style={{ fontSize: "0.7rem" }}>{data?.message}</span>
-                </span>,
-                {
-                    onClose: async () => {
-                        await revalidatePostsAndSearch(blogId);
-                        await revalidatePagination();
-                        await revalidateCategories(blogId);
-                        await revalidatePostsCategories();
-                        await revalidatePostsCategoriesPagination();
-                        // window.location.replace(`/${blogId}/posts`);
-                        router.replace(`/${blogId}/posts`);
-                    },
-                    autoClose: 2500,
-                }
+                </span>
             );
+
+            await revalidatePostsAndSearch(blogId);
+            await revalidateInfiniteScroll();
+            await revalidatePagination();
+            await revalidateCategories(blogId);
+            await revalidatePostsCategories();
+            await revalidatePostsCategoriesPagination();
+            await revalidatePostDetailPage(blogId, postId);
+            await revalidatePostEditPage(blogId, postId);
+
+            setTimeout(() => {
+                // window.location.replace(`/${blogId}/posts`);
+                router.replace(`/${blogId}/posts`);
+            }, 2500);
         };
 
         const onError = (error: unknown) => {

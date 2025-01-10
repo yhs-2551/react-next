@@ -1,6 +1,7 @@
 import React from "react";
 import BlogList from "./components/BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
+import { CacheTimes } from "@/constants/cache-constants";
 
 export default async function PostListPage({
     params,
@@ -11,6 +12,9 @@ export default async function PostListPage({
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?size=8`, {
         cache: "force-cache",
+        next: {
+            revalidate: CacheTimes.MODERATE.POSTS
+        }
     });
 
     const response = await res.json();

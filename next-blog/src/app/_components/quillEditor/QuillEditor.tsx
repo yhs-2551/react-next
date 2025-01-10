@@ -17,7 +17,7 @@ import "./QuillEditor.css";
 import ReactQuill from "react-quill-new";
 
 import Quill, { Range } from "quill";
-import { FileMetadata } from "@/types/PostTypes"; 
+import { FileMetadata } from "@/types/PostTypes";
 import { useParams } from "next/navigation";
 
 import { IoMdImages } from "react-icons/io";
@@ -25,6 +25,7 @@ import { FaRegFileAlt } from "react-icons/fa";
 
 import { MdFormatAlignLeft, MdFormatAlignCenter, MdFormatAlignRight } from "react-icons/md";
 import { uploadFile } from "@/services/api";
+import { createPortal } from "react-dom";
 
 interface QuillEditorProps {
     contentValue: string | undefined;
@@ -862,7 +863,6 @@ export default React.memo(
                             quill.setSelection(nextLineIndex + 1, Quill.sources.SILENT);
                         }
                     }, 0); // 콜백을 이벤트 루프의 태스크 큐에 추가 후 현재 실행 스택이 비워진 후 실행. 즉 비동기
-                    
 
                     if (fileRef && fileRef.current) {
                         fileRef.current.push({
@@ -912,16 +912,18 @@ export default React.memo(
         // 드롭다운 위치 설정 함수
         const setPosition = () => {
             const imageButtonElement = document.querySelector(".ql-image");
-            const parentContainer = document.querySelector(".ql-custom-container");
+            const toolbarContainer = document.querySelector(".ql-toolbar-container");
 
-            if (imageButtonElement && dropdownRef.current && parentContainer) {
-                const rect = imageButtonElement.getBoundingClientRect();
-                const parentRect = parentContainer.getBoundingClientRect();
+            if (imageButtonElement && dropdownRef.current && toolbarContainer) {
+                const buttonRect = imageButtonElement.getBoundingClientRect();
+                const toolbarRect = toolbarContainer.getBoundingClientRect();
                 const dropdownWidth = dropdownRef.current.offsetWidth;
-                const buttonWidth = rect.width;
+                const buttonWidth = buttonRect.width;
 
-                dropdownRef.current.style.top = `${rect.bottom - parentRect.top}px`;
-                dropdownRef.current.style.left = `${rect.left - parentRect.left + buttonWidth / 2 - dropdownWidth / 2}px`;
+                // 이미지 버튼 바로 아래 위치
+                dropdownRef.current.style.top = `${buttonRect.bottom - toolbarRect.top}px`;
+                // 이미지 버튼 중앙 정렬
+                dropdownRef.current.style.left = `${buttonRect.left - toolbarRect.left + buttonWidth / 2 - dropdownWidth / 2}px`;
             }
         };
 
@@ -1011,31 +1013,30 @@ export default React.memo(
             []
         );
 
-        const DropdownMenu: React.FC<DropdownMenuProps> = ({ dropdownPosition, handleFileSelection, dropdownRef }) => (
-            <div
-                ref={dropdownRef}
-                className='absolute bg-white border border-gray-300 shadow-md'
-                style={{
-                    top: dropdownPosition.top,
-                    left: dropdownPosition.left,
-                }}
-            >
-                <ul>
-                    <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("image")}>
-                        <IoMdImages className='inline-block w-4 h-4 mr-2 text-gray-400' />
-                        사진
-                    </li>
-                    <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("file")}>
-                        <FaRegFileAlt className='inline-block w-4 h-4 mr-2 text-gray-400' />
-                        파일
-                    </li>
-                    {/* <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("video")}>
-                        <MdVideoLibrary className='inline-block w-4 h-4 mr-2 text-gray-400' />
-                        동영상
-                    </li> */}
-                </ul>
-            </div>
-        );
+        const DropdownMenuPortal: React.FC<DropdownMenuProps> = ({ dropdownPosition, handleFileSelection, dropdownRef }) => {
+            return createPortal(
+                <div
+                    ref={dropdownRef}
+                    className='absolute bg-white border border-gray-300 shadow-md z-[9999px]'
+                    style={{
+                        top: dropdownPosition.top,
+                        left: dropdownPosition.left,
+                    }}
+                >
+                    <ul>
+                        <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("image")}>
+                            <IoMdImages className='inline-block w-4 h-4 mr-2 text-gray-400' />
+                            사진
+                        </li>
+                        <li className='py-2 px-4 hover:bg-gray-100 cursor-pointer' onClick={() => handleFileSelection("file")}>
+                            <FaRegFileAlt className='inline-block w-4 h-4 mr-2 text-gray-400' />
+                            파일
+                        </li>
+                    </ul>
+                </div>,
+                document.querySelector(".ql-toolbar-container") as HTMLDivElement
+            );
+        };
 
         return (
             <>
@@ -1075,7 +1076,8 @@ export default React.memo(
 
                 {/* 드롭다운 메뉴 */}
 
-                {<DropdownMenu dropdownPosition={dropdownPosition} handleFileSelection={handleFileSelection} dropdownRef={dropdownRef} />}
+                {/* {<DropdownMenu dropdownPosition={dropdownPosition} handleFileSelection={handleFileSelection} dropdownRef={dropdownRef} />} */}
+                {<DropdownMenuPortal dropdownPosition={dropdownPosition} handleFileSelection={handleFileSelection} dropdownRef={dropdownRef} />}
             </>
         );
     })

@@ -109,7 +109,7 @@ function PublishModal({
     };
 
     return (
-        <div className='fixed inset-0 bg-gray-600 bg-opacity-50 z-[1001] flex justify-center items-center'>
+        <div className='fixed inset-0 bg-gray-600 bg-opacity-50 z-[1500] flex justify-center items-center'>
             <div className='bg-white p-6 rounded-md shadow-md w-96'>
                 <h2 className='text-2xl font-bold mb-4'>발행</h2>
 
@@ -140,8 +140,9 @@ function PublishModal({
                                 src={featuredImage.fileUrl}
                                 alt='Representative Image'
                                 className='rounded-md object-cover'
-                                fill
-                                sizes='(max-width: 334px) 100vw'
+                                fill 
+                                quality={100}
+                                sizes='(max-width: 334px) 100vw 334px'
                                 priority={true}
                             />
                             <button

@@ -8,6 +8,7 @@ interface ProfileState {
     blogUsername: string;
     blogId: string;
     profileImage: string;
+    defaultProfileImage: string;
     setBlogName: (name: string) => void;
     setBlogUsername: (username: string) => void;
     setBlogId: (id: string) => void;
@@ -18,7 +19,8 @@ export const userProfileStore = create<ProfileState>((set) => ({
     blogName: "",
     blogUsername: "",
     blogId: "",
-    profileImage: "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-avatar-profile.webp",
+    profileImage: "",
+    defaultProfileImage: "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-avatar-profile.webp",
     setBlogName: (name) => set({ blogName: name }),
     setBlogUsername: (username) => set({ blogUsername: username }),
     setBlogId: (id) => set({ blogId: id }),
