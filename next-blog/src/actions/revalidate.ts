@@ -73,4 +73,14 @@ export async function revalidatePostEditPage(blogId: string, postId: string) {
         console.error("revalidatePostDetailPage 캐시 무효화 실패:", error);
     }
 }
+
+export async function revalidateUserProfile() {
+    try {
+        revalidateTag("private-profile");
+        revalidateTag("public-profile");
+    } catch (error) {
+        console.error("revalidateUserProfile 캐시 무효화 실패:", error);
+    }
+}
+ 
  

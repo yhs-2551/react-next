@@ -1,11 +1,14 @@
 import React from "react";
 import UserManage from "./components/UserManage";
 import AuthCheck from "../components/AuthCheck";
+import ClientWrapper from "@/providers/ClientWrapper";
 
 export default function UserManagePage() {
     return (
-        <AuthCheck>
-            <UserManage />
-        </AuthCheck>
+        <ClientWrapper>
+            <AuthCheck>
+                <UserManage />
+            </AuthCheck>
+        </ClientWrapper>
     );
 }

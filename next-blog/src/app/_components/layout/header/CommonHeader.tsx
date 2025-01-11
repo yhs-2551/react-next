@@ -89,7 +89,8 @@ export default function CommonHeader() {
 
             const isAccessToken = accessToken && accessToken !== null && accessToken !== undefined && accessToken !== "";
 
-            if (isAccessToken) {
+            if (isAccessToken) { 
+
                 setIsLoggedIn(true);
                 //setHeaderLogin는 AuthCheck부분을 위해. window.location 새로고침 기능 대신 router.push 기능을 사용하기 위해, 즉 ux향상을 위해 사용
                 setHeaderLogin(true);
@@ -97,9 +98,6 @@ export default function CommonHeader() {
                 const fetchUserProfile = async () => {
                     try {
                         const response = await getUserPrivateProfile(accessToken);
-
-                        console.log("헤더에서 프로필 조회 성공:", response.data);
-
                         setUserPrivateProfile(response.data);
                     } catch (error) {
                         console.error("프로필 조회 실패:", error);

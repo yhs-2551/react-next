@@ -52,7 +52,7 @@ export default function EmailVerificationModal({ user }: EmailVerificationModalP
                             <span style={{ fontSize: "0.9rem" }}>{verifyResponse.message}</span>
                         </span>,
                         {
-                            autoClose: 3000, // 2초
+                            autoClose: 3000, // 3초
                             style: {
                                 padding: "16px",
                             },

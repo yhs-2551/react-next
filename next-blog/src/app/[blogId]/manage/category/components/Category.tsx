@@ -34,6 +34,7 @@ import { CategoryType } from "@/types/CateogryTypes";
 import CommonSideNavigation from "@/app/_components/layout/sidebar/CommonSideNavigation";
 import { useCategoryStore } from "@/store/appStore";
 import { revalidateCategories } from "@/actions/revalidate";
+import { CustomHttpError } from "@/utils/CustomHttpError";
 
 // 컴포넌트 외부에 헬퍼 함수 정의
 const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
@@ -247,10 +248,36 @@ const Category: React.FC = () => {
             }
         };
 
-        const onError = (error: any) => {
-            // console.log(isEditingRef.current ? "Blog Edit Form 실패 실행" : "Blog 작성 실패 실행");
-            console.error("카테고리 저장 실패 Error:", error); // 오류 로그 확인
-            // errorMessageRef.current = error.message;
+        const onError = (error: unknown) => {
+            if (error instanceof CustomHttpError) {
+                if (error.status === 401) {
+
+                    localStorage.removeItem("access_token");
+
+                    toast.error(
+                        <span style={{ whiteSpace: "pre-line" }}>
+                            <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                        </span>,
+                        {
+                            onClose: () => {
+                                window.location.reload();
+                            },
+                        }
+                    );
+                } else {
+                    console.error("카테고리 저장 실패 CustomHttpError:", error); // 오류 로그 확인
+                    toast.error(
+                        <span style={{ whiteSpace: "pre-line" }}>
+                            <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                        </span>,
+                        {
+                            onClose: () => {},
+                        }
+                    );
+                }
+            } else {
+                console.error("카테고리 저장 실패 Unknown Error:", error);
+            }
         };
 
         createCategoryMutation.mutate(categoryPayLoad, { onSuccess, onError });

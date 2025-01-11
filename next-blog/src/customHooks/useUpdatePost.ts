@@ -36,7 +36,7 @@ function useUpdatePost(id: string, blogId: string) {
                     } catch (error: unknown) {
                         if (error instanceof CustomHttpError) {
                             // 리프레시 토큰 까지 만료되어서 재로그인 필요
-                            throw new CustomHttpError(error.status, "세션이 만료되었습니다. \n로그아웃 이후 재로그인 해주세요.");
+                            throw new CustomHttpError(error.status, "세션이 만료되었습니다.\n재로그인 해주세요.");
                         }
                     }
                 }

@@ -1,6 +1,7 @@
 import { useMutation, UseMutationResult } from "@tanstack/react-query";
 import { CategoryType } from "@/types/CateogryTypes";
 import { refreshToken } from "@/services/api";
+import { CustomHttpError } from "@/utils/CustomHttpError";
 
 interface CategoryPayload {
     categories: CategoryType[];
@@ -37,15 +38,26 @@ function useAddCategory(blogId: String) {
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    const newAccessToken = await refreshToken();
-                    if (newAccessToken) {
-                        response = await createCategory(newAccessToken);
+                    
+                    try {
+                        const newAccessToken = await refreshToken();
+                        if (newAccessToken) {
+                            response = await createCategory(newAccessToken);
+                        }
+                    } catch (error: unknown) {
+                        
+                        if (error instanceof CustomHttpError) {
+                            // 리프레시 토큰 까지 만료되어서 재로그인 필요
+                            throw new CustomHttpError(error.status, "세션이 만료되었습니다.\n재로그인 해주세요.");
+                        }
                     }
+
+                 
                 }
             }
 
             if (!response.ok) {
-                throw new Error("Failed to add new category please retry again.");
+                throw new CustomHttpError(response.status, "서버측 오류로 인해 카테고리 수정이 실패하였습니다.\n잠시 후 다시 시도해주세요.");
             }
 
             const responseData = await response.json();

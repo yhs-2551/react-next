@@ -3,6 +3,7 @@ import { CustomHttpError } from "@/utils/CustomHttpError";
 
 export const fetchAccessToken = async () => {
     // 초기 로그인 시 브라우저 쿠키에 담긴 액세스 토큰을 서버에서 검증한 후, 다시 클라이언트측으로 응답 헤더를 통해 액세스 토큰 전송
+    // OAUTH2 로그인 사용자
     const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/token/initial-token`, {
         method: "GET",
         credentials: "include",
@@ -84,7 +85,7 @@ export const fetchIsAuthor = async (postId: string, blogId: string, accessToken:
     const response = await verifyPostAuthor(accessToken);
 
     if (!response.ok && response.status === 500) {
-        throw new CustomHttpError(response.status, "작성자 확인에 실패했습니다. 잠시후 다시 시도해주세요.");
+        throw new Error("서버측 오류로 인해 작성자 확인이 불가능합니다.");
     }
 
     const data = await response.json();

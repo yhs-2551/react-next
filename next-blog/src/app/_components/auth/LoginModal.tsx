@@ -11,6 +11,7 @@ import { loginUser } from "@/services/api";
 
 import { useAuthStore } from "@/store/appStore";
 import { CustomHttpError } from "@/utils/CustomHttpError";
+import { toast } from "react-toastify";
 
 export interface LoginFormData {
     email: string;
@@ -114,8 +115,8 @@ function LoginModal() {
             }, 300);
 
             setTimeout(() => {
-                //   window.location.reload();
                 setAuthenticated(true);
+
             }, 350);
         } catch (error: unknown) {
             if (error instanceof CustomHttpError) {

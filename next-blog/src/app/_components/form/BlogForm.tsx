@@ -283,6 +283,9 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         const onError = (error: unknown) => {
             if (error instanceof CustomHttpError) {
                 if (error.status === 401) {
+
+                    localStorage.removeItem("access_token");
+
                     toast.error(
                         <span style={{ whiteSpace: "pre-line" }}>
                             <span style={{ fontSize: "0.7rem" }}>{error.message}</span>

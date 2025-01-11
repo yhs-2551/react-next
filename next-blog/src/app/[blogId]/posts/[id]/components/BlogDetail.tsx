@@ -155,17 +155,8 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                     const isAuthor = await fetchIsAuthor(postId, blogId, accessToken);
 
                     if (isAuthor) setIsAuthor(isAuthor);
-                } catch (error: unknown) {
-                    // ux측면에서 작성자 확인이 실패하였습니다. 잠시 후 다시 시도해주세요. 할필요가 있을까 일단 보류
-                    if (error instanceof CustomHttpError) {
-                        if (error.status === 500) {
-                            toast.error(
-                                <span>
-                                    <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
-                                </span>
-                            );
-                        }
-                    }
+                } catch (error) {
+                    console.error("작성자 확인 실패 오류: ", error);
                 }
             };
 
@@ -237,7 +228,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                     localStorage.removeItem("access_token");
 
                     toast.error(
-                        <span>
+                        <span style={{ whiteSpace: "pre-line" }}>
                             <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
                         </span>,
                         {
@@ -253,7 +244,6 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
 
     const handleDelete: () => void = (): void => {
         const onSuccess = async (data: { message: string } | undefined, variables: void, context: unknown) => {
-          
             sessionStorage.setItem("isDeleting", "true");
 
             sessionStorage.removeItem("cached-users-posts");

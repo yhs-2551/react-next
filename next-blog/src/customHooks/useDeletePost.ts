@@ -43,7 +43,7 @@ function useDeletePost(postId: string, blogId: string) {
                         // 리프레시 토큰 까지 만료되면 재로그인 필요
                         if (error instanceof CustomHttpError) {
                             setAccessToken(null);
-                            throw new CustomHttpError(error.status, error.message);
+                            throw new CustomHttpError(error.status, "세션이 만료되었습니다.\n재로그인 해주세요.");
                         }
                     }
                 }
