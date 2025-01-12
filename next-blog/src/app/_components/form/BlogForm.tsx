@@ -20,16 +20,7 @@ import { Tag } from "@/types/TagTypes";
 import { CategoryType } from "@/types/CateogryTypes";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import PublishModal from "../modal/PublishModal";
-import {
-    revalidateCategories,
-    revalidateInfiniteScroll,
-    revalidatePagination,
-    revalidatePostDetailPage,
-    revalidatePostEditPage,
-    revalidatePostsAndSearch,
-    revalidatePostsCategories,
-    revalidatePostsCategoriesPagination,
-} from "@/actions/revalidate";
+import { revalidateAllRelatedCaches, revalidatePostDetailPage, revalidatePostEditPage } from "@/actions/revalidate";
 import { useCategoryStore } from "@/store/appStore";
 import ConfirmModal from "../modal/ConfirmModal";
 
@@ -254,7 +245,6 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         };
 
         const onSuccess = async () => {
-
             sessionStorage.removeItem("cached-users-posts");
 
             if (isEditingRef.current && postId) {
@@ -262,15 +252,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                 await revalidatePostEditPage(blogId, postId);
             }
 
-            // revalidatePath는 await없어도 되지만 안정성을 위해 추가
-            await revalidatePostsAndSearch(blogId);
-            // 무한 스크롤 무효화
-            await revalidateInfiniteScroll();
-            // 태그 무효화의 경우 await 필수, await 없으면 태그 무효화 적용 안됨
-            await revalidatePagination();
-            await revalidateCategories(blogId);
-            await revalidatePostsCategories();
-            await revalidatePostsCategoriesPagination();
+            await revalidateAllRelatedCaches(blogId);
 
             if (modalRef.current) {
                 modalRef.current.style.display = "none";
@@ -283,7 +265,6 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         const onError = (error: unknown) => {
             if (error instanceof CustomHttpError) {
                 if (error.status === 401) {
-
                     localStorage.removeItem("access_token");
 
                     toast.error(

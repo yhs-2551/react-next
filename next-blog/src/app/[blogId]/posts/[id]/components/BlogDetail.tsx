@@ -6,8 +6,6 @@ import "react-quill-new/dist/quill.snow.css"; // Snow 테마 CSS 파일
 
 import parse, { DOMNode, Element } from "html-react-parser";
 
-import Zoom from "react-medium-image-zoom";
-
 import useDeletePost from "@/customHooks/useDeletePost";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -17,25 +15,16 @@ import { useParams, useRouter } from "next/navigation";
 import { toast, ToastContainer } from "react-toastify";
 import { checkAccessToken, fetchIsAuthor, refreshToken } from "@/services/api";
 
-import NextImage from "next/image";
 import { FileMetadata, PostResponse } from "@/types/PostTypes";
 import DOMPurify from "dompurify";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { useAuthStore } from "@/store/appStore";
 import ToastProvider from "@/providers/ToastProvider";
 
-import {
-    revalidateCategories,
-    revalidateInfiniteScroll,
-    revalidatePagination,
-    revalidatePostDetailPage,
-    revalidatePostEditPage,
-    revalidatePostsAndSearch,
-    revalidatePostsCategories,
-    revalidatePostsCategoriesPagination,
-} from "@/actions/revalidate";
-import ConfirmModal from "@/app/_components/modal/ConfirmModal";
+import { revalidateAllRelatedCaches, revalidatePostDetailPage, revalidatePostEditPage } from "@/actions/revalidate";
+
 import DeleteModal from "@/app/_components/modal/DeleteModal";
+import { LightboxImage } from "./LightboxImage";
 
 function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId: string }) {
     const [isAuthor, setIsAuthor]: [boolean, React.Dispatch<React.SetStateAction<boolean>>] = useState<boolean>(false); // 작성자 여부 상태
@@ -51,6 +40,8 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     const router = useRouter();
 
     const { isInitialized } = useAuthStore();
+
+    const imageUrls = post.files?.map((file) => file.fileUrl) || [];
 
     const parseStyleString = (style: string) => {
         return style.split(";").reduce((acc: { [key: string]: string | number }, styleProperty) => {
@@ -109,19 +100,26 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                         console.log("finalStyle >>>", finalStyle);
 
                         return (
-                            <Zoom>
-                                <NextImage
-                                    key={src}
-                                    src={src}
-                                    alt={alt || "detail page image"}
-                                    width={width} // 서버에서 받은 크기 사용
-                                    height={height} // 서버에서 받은 크기 사용
-                                    style={finalStyle} // 서버에서 받은 기존 스타일 유지
-                                    quality={100}
-                                    sizes={`(max-width: 334px) 100vw, ${width}px`}
-                                    loading='lazy'
-                                />
-                            </Zoom>
+                            <LightboxImage
+                                unique={src}
+                                src={src}
+                                alt={alt || "detail page image"}
+                                width={width} // 서버에서 받은 크기 사용
+                                height={height} // 서버에서 받은 크기 사용
+                                style={finalStyle} // 서버에서 받은 기존 스타일 유지
+                                allImages={imageUrls}
+                            />
+                            // <NextImage
+                            //     key={src}
+                            //     src={src}
+                            //     alt={alt || "detail page image"}
+                            //     width={width} // 서버에서 받은 크기 사용
+                            //     height={height} // 서버에서 받은 크기 사용
+                            //     style={finalStyle} // 서버에서 받은 기존 스타일 유지
+                            //     quality={100}
+                            //     sizes={`(max-width: 334px) 100vw, ${width}px`}
+                            //     loading='lazy'
+                            // />
                         );
                     }
                 },
@@ -242,6 +240,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         }
     };
 
+    // 아래 toast, setTimeout 캐시 무효화 순서 저렇게 해야만 올바르게 작동함. 시간만 조정 가능
     const handleDelete: () => void = (): void => {
         const onSuccess = async (data: { message: string } | undefined, variables: void, context: unknown) => {
             sessionStorage.setItem("isDeleting", "true");
@@ -250,23 +249,26 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
 
             toast.success(
                 <span>
-                    <span style={{ fontSize: "0.7rem" }}>{data?.message}</span>
-                </span>
+                    <span style={{ fontSize: "0.8rem", whiteSpace: "pre-line" }}>{data?.message || "게시글이 성공적으로 삭제되었습니다."}</span>
+                </span>,
+                {
+                    autoClose: 500,
+                }
             );
 
-            await revalidatePostsAndSearch(blogId);
-            await revalidateInfiniteScroll();
-            await revalidatePagination();
-            await revalidateCategories(blogId);
-            await revalidatePostsCategories();
-            await revalidatePostsCategoriesPagination();
-            await revalidatePostDetailPage(blogId, postId);
-            await revalidatePostEditPage(blogId, postId);
+            setTimeout(async () => {
+                await revalidateAllRelatedCaches(blogId);
 
-            setTimeout(() => {
-                // window.location.replace(`/${blogId}/posts`);
+                await revalidatePostDetailPage(blogId, postId);
+                await revalidatePostEditPage(blogId, postId);
+
                 router.replace(`/${blogId}/posts`);
-            }, 2500);
+            }, 1000);
+
+            // setTimeout(() => {
+            //     // window.location.replace(`/${blogId}/posts`);
+            //     router.replace(`/${blogId}/posts`);
+            // }, 2500);
         };
 
         const onError = (error: unknown) => {

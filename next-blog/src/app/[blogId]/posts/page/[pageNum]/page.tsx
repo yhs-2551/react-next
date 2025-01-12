@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import BlogList from "../../components/BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { CacheTimes } from "@/constants/cache-constants";
@@ -18,9 +18,9 @@ export default async function PostListPaginationPage({ params }: { params: Promi
     const isExistContent = content.length > 0;
 
     return (
-        <>
+        <Suspense>
             <BlogList initialData={content} isSearch={false} totalElements={totalElements} />
             <Pagination isExistContent={isExistContent} totalPages={totalPages} currentPage={currentPage} blogId={blogId} />
-        </>
+        </Suspense>
     );
 }

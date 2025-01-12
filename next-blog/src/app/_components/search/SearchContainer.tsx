@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import ClientWrapper from "@/providers/ClientWrapper";
@@ -9,9 +9,14 @@ import SearchInput from "./SearchInput";
 type SearchContainerType = "TITLE" | "CONTENT" | "ALL";
 
 export default function SearchContainer() {
-    return <SearchComponent />;
+    return (
+        <Suspense>
+            <SearchComponent />
+        </Suspense>
+    );
 }
 function SearchComponent() {
+    
     const params = useParams();
     const searchParams = useSearchParams();
     const blogId = params.blogId as string | undefined;
@@ -36,7 +41,7 @@ function SearchComponent() {
             params.set("category", decodeURIComponent(categoryName));
         }
 
-        // /search?page=1&category=123&searchType=TITLE&keyword=123 이런식의 URL에서 검색했을때 카테고리 페이지 검색 유지하기 위해 필요 
+        // /search?page=1&category=123&searchType=TITLE&keyword=123 이런식의 URL에서 검색했을때 카테고리 페이지 검색 유지하기 위해 필요
         if (categoryNameByQueryParams) {
             params.set("category", categoryNameByQueryParams);
         }
@@ -59,9 +64,13 @@ function SearchComponent() {
                 <option value='ALL'>제목+내용</option>
             </select>
 
-            <ClientWrapper>
-                <SearchInput blogId={blogId} searchType={searchType} onSearch={handleSearch} categoryName={categoryName} categoryNameByQueryParams={categoryNameByQueryParams}/>
-            </ClientWrapper>
+            <SearchInput
+                blogId={blogId}
+                searchType={searchType}
+                onSearch={handleSearch}
+                categoryName={categoryName}
+                categoryNameByQueryParams={categoryNameByQueryParams}
+            />
         </div>
     );
 }

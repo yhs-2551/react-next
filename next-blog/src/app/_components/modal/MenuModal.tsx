@@ -11,7 +11,7 @@ interface MenuModalProps {
 }
 
 export default function MenuModal({ isOpen, onClose }: MenuModalProps) {
-    // 캐시 메모리에서 가져옴
+  
     const { categories } = useCategoryStore();
     const { blogId } = userProfileStore();
 

@@ -3,8 +3,10 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useDebounce } from "use-debounce";
 import { AiOutlineSearch } from "react-icons/ai"; 
+import { getSearchSuggestions } from "@/actions/search-actions";
+import { extractTextWithoutImages } from "@/utils/extractTextWithoutImages";
 
-interface SearchSuggestion {
+interface SearchSuggestionProps {
     id: number;
     blogId: string;
     title: string;
@@ -25,8 +27,15 @@ interface RecentSearch {
     timestamp: number;
 }
 
+const STORAGE_KEY = "recentSearches";
+
 export default function SearchInput({ blogId, searchType, onSearch, categoryName, categoryNameByQueryParams }: SearchInputProps) {
+
+    console.log("categoryNameByQueryParams", categoryNameByQueryParams);
+
     const [keyword, setKeyword] = useState<string>("");
+    const [suggestions, setSuggestions] = useState<SearchSuggestionProps[]>([]);
+
     const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
     const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
 
@@ -36,11 +45,10 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
     const [debouncedKeyword] = useDebounce(keyword, 300);
 
     // keyword가 변경될때마다 상태가 업데이트 되고, 재렌더링 -> debouncedKeyword 및 searchType이 변경될때마다 새로운 캐시키로 인해 새로운 쿼리가 실행됨
-    const { data: suggestions = [], isLoading } = useSearchSuggestions(blogId, debouncedKeyword, searchType, categoryName, categoryNameByQueryParams);
+    // const { data: suggestions = [], isLoading } = useSearchSuggestions(blogId, debouncedKeyword, searchType, categoryName, categoryNameByQueryParams);
 
     const router = useRouter();
 
-    const STORAGE_KEY = "recentSearches";
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -59,6 +67,32 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
             setRecentSearches(JSON.parse(saved));
         }
     }, []);
+
+    
+    useEffect(() => {
+        const fetchSuggestions = async () => {
+            try {
+                const data = await getSearchSuggestions(blogId, debouncedKeyword, searchType, categoryName, categoryNameByQueryParams);
+                const processedData = data.map((item: SearchSuggestionProps) => {
+                    if (!item.content) return { ...item, content: "" };
+                    const cleanText = extractTextWithoutImages(item.content);
+                    const sliceText = cleanText.slice(0, 15);
+                    return {
+                        ...item,
+                        content: sliceText + (cleanText.length > 15 ? "..." : ""),
+                    };
+                });
+                setSuggestions(processedData);
+            } catch (error) {
+                console.error("검색어 자동완성 실패:", error);
+            }
+        };
+
+        fetchSuggestions();
+    }, [debouncedKeyword, searchType]);
+
+
+    
 
     const handleDeleteRecentSearch = (e: React.MouseEvent, timestamp: number) => {
         e.stopPropagation();
@@ -120,7 +154,7 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
                         {suggestions.length > 0 ? (
                             <>
                                 <li className='px-4 py-2 text-xs text-gray-500 border-b'>관련 게시글</li>
-                                {suggestions.map((suggestion: SearchSuggestion) => (
+                                {suggestions.map((suggestion: SearchSuggestionProps) => (
                                     <li
                                         key={suggestion.id}
                                         className='px-4 py-2 hover:bg-gray-100 cursor-pointer'

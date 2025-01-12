@@ -7,6 +7,7 @@ export default async function IndexPage() {
     const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/posts?page=1&size=20`, {
         cache: "force-cache",
         next: {
+            tags: ["index-posts"],
             revalidate: CacheTimes.FREQUENT.INDEX_POSTS,
         }
     });

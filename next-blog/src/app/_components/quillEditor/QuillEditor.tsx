@@ -252,12 +252,8 @@ export default React.memo(
                 const quill = quillRef.current?.getEditor();
                 if (quill) {
                     if (contentValue) {
-                        console.log("contenvalue>>>", contentValue);
-
                         // 비제어 방식으로 ql-editor DOM에 직접 삽입
                         quill.root.innerHTML = contentValue;
-
-                        console.log("quill root >>>", quill.root);
                     }
 
                     quill.root.addEventListener("paste", handlePaste);
@@ -298,6 +294,8 @@ export default React.memo(
 
         // 오버레이 드래그 진행 시 가로세로 비율 유지하면서 조정
         const handleResizeFunction = (initialImgRect?: DOMRect | null) => {
+            let imgRect = initialImgRect;
+
             // Utility functions
             const calculateNewDimensions = (
                 event: MouseEvent,
@@ -370,11 +368,16 @@ export default React.memo(
 
             const createResizeHandler = (handlerType: string) => {
                 return (event: MouseEvent) => {
-                    if (!initialImgRect || !selectedImageRef.current) return;
+                    // 이게 없으면 이미지 사이즈 드래그로 조정 시에 접근 금지 아이콘이 나오게 됨.
+                    // 접근 금지 아이콘이 나오면 드래그로 조정이 스무스하게 되지 않음.
+                    // 따라서 접근 금지 아이콘이 못나오도록 preventDefault()로 기본 이벤트를 막아줌.
+                    event.preventDefault();
+
+                    if (!imgRect || !selectedImageRef.current) return;
 
                     const startX = event.clientX;
-                    const startWidth = initialImgRect.width;
-                    const aspectRatio = initialImgRect.width / initialImgRect.height;
+                    const startWidth = imgRect.width;
+                    const aspectRatio = imgRect.width / imgRect.height;
                     let animationFrameId: number;
 
                     const handleResizeMove = (moveEvent: MouseEvent) => {
@@ -397,7 +400,12 @@ export default React.memo(
                         cancelAnimationFrame(animationFrameId);
                         if (selectedImageRef.current) {
                             selectedImageRef.current.style.opacity = "1";
+
                             const newRect = selectedImageRef.current.getBoundingClientRect();
+                            // 드래그 한번 조정 후에 조정된 img의 Rect값으로 재 적용.
+                            imgRect = newRect;
+                            // 서버로 크기가 조정된 이미지의 width, height값을 같이 전송해주기 위함.
+                            // 캡쳐가 아닌 툴바로 삽입하고 이미지 크기 따로 조정 안하면  880 / 495기본값으로 백엔드에서 지정해두었음.
                             updateFileMetadata(newRect);
                         }
                         window.removeEventListener("mousemove", handleResizeMove);
@@ -411,7 +419,9 @@ export default React.memo(
 
             const updateFileMetadata = (newRect: DOMRect) => {
                 if (!selectedImageRef.current) return;
+                // fileRef.current에서 해당 url과 일치하는 이미지를 찾아 width와 height 값을 추가
                 const file = fileRef.current.find((file) => file.fileUrl === selectedImageRef.current?.src);
+
                 if (file) {
                     file.width = Math.round(newRect.width);
                     file.height = Math.round(newRect.height);

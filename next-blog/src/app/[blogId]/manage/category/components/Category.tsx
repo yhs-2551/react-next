@@ -251,7 +251,6 @@ const Category: React.FC = () => {
         const onError = (error: unknown) => {
             if (error instanceof CustomHttpError) {
                 if (error.status === 401) {
-
                     localStorage.removeItem("access_token");
 
                     toast.error(
@@ -635,7 +634,7 @@ const Category: React.FC = () => {
             </div>
 
             {/* 모달 다이얼로그 */}
-            <Dialog open={isModalOpen} as='div' onClose={closeModal} className='fixed z-10 inset-0 overflow-y-auto'>
+            <Dialog open={isModalOpen} as='div' onClose={closeModal} className='fixed z-[1500] inset-0 overflow-y-auto'>
                 <div className='flex items-center justify-center min-h-screen'>
                     <DialogBackdrop className='fixed inset-0 bg-black opacity-30' />
                     <DialogPanel
@@ -644,7 +643,8 @@ const Category: React.FC = () => {
                     >
                         <div className='flex'>
                             <DialogTitle className='text-lg font-bold'>카테고리 편집</DialogTitle>
-                            <Description className='mt-1 text-sm font-medium'>
+
+                            <div className='mt-1 text-sm font-medium'>
                                 <a
                                     className='inline-block ml-2 text-gray-500 text-sm'
                                     data-tooltip-id='category-edit-tooltip'
@@ -652,12 +652,12 @@ const Category: React.FC = () => {
                                 >
                                     ?
                                 </a>
-                                <Tooltip id='category-edit-tooltip' place='top' />
-                            </Description>
+                            </div>
+                            <Tooltip id='category-edit-tooltip' place='top' />
                         </div>
 
                         {/* 카테고리 이름 입력 */}
-                        <form className='mt-4' onSubmit={handleSaveCategoryFromModal}>
+                        <form className='mt-</form>4' onSubmit={handleSaveCategoryFromModal}>
                             <fieldset>
                                 <legend className='sr-only'>카테고리 편집 모달</legend>
 
@@ -682,7 +682,7 @@ const Category: React.FC = () => {
                                             }}
                                         >
                                             <div className='flex items-center justify-between mb-3'>
-                                                <ListboxButton className='mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-left'>
+                                                <ListboxButton className='cursor-not-allowed mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-left'>
                                                     {selectedParentCategoryId
                                                         ? categories.find((cat) => cat.categoryUuid === selectedParentCategoryId)?.name
                                                         : "최상위 카테고리"}

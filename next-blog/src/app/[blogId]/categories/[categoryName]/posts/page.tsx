@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 
 import Pagination from "@/app/_components/pagination/Pagination";
 import BlogList from "@/app/[blogId]/posts/components/BlogList";
@@ -32,7 +32,7 @@ export default async function CategoryPostListPage({ params }: { params: Promise
     const decodedCategoryName = decodeURIComponent(categoryName);
 
     return (
-        <>
+        <Suspense>
             <BlogList initialData={content} isSearch={false} totalElements={totalElements} />
             <Pagination
                 isExistContent={isExistContent}
@@ -41,6 +41,6 @@ export default async function CategoryPostListPage({ params }: { params: Promise
                 blogId={blogId}
                 category={decodedCategoryName}
             />
-        </>
+        </Suspense>
     );
 }

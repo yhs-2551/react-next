@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import BlogList from "../components/BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { notFound } from "next/navigation";
@@ -30,12 +30,13 @@ export default async function PostSearchResultsPage({
         keyword,
         size: "8",
     });
-    
+
     const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?${queryParams}`, {
         cache: "force-cache",
         next: {
-            revalidate: CacheTimes.MODERATE.POSTS_SEARCH_RESULTS
-        }
+            tags: [`${blogId}-posts-search`],
+            revalidate: CacheTimes.MODERATE.POSTS_SEARCH_RESULTS,
+        },
     });
 
     if (!res.ok) {
@@ -44,18 +45,16 @@ export default async function PostSearchResultsPage({
 
     const response = await res.json();
 
-    
     console.log("response>>>>>>>>>>>>", response);
-
 
     const { totalPages, content, currentPage, totalElements } = response.data;
 
     const isExistContent = content.length > 0;
 
     return (
-        <>
+        <Suspense>
             <BlogList initialData={content} keyword={keyword} isSearch={true} totalElements={totalElements} />
             <Pagination isExistContent={isExistContent} totalPages={totalPages} currentPage={currentPage} blogId={blogId} />
-        </>
+        </Suspense>
     );
 }
