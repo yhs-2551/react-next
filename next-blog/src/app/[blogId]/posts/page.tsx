@@ -14,6 +14,8 @@ export default async function PostListPage({ params }: { params: Promise<{ blogI
         },
     });
 
+    if (!res.ok) throw new Error("특정 사용자 게시글 목록 데이터를 불러오는데 실패하였습니다.");
+
     const response = await res.json();
 
     const { totalPages, content, currentPage, totalElements } = response.data;

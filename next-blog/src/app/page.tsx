@@ -12,6 +12,8 @@ export default async function IndexPage() {
         }
     });
 
+    if (!res.ok) throw new Error("메인 페이지 데이터를 불러오는데 실패하였습니다.");
+
     const response = await res.json();
 
     const { content, totalElements } = response.data;

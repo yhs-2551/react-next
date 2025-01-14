@@ -1,13 +1,11 @@
 "use client";
 
-import { useInView } from "react-intersection-observer";
-import { useInfiniteQuery, QueryClient } from "@tanstack/react-query";
+import { useInView } from "react-intersection-observer"; 
 import { useEffect, useState } from "react";
 import { PostResponse } from "@/types/PostTypes";
 import EmptyState from "../_components/search/EmptyState";
 import PostCardWithContent from "./PostCardWithContent";
-import { AiOutlineClockCircle } from "react-icons/ai";
-import { usePathname } from "next/navigation";
+import { AiOutlineClockCircle } from "react-icons/ai"; 
 import { getInfiniteScrollPosts } from "@/actions/post.actions";
 
 interface PostsGridProps {
@@ -16,7 +14,7 @@ interface PostsGridProps {
 }
 
 export default function PostsGrid({ initialData, totalElements }: PostsGridProps) {
-    const [isInitialized, setIsInitialized] = useState(false);
+    const [indexPageIsInitialized, setIndexPageIsInitialized] = useState(false);
 
     const [page, setPage] = useState<number>(2); // 초기에 20개 가져오기 때문 3페이지부터 시작해야함.
     const [posts, setPosts] = useState<PostResponse[]>(initialData);
@@ -34,15 +32,15 @@ export default function PostsGrid({ initialData, totalElements }: PostsGridProps
         if (cachedPosts) {
             setPosts(JSON.parse(cachedPosts));
         }
-        setIsInitialized(true);
+        setIndexPageIsInitialized(true);
     }, []);
 
     // 무한 스크롤 방식에서 스크롤 위치를 유지하기 위해 필요
     useEffect(() => {
-        if (isInitialized && posts.length > 0) {
+        if (indexPageIsInitialized && posts.length > 0) {
             sessionStorage.setItem("cached-users-posts", JSON.stringify(posts));
         }
-    }, [posts, isInitialized]);
+    }, [posts, indexPageIsInitialized]);
 
     useEffect(() => {
         const loadMore = async () => {

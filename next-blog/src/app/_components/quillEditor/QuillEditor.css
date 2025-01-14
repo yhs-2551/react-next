@@ -29,6 +29,7 @@
 
 .ql-editor img {
     cursor: pointer;
+    display: inline-block;
 }
 
 .ql-editor a {

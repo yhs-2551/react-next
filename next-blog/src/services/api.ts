@@ -348,14 +348,12 @@ export const refreshToken: () => Promise<string | null> = async (): Promise<stri
 };
 
 // FormData 사용시 Content-Type multipart/form-data 수동 설정 불필요
-export const uploadFile = async (file: File, blogId: string, featuredOrProfile?: "featured" | "profile"): Promise<string> => {
+export const uploadFile = async (file: File, blogId: string, featured?: string): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
 
-    if (featuredOrProfile && featuredOrProfile === "featured") {
-        formData.append("featured", featuredOrProfile);
-    } else if (featuredOrProfile && featuredOrProfile === "profile") {
-        formData.append("profile", featuredOrProfile);
+    if (featured) {
+        formData.append("featured", featured);
     }
     const upload = async (token: string | boolean) => {
         return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/temp/files/upload`, {

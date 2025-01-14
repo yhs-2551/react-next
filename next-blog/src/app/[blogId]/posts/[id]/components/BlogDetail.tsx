@@ -161,45 +161,75 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
             fetchAuthorStatus();
         }
     }, [isInitialized]);
-
-    // 아래 상세페이지에서 파일 다운할 수 있게 하는 코드.
-
     useEffect(() => {
-        const anchorEl = document.querySelectorAll(".file-container__item") as NodeListOf<HTMLAnchorElement>;
-        anchorEl.forEach((el: HTMLAnchorElement) => {
-            el.addEventListener("click", (e) => {
-                e.preventDefault();
+        let observer: MutationObserver;
 
-                const fileUrl: string | null = el.getAttribute("href");
+        const setupFileDownload = () => {
+            const anchorEl = document.querySelectorAll(".ql-file") as NodeListOf<HTMLAnchorElement>;
 
-                console.log("el", el);
-                console.log("el", fileUrl);
+            console.log("anchorEl >>>", anchorEl);
 
-                if (fileUrl) {
-                    const lastHyphenIndex = fileUrl.lastIndexOf("-");
-                    const originalFileNameFromFileUrl = lastHyphenIndex !== -1 ? fileUrl.substring(lastHyphenIndex + 1) : fileUrl;
+            let allElementsHaveListeners = true;
 
-                    fetch(fileUrl)
-                        .then((response) => response.blob())
-                        .then((blob) => {
-                            const blobUrl = window.URL.createObjectURL(blob); // Object URL 생성
+            anchorEl.forEach((el: HTMLAnchorElement) => {
+                if (!el.dataset.hasListener) {
+                    allElementsHaveListeners = false;
+                    el.dataset.hasListener = 'true';
+                    el.addEventListener("click", (e) => {
+                        e.preventDefault();
 
-                            console.log("blolbUrl >>>", blobUrl);
+                        const fileUrl: string | null = el.getAttribute("href");
 
-                            const link = document.createElement("a");
-                            link.href = blobUrl;
-                            // 한글 깨지는 현상 해결. URL 인코딩된 파일명을 올바른 한글 텍스트로 변환한다.
-                            link.download = decodeURIComponent(originalFileNameFromFileUrl);
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                        if (fileUrl) {
+                            const lastHyphenIndex = fileUrl.lastIndexOf("-");
+                            const originalFileNameFromFileUrl = lastHyphenIndex !== -1 ? fileUrl.substring(lastHyphenIndex + 1) : fileUrl;
 
-                            window.URL.revokeObjectURL(blobUrl); // Object URL 해제
-                        })
-                        .catch(console.error);
+                            fetch(fileUrl)
+                                .then((response) => response.blob())
+                                .then((blob) => {
+                                    const blobUrl = window.URL.createObjectURL(blob);
+                                    const link = document.createElement("a");
+                                    link.href = blobUrl;
+                                    link.download = decodeURIComponent(originalFileNameFromFileUrl);
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    window.URL.revokeObjectURL(blobUrl);
+                                })
+                                .catch(console.error);
+                        }
+                    });
+                }
+            });
+
+            // 모든 요소에 리스너가 설정되어 있고, 요소가 하나 이상 존재하면 옵저버 중단
+            if (allElementsHaveListeners && anchorEl.length > 0) {
+                observer?.disconnect();
+            }
+        };
+
+        // 초기 설정
+        setupFileDownload();
+
+        // MutationObserver 설정
+        observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.addedNodes.length) {
+                    setupFileDownload();
                 }
             });
         });
+
+        // 관찰 시작
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        // 클린업
+        return () => {
+            observer.disconnect();
+        };
     }, []);
 
     const handleEdit: () => Promise<void> = async (): Promise<void> => {

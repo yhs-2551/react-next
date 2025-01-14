@@ -166,6 +166,7 @@ export default function CommonHeader() {
                 }
             }
         } else if (isValidToken === true) {
+            // window.location.assign(`/${userPrivateProfile.blogId}/posts/new`);
             router.push(`/${userPrivateProfile.blogId}/posts/new`);
         }
     };

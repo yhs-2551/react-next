@@ -31,8 +31,6 @@ const STORAGE_KEY = "recentSearches";
 
 export default function SearchInput({ blogId, searchType, onSearch, categoryName, categoryNameByQueryParams }: SearchInputProps) {
 
-    console.log("categoryNameByQueryParams", categoryNameByQueryParams);
-
     const [keyword, setKeyword] = useState<string>("");
     const [suggestions, setSuggestions] = useState<SearchSuggestionProps[]>([]);
 

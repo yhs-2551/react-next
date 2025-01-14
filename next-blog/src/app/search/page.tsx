@@ -28,6 +28,8 @@ export default async function IndexSearchPage({ searchParams }: { searchParams: 
         },
     });
 
+    if (!res.ok) throw new Error ("검색 결과 데이터를 불러오는데 실패하였습니다.");
+
     const response = await res.json();
 
     const { totalPages, content, currentPage, totalElements } = response.data;

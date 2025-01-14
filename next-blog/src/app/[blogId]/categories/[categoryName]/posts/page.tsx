@@ -19,10 +19,12 @@ export default async function CategoryPostListPage({ params }: { params: Promise
         }
     );
 
-    if (!res.ok) {
+    if (!res.ok && res.status === 404) {
         notFound();
+    } else if (!res.ok) {
+        throw new Error("특정 사용자의 카테고리 목록 데이터를 불러오는데 실패하였습니다.");
     }
-
+    
     const response = await res.json();
 
     const { totalPages, content, currentPage, totalElements } = response.data;

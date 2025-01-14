@@ -167,6 +167,9 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
     };
 
     const handleComplete = () => {
+
+        console.log("totalUploadedImagesUrlRef >>>" + totalUploadedImagesUrlRef.current);
+
         console.log("컨텐츠 >>>>" + categoryRef.current?.value);
 
         // quillContentRef.current함수를 실행해서 DOMPurify.sanitize(html)로 정화?된 quill.innerhtml 즉 에디터 내의 모든 html 내용을 가져옴

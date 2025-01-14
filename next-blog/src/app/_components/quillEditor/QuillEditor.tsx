@@ -74,7 +74,8 @@ export default React.memo(
 
         const imgRectRef = useRef<DOMRect | null>(null);
 
-        const alignmentRef = useRef<("left" | "center" | "right") | false | null>(null);
+        const alignmentRef = useRef<("left" | "center" | "right") | null>(null);
+        const alignmentByQlClassRef = useRef<("left" | "center" | "right") | false | null>(null);
 
         const dropdownPosition = { top: -9999, left: -9999 };
 
@@ -104,15 +105,14 @@ export default React.memo(
             if (quill) {
                 // 에디터 내 삭제를 감지하여 최종적으로 서버측에 요청될 이미지 및 파일 관리, 및 AWS3에 임시 저장된 불필요한 이미지 및 파일 삭제 관리 로직
                 quill.on("text-change", (delta, oldDelta, source) => {
-                    console.log("oldDelta>>", oldDelta);
-                    console.log("delta", delta);
-
                     if (source === "user") {
                         delta.ops.forEach((op, index) => {
+                            // 여기서 삭제 작업인 delete, esc, backspace, ctrL+x 자르기 등 모두 포함
                             if (!op.delete) return;
 
                             const images = quill.root.querySelectorAll("img");
-                            const links = quill.root.querySelectorAll("a[data-file]");
+                            const links = quill.root.querySelectorAll(".ql-file");
+
                             const currentImageUrls = new Set<string>();
 
                             // 남아있는 전체 이미지 선택
@@ -125,13 +125,6 @@ export default React.memo(
 
                             // 남아있는 전체 파일 선택
                             links.forEach((link) => {
-                                const parentElement = link.parentElement;
-
-                                // 파일을 esc키로 지울 때 p태그까지 한번에 지우는 로직. 이게 없으면 p태그 안에 ::before, ::after 슈도 엘리먼트만 삭제 됨
-                                if (parentElement && parentElement.tagName.toLowerCase() === "p") {
-                                    parentElement.remove();
-                                }
-
                                 const fileHref = link.getAttribute("href");
                                 if (fileHref) {
                                     currentImageUrls.add(fileHref);
@@ -145,7 +138,7 @@ export default React.memo(
                             // 글 작성 중 삭제된 이미지 목록
                             if (currentImageUrlsArr.length !== totalUploadedImagesUrlRef.current.length && fileRef && fileRef.current) {
                                 // 최종 발행 시 적용할 이미지 목록
-                                fileRef.current = fileRef.current.filter((fileMetadata) => currentImageUrlsArr.includes(fileMetadata.fileUrl));
+                                fileRef.current = fileRef.current.filter((file) => currentImageUrlsArr.includes(file.fileUrl));
 
                                 // 최종 발행 시 클라우드 저장소에서 추가적으로 삭제할 이미지 목록
                                 // 초기에 이미지 or 파일을 삭제하고 다시 이미지나 파일을 삽입 후 백스페이 or delete 즉 에디터내에서 삭제 작업을 하면 이전에 삭제된 이미지/파일이 중복으로 들어감
@@ -161,6 +154,9 @@ export default React.memo(
                                     ),
                                 ];
                             }
+
+                            console.log("op.delete fileRef.current", fileRef.current);
+                            console.log("op.delete fileRef.deletedImageUrlsInFutureRef.current", deletedImageUrlsInFutureRef.current);
                         });
                     }
                 });
@@ -169,22 +165,38 @@ export default React.memo(
 
         // 캡쳐 이미지 붙여넣었을때 처리
         useEffect(() => {
-            // 최종적으로 클라우드 스토리지에 저장 후, 해당 url을 받아와서 에디터에 붙여넣는 함수
-            const handleImagePaste: (quill: Quill, file: File) => Promise<void> = async (quill: Quill, file: File) => {
-                // 이미지 파일을 서버에 업로드
-                const fileUrl = await uploadFile(file, blogId);
+            // 서버측에 최종 요청 보내기 위해 fileRef에 추가하는 로직
+            const additionalProcessFile = (fileUrl: string, file: File) => {
+                totalUploadedImagesUrlRef.current = [...totalUploadedImagesUrlRef.current, fileUrl];
 
-                const currentUploadedImages: string[] = totalUploadedImagesUrlRef.current;
-                totalUploadedImagesUrlRef.current = [...currentUploadedImages, fileUrl];
+                // 서버로 캡쳐된 이미지의 width, height값을 같이 전송해주기 위한 코드, Next.js 최적화 이미지를 사용하기 위해 쓴다.
+                const imgElement = document.querySelector(`img[src="${fileUrl}"]`) as HTMLImageElement;
+                if (imgElement) {
+                    const { width, height } = imgElement.getBoundingClientRect();
+                    const roundedWidth = Math.round(width);
+                    const roundedHeight = Math.round(height);
 
-                if (fileRef && fileRef.current) {
-                    fileRef.current.push({
+                    const fileMetadata = {
                         fileName: file.name,
                         fileType: file.type,
                         fileUrl,
                         fileSize: file.size,
-                    });
+                        width: roundedWidth,
+                        height: roundedHeight,
+                    };
+
+                    if (fileRef && fileRef.current) {
+                        fileRef.current.push(fileMetadata);
+                    }
+
+                    deletedImageUrlsInFutureRef.current = deletedImageUrlsInFutureRef.current.filter((url) => url !== fileUrl);
                 }
+            };
+
+            // 최종적으로 클라우드 스토리지에 저장 후, 해당 url을 받아와서 에디터에 붙여넣는 함수
+            const handleImagePaste: (quill: Quill, file: File) => Promise<void> = async (quill: Quill, file: File) => {
+                // 이미지 파일을 서버에 업로드
+                const fileUrl = await uploadFile(file, blogId);
 
                 const range: Range | null = quill.getSelection();
 
@@ -201,49 +213,212 @@ export default React.memo(
                     }
                 }
 
-                // 서버로 캡쳐된 이미지의 width, height값을 같이 전송해주기 위한 코드, Next.js 최적화 이미지를 사용하기 위해 쓴다.
-                const imgElement = document.querySelector(`img[src="${fileUrl}"]`) as HTMLImageElement;
-                if (imgElement) {
-                    const { width, height } = imgElement.getBoundingClientRect();
-                    const roundedWidth = Math.round(width);
-                    const roundedHeight = Math.round(height);
-
-                    console.log("imgElement >>>", imgElement);
-
-                    // fileRef.current에서 해당 url과 일치하는 객체를 찾아 width와 height 값을 추가
-                    const file = fileRef.current.find((file) => file.fileUrl === fileUrl);
-                    if (file) {
-                        file.width = roundedWidth;
-                        file.height = roundedHeight;
-                        console.log("file >>>>>", file);
-                    }
-                }
+                additionalProcessFile(fileUrl, file);
             };
 
             // 클립보드에서 붙여넣기된 이미지를 파일 형식으로 변환 처리하는 함수
-            const handlePaste = (e: ClipboardEvent) => {
+            // 얘는 이미지를 다른데서 우클릭으로 복사하고 붙여넣으면 실행되는데, 드래그로 CTRL + C로 복사하고 붙여넣으면 이미지로 취급을 안함 알아봐야함함
+
+            const handlePaste = async (e: ClipboardEvent) => {
                 const quill = quillRef.current?.getEditor();
+
+                // 기능은 안되지만 잘라내고 다시 붙여넣었을떄 quill link나오는거 못하게 하도록
+                setTimeout(() => {
+                    const links = quill?.root.querySelectorAll("a");
+
+                    if (links) {
+                        links.forEach((link) => {
+                            const text = link.textContent;
+                            if (text && text.includes("파일:")) {
+                                const fileUrl = link.getAttribute("href");
+                                if (fileUrl) {
+                                    setupFile(fileUrl);
+
+                                    // ex: "파일: 스티커메모내용.txt - 0.01MB" 파싱
+                                    const matches = text.match(/파일:.+\.(\w+)\s*-\s*([\d.]+)MB/);
+                                    if (matches) {
+                                        const extension = matches[1]; // "txt"
+                                        const sizeMB = parseFloat(matches[2]); // 0.01
+                                        const sizeBytes = Math.round(sizeMB * 1024 * 1024); // MB를 bytes로 변환
+
+                                        if (fileRef && fileRef.current) {
+                                      
+                                            const fileExists = fileRef.current.some((file) => file.fileUrl === fileUrl);
+
+                                           // 모든 파일을 반복을 돌리기 때문에 붙여넣기로 추가했을때, 기존에 있는 파일은 추가하지 않고 새로운 파일만 추가
+                                            if (!fileExists) {
+                                                fileRef.current.push({
+                                                    fileName: text,
+                                                    fileType: `application/${extension}`,
+                                                    fileUrl,
+                                                    fileSize: sizeBytes,
+                                                });
+                                            }
+                                        }
+                                    }
+
+                                    // filter로 새 배열을 만든 후 기존 배열을 대체해야 올바르게 작동.
+                                    deletedImageUrlsInFutureRef.current = deletedImageUrlsInFutureRef.current.filter((url) => url !== fileUrl);
+                                }
+                            }
+                        });
+                    }
+                }, 0);
+
+                // 여기부터 이미지 붙여넣기 처리
 
                 const clipboardData = e.clipboardData;
 
                 if (clipboardData && quill) {
-                    // 붙여넣기 데이터 중 이미지가 있는지 확인
-                    const pastedData = clipboardData.items;
+                    const htmlData = clipboardData.getData("text/html"); // CTRL C + CTRL V로 복사 붙여넣기
+                    const files = clipboardData.files; // 우클릭으로 복사 붙여넣기, Blob이든 http형식이든 우클릭으로 복사하면 여기서 걸림림
+                    const pastedData = clipboardData.items; // 캡쳐 복사 이미지
 
-                    for (let i = 0; i < pastedData.length; i++) {
-                        const item = pastedData[i];
+                    if (files && files.length > 0) {
+                        // 우클릭으로 복사 붙여넣기 시 이미지 처리
 
-                        if (item.type.startsWith("image/")) {
-                            //DataTransferItem 형식을 파일로 변환 처리
-                            const file: File | null = item.getAsFile();
+                        e.preventDefault();
+                        const file = files[0];
 
-                            if (file) {
-                                // 붙여넣은 이미지를 파일로 변환 후 최종적으로 에디터에 붙여넣기
-                                handleImagePaste(quill, file);
+                        const fileUrl = await uploadFile(file, blogId);
+
+                        // 현재 커서 위치 가져오기
+                        const range = quill.getSelection();
+                        if (range) {
+                            // 현재 위치의 컨텐츠(이미지) 찾기
+                            const [leaf] = quill.getLeaf(range.index);
+                            if (leaf && leaf.domNode && (leaf.domNode as HTMLElement).tagName === "IMG") {
+                                // 현재 위치의 이미지 src 업데이트
+                                (leaf.domNode as HTMLImageElement).src = fileUrl;
                             }
-                            break;
+                        }
+
+                        additionalProcessFile(fileUrl, file);
+
+                        return;
+                    }
+                    if (htmlData) {
+                        const extractFileName = (imageUrl: string): string => {
+                            const urlParts = imageUrl.split("/");
+                            const originalName = urlParts[urlParts.length - 1];
+                            // URL 디코딩 및 쿼리 파라미터 제거
+                            return decodeURIComponent(originalName.split("?")[0]);
+                        };
+
+                        // CTRL C + CTRL V로 복사 붙여넣기 시 이미지 처리 및 CTRL + X로 자르고 붙여넣어도 여기 실행
+
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(htmlData, "text/html");
+                        const images = doc.getElementsByTagName("img");
+
+                        if (images.length > 0) {
+                            e.preventDefault();
+                            for (const img of images) {
+                                const imageData = img.getAttribute("src") as string;
+
+                                try {
+                                    const token = localStorage.getItem("access_token");
+
+                                    //  URL 생성 최적화
+                                    const proxyUrl = new URL(
+                                        `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/proxy-image`
+                                    );
+                                    proxyUrl.searchParams.append("url", imageData);
+
+                                    // 병렬 처리로 변경
+                                    // 백엔드로부터 byte[] 형식으로 가져왔는데, response의 body속성에 ReadableStream 형식으로 바이너리 데이터가 담겨있음
+                                    const [response, targetImage] = await Promise.all([
+                                        fetch(proxyUrl.toString(), {
+                                            headers: { Authorization: `Bearer ${token}` },
+                                        }),
+
+                                        // DOM 쿼리를 한 번만 실행
+                                        quill.root.querySelector(`img[src="${imageData}"]`),
+                                    ]);
+
+                                    // Ctrl + X + ctrl + v로 이미 aws s3에 업로드 된 이미지를 자른후에 다시 붙여넣은 경우
+                                    // 백엔드로부터 AwsS3에 기존에 존재하는 이미지에 대한 정보를 가져옴
+                                    if (imageData.includes("iceamericano-blog-storage.s3")) {
+                                        const blob = await response.blob();
+                                        const file = new File([blob], extractFileName(imageData), {
+                                            type: response.headers.get("content-type") || "image/png",
+                                        });
+
+                                        additionalProcessFile(imageData, file);
+                                        continue;
+                                    }
+
+                                    //  메모리 효율적인 Blob 처리
+                                    const blob = await response.blob();
+                                    const file = new File([blob], extractFileName(imageData), {
+                                        type: response.headers.get("content-type") || "image/png",
+                                    });
+
+                                    //  S3 업로드와 메타데이터 업데이트 병렬 처리
+                                    const fileUrl = await uploadFile(file, blogId);
+
+                                    //  일괄 업데이트로 리렌더링 최소화
+                                    if (targetImage && fileRef?.current) {
+                                        // DOM 업데이트
+                                        (targetImage as HTMLImageElement).src = fileUrl;
+
+                                        // 메타데이터 업데이트
+                                        additionalProcessFile(fileUrl, file);
+                                    }
+                                } catch (error) {
+                                    console.error("이미지 프록시 처리 실패:", error);
+                                }
+                            }
                         }
                     }
+
+                    if (pastedData && pastedData.length > 0) {
+                        // 캡쳐해서 붙여넣은 데이터 처리
+                        for (let i = 0; i < pastedData.length; i++) {
+                            const item = pastedData[i];
+
+                            if (item.type.startsWith("image/")) {
+                                //DataTransferItem 형식을 파일로 변환 처리
+                                const file: File | null = item.getAsFile();
+
+                                if (file) {
+                                    // 붙여넣은 이미지를 파일로 변환 후 최종적으로 에디터에 붙여넣기
+                                    handleImagePaste(quill, file);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            };
+
+            // 이미지 하나만 짤랏을 때
+            const handleCut = (e: ClipboardEvent) => {
+                if (selectedImageRef.current && overlayRef.current?.style.display !== "none") {
+                    e.preventDefault();
+
+                    const parentElement = selectedImageRef.current.closest("p");
+                    // 클립보드에 이미지 데이터와 부모 요소 저장, 부모 요소에 ql-align-right과 같은 정렬 클래스가 있기 때문문
+                    const clipboardData = e.clipboardData;
+                    if (clipboardData && parentElement) {
+                        // 부모 요소의 클래스 정보를 포함한 HTML 저장
+                        const htmlContent = `<p class="${parentElement.className}">${selectedImageRef.current.outerHTML}</p>`;
+                        clipboardData.setData("text/html", htmlContent);
+                    }
+
+                    // 이미지 제거
+                    selectedImageRef.current.remove();
+
+                    if (parentElement) {
+                        parentElement.style.marginBottom = "0";
+                    }
+
+                    // 오버레이 숨기기
+                    if (overlayRef.current) {
+                        overlayRef.current.style.display = "none";
+                    }
+
+                    selectedImageRef.current = null;
                 }
             };
 
@@ -257,6 +432,7 @@ export default React.memo(
                     }
 
                     quill.root.addEventListener("paste", handlePaste);
+                    quill.root.addEventListener("cut", handleCut);
 
                     const toolbarElement = document.querySelector(".ql-toolbar") as HTMLDivElement;
                     const customContainer = document.querySelector(".ql-toolbar-container") as HTMLDivElement;
@@ -270,9 +446,6 @@ export default React.memo(
                     if (fetchFileFromServer && fetchFileFromServer.length > 0) {
                         fileRef.current = fetchFileFromServer;
                         totalUploadedImagesUrlRef.current = fetchFileFromServer.map((file) => file.fileUrl);
-
-                        console.log("fileRef >>>", fileRef.current);
-                        console.log("totalUploadedImagesUrlRef >>>", totalUploadedImagesUrlRef.current);
                     }
 
                     return quill;
@@ -284,6 +457,7 @@ export default React.memo(
             return () => {
                 if (quill) {
                     quill.root.removeEventListener("paste", handlePaste);
+                    quill.root.removeEventListener("cut", handleCut);
                 }
             };
         }, []);
@@ -364,6 +538,10 @@ export default React.memo(
 
                 selectedImageRef.current.style.width = `${newWidth}px`;
                 selectedImageRef.current.style.height = `${newHeight}px`;
+
+                // width 및 height은 html 속성으로 써야 자르고 다시 붙여넣었을 때 유지됨
+                selectedImageRef.current.setAttribute("width", `${newWidth}`);
+                selectedImageRef.current.setAttribute("height", `${newHeight}`);
             };
 
             const createResizeHandler = (handlerType: string) => {
@@ -386,6 +564,7 @@ export default React.memo(
 
                         const container = document.querySelector(".ql-custom-container");
                         const containerRect = container?.getBoundingClientRect();
+
                         if (!containerRect) return;
 
                         const dimensions = calculateNewDimensions(moveEvent, startX, startWidth, aspectRatio, handlerType);
@@ -532,13 +711,22 @@ export default React.memo(
             if ((event.target as HTMLElement).tagName === "IMG") {
                 imgEl = event.target as HTMLImageElement;
 
-                const storedAlignment = imgEl.getAttribute("data-alignment") as "left" | "center" | "right" | null;
-
-                if (storedAlignment) {
-                    alignmentRef.current = storedAlignment;
-                } else {
+                const parentEl = imgEl.closest("p") as HTMLParagraphElement;
+                if (parentEl.className.includes("ql-align-center")) {
+                    alignmentRef.current = "center";
+                } else if (parentEl.className.includes("ql-align-right")) {
+                    alignmentRef.current = "right";
+                } else if (parentEl.className.includes("ql-align-left")) {
                     alignmentRef.current = "left";
                 }
+
+                // const storedAlignment = imgEl.getAttribute("data-alignment") as false | "left" | "center" | "right" | null;
+
+                // if (storedAlignment) {
+                //     alignmentRef.current = storedAlignment;
+                // } else {
+                //     alignmentRef.current = "left";
+                // }
 
                 const imgRect = imgEl.getBoundingClientRect();
 
@@ -624,6 +812,34 @@ export default React.memo(
                         figure.style.display = "none"; // figure.remove()를 하면 DOM에서도 아예 삭제되어서 안된다.
                     }
                 }
+
+                // metaKey는 cmd와 같음
+                // if ((event.ctrlKey || event.metaKey) && event.key === "x") {
+                //     if (overlayRef.current && selectedImageRef.current) {
+                //         overlayRef.current.style.display = "none";
+
+                //         // Create a new range and select the image
+                //         const range = document.createRange();
+                //         range.selectNode(selectedImageRef.current);
+
+                //         // Clear existing selection and add new range
+                //         const selection = window.getSelection();
+                //         selection?.removeAllRanges();
+                //         selection?.addRange(range);
+
+                //         // Create and dispatch cut event
+                //         const cutEvent = new ClipboardEvent('cut', {
+                //             bubbles: true,
+                //             cancelable: true,
+                //             clipboardData: new DataTransfer()
+                //         });
+                //         selectedImageRef.current.dispatchEvent(cutEvent);
+
+                //         // Clear selection after cut
+                //         selection?.removeAllRanges();
+                //         selectedImageRef.current = null;
+                //     }
+                // }
             };
 
             const quill = quillRef.current?.getEditor();
@@ -679,10 +895,14 @@ export default React.memo(
 
         // handleAlign 함수 이미지를 클릭했을때 오버레이가 선택되면서, 이후에 툴바의 정렬 기능이 제대로 작동되게 하기 위함.
         // react quill의 정렬 툴바에서 왼쪽 정렬은 false값으로 설정해놨기 때문에 아래와 같이 추가적으로 처리함.
-        const handleAlign = (value: "left" | "center" | "right") => {
-            console.log("실행요", value);
+        const handleAlign = (value: false | "left" | "center" | "right") => {
+
+            if (value === false) {
+                value = "left";
+            }
 
             const image = selectedImageRef.current; // 최신 이미지 참조
+            const parentEl = image?.closest("p");
             const overlay = overlayRef.current; // 최신 오버레이 참조
 
             let alignmentValue = value;
@@ -690,20 +910,14 @@ export default React.memo(
             if (image && overlay) {
                 // 정렬 상태 저장
                 alignmentRef.current = alignmentValue;
-                image.setAttribute("data-alignment", alignmentValue);
 
-                // 정렬에 따라 이미지의 margin을 설정
+                // ql-align으로 사용해야 이미지를 자르고 다시 붙여넣었을때 정렬이 유지됨
                 if (value === "center") {
-                    image.style.marginLeft = "auto";
-                    image.style.marginRight = "auto";
+                    parentEl?.setAttribute("class", "ql-align-center");
                 } else if (value === "right") {
-                    image.style.marginLeft = "auto";
-                    image.style.marginRight = "0";
+                    parentEl?.setAttribute("class", "ql-align-right");
                 } else if (value === "left") {
-                    image.style.marginLeft = "0";
-                    image.style.marginRight = "auto";
-                } else {
-                    image.style.margin = "0";
+                    parentEl?.setAttribute("class", "ql-align-left");
                 }
 
                 // 이미지의 위치에 맞춰 오버레이 위치 업데이트
@@ -760,7 +974,7 @@ export default React.memo(
             return true;
         };
 
-        const setupFileDownloadLink = (fileUrl: string, fileName: string): void => {
+        const setupFile = (fileUrl: string): void => {
             const quillEditor = document.querySelector(".ql-editor");
             const anchorTag = quillEditor?.querySelector(`a[href="${fileUrl}"]`) as HTMLAnchorElement;
 
@@ -768,39 +982,19 @@ export default React.memo(
                 anchorTag.classList.add("ql-file");
 
                 // 우클릭 시 툴바 보이는 것 방지
-                anchorTag.addEventListener("contextmenu", (event: MouseEvent) => {
-                    const tooltip = document.querySelector(".ql-tooltip");
-                    if (tooltip) {
-                        tooltip.classList.add("ql-hidden");
-                    }
-                });
+                // anchorTag.addEventListener("contextmenu", (event: MouseEvent) => {
+                //     const tooltip = document.querySelector(".ql-tooltip");
+                //     if (tooltip) {
+                //         tooltip.classList.add("ql-hidden");
+                //     }
+                // });
 
-                // 임시 다운 로드 링크 생성
-                anchorTag.addEventListener("click", (event: MouseEvent) => {
-                    event.preventDefault();
-
-                    const tooltip = document.querySelector(".ql-tooltip");
-
-                    console.log("tooltip >>>", tooltip);
-
-                    if (tooltip) {
-                        tooltip.classList.add("ql-hidden"); // quill editor 자체적으로 갖고있는 ql-hidden
-                    }
-
-                    fetch(fileUrl)
-                        .then((response) => response.blob())
-                        .then((blob) => {
-                            const blobUrl = window.URL.createObjectURL(blob);
-                            const link = document.createElement("a");
-                            link.href = blobUrl;
-                            link.download = decodeURIComponent(fileName);
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            window.URL.revokeObjectURL(blobUrl);
-                        })
-                        .catch(console.error);
-                });
+                // anchorTag.addEventListener("click", (event: MouseEvent) => {
+                //     const tooltip = document.querySelector(".ql-tooltip");
+                //     if (tooltip) {
+                //         tooltip.classList.add("ql-hidden");
+                //     }
+                // });
             }
         };
 
@@ -831,8 +1025,6 @@ export default React.memo(
 
                     const imgEl = quill.root.querySelector(`img[src="${fileUrl}"]`) as HTMLImageElement;
 
-                    console.log("ImgEl >>>", imgEl);
-
                     if (imgEl) {
                         // 이미지가 완전히 로드 되어야만 getBoundingClientRect에서 width, height값을 가져올 수 있음. 로드 전에 가져오면 0으로 나옴.
                         imgEl.onload = () => {
@@ -853,11 +1045,11 @@ export default React.memo(
                 } else if (type === "file") {
                     const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
 
-                    const fileIconHtml = `<a href="${fileUrl}" data-file="true">${file.name} - ${fileSizeInMB}MB (클릭하여 다운로드)</a>`;
+                    const fileIconHtml = `<a href="${fileUrl}">파일: ${file.name} - ${fileSizeInMB}MB</a>`;
 
                     quill.clipboard.dangerouslyPasteHTML(savedSelection, fileIconHtml, Quill.sources.USER);
 
-                    setupFileDownloadLink(fileUrl, file.name);
+                    setupFile(fileUrl);
 
                     setTimeout(() => {
                         // 현재 라인의 다음 라인으로 커서를 이동
@@ -997,19 +1189,14 @@ export default React.memo(
                     container: toolbarConfig,
                     handlers: {
                         image: toggleDropdown,
-                        align: (value: "left" | "center" | "right") => {
+                        align: (value: false | "left" | "center" | "right") => {
                             const quill = quillRef.current?.getEditor();
                             if (quill) {
-                                const range = quill.getSelection();
-                                if (range) {
-                                    const [blot] = quill.getLeaf(range.index);
-                                    // 현재 선택된 블롯이 이미지인 경우 handleAlign() 호출
-                                    if (blot && blot.domNode && (blot.domNode as HTMLElement).tagName === "IMG") {
-                                        handleAlign(value);
-                                    } else {
-                                        // 그렇지 않은 경우에 quill의 기본 정렬 기능 호출
-                                        quill.format("align", value);
-                                    }
+                                if (overlayRef.current && overlayRef.current?.style.display !== "none") {
+                                    handleAlign(value);
+                                } else {
+                                    // 그렇지 않은 경우에 quill의 기본 정렬 기능 호출
+                                    quill.format("align", value);
                                 }
                             }
                         },

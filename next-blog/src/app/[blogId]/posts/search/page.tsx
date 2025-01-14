@@ -39,8 +39,10 @@ export default async function PostSearchResultsPage({
         },
     });
 
-    if (!res.ok) {
+    if (!res.ok && res.status === 404) {
         notFound();
+    } else if (!res.ok) { 
+        throw new Error("특정 사용자 게시글 검색 데이터를 불러오는데 실패하였습니다");
     }
 
     const response = await res.json();

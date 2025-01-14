@@ -20,8 +20,10 @@ export default async function PostListByCategoryPaginationPage({
         }
     );
 
-    if (!res.ok) {
+    if (!res.ok && res.status === 404) {
         notFound();
+    } else if (!res.ok) {
+        throw new Error("특정 사용자의 카테고리 페이지네이션 데이터를 불러오는데 실패하였습니다.");
     }
 
     const response = await res.json();

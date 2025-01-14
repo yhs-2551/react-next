@@ -2,6 +2,7 @@ import React, { Suspense } from "react";
 import BlogList from "../../components/BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { CacheTimes } from "@/constants/cache-constants";
+import { notFound } from "next/navigation";
 
 export default async function PostListPaginationPage({ params }: { params: Promise<{ blogId: string; pageNum: string }> }) {
     const { blogId, pageNum } = await params;
@@ -10,6 +11,13 @@ export default async function PostListPaginationPage({ params }: { params: Promi
         cache: "force-cache",
         next: { tags: ["posts-pagination"], revalidate: CacheTimes.MODERATE.POSTS_PAGINATION },
     });
+
+    
+    if (!res.ok && res.status === 404) {
+        notFound();
+    } else if (!res.ok) {
+        throw new Error("특정 사용자 페이지네이션 목록 데이터를 불러오는데 실패하였습니다.");
+    }
 
     const response = await res.json();
 
