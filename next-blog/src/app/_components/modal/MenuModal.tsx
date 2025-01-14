@@ -1,6 +1,5 @@
 "use client";
 
-import { useGetAllCategories } from "@/customHooks/useGetCategories";
 import { useCategoryStore, userProfileStore } from "@/store/appStore";
 import { CategoryType } from "@/types/CateogryTypes";
 import { motion } from "framer-motion";
@@ -12,7 +11,7 @@ interface MenuModalProps {
 }
 
 export default function MenuModal({ isOpen, onClose }: MenuModalProps) {
-    // 캐시 메모리에서 가져옴
+  
     const { categories } = useCategoryStore();
     const { blogId } = userProfileStore();
 

@@ -1,13 +1,14 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { jwtDecode } from "jwt-decode";
+
 import { useEffect, useRef, useState } from "react";
-import { Params } from "next/dist/server/request/params";
-import LoadingAuth from "../LoadingAuth";
+
 import { useAuthStore } from "@/store/appStore";
-import path from "path";
+
 import GlobalLoading from "@/app/loading";
+
+import { jwtDecode } from "jwt-decode";
 
 interface JwtPayload {
     blogId: string;
@@ -19,7 +20,6 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
     const pathBlogId = params.blogId as string;
     const { isHeaderLogin, isAuthenticated, isInitialized } = useAuthStore();
 
-    // 비로그인 사용자, 로그인 사용자 모두 검증
     useEffect(() => {
         const accessToken = localStorage.getItem("access_token") ?? false;
         if (!accessToken) {
@@ -43,7 +43,7 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
     }, [isHeaderLogin, pathBlogId, isAuthenticated, isInitialized]);
 
     if (isChecking) {
-        return <GlobalLoading type="auth" message="사용자 인증 진행 중..."/>;
+        return <GlobalLoading type='auth' message='사용자 인증 진행 중...' />;
     }
 
     return <>{children}</>;

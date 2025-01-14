@@ -8,32 +8,29 @@ import parse, { DOMNode, Element } from "html-react-parser";
 
 import useDeletePost from "@/customHooks/useDeletePost";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { useParams, useRouter } from "next/navigation";
 
 import { toast, ToastContainer } from "react-toastify";
-import { checkAccessToken, fetchIsAuthor } from "@/services/api";
+import { checkAccessToken, fetchIsAuthor, refreshToken } from "@/services/api";
 
-import NextImage from "next/image";
 import { FileMetadata, PostResponse } from "@/types/PostTypes";
-import { refreshToken } from "@/utils/refreshToken";
 import DOMPurify from "dompurify";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { useAuthStore } from "@/store/appStore";
-import { useQueryClient } from "react-query";
 import ToastProvider from "@/providers/ToastProvider";
-import {
-    revalidateCategories,
-    revalidatePagination,
-    revalidatePostsAndSearch,
-    revalidatePostsCategories,
-    revalidatePostsCategoriesPagination,
-} from "@/actions/revalidate";
+
+import { revalidateAllRelatedCaches, revalidatePostDetailPage, revalidatePostEditPage } from "@/actions/revalidate";
+
+import DeleteModal from "@/app/_components/modal/DeleteModal";
+import { LightboxImage } from "./LightboxImage";
 
 function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId: string }) {
     const [isAuthor, setIsAuthor]: [boolean, React.Dispatch<React.SetStateAction<boolean>>] = useState<boolean>(false); // 작성자 여부 상태
     const [parsedContent, setParsedContent] = useState<React.ReactNode | null>(null);
+
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const params = useParams();
     const blogId = params.blogId as string;
@@ -42,9 +39,9 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
 
     const router = useRouter();
 
-    const queryClient = useQueryClient();
-
     const { isInitialized } = useAuthStore();
+
+    const imageUrls = post.files?.map((file) => file.fileUrl) || [];
 
     const parseStyleString = (style: string) => {
         return style.split(";").reduce((acc: { [key: string]: string | number }, styleProperty) => {
@@ -103,15 +100,26 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                         console.log("finalStyle >>>", finalStyle);
 
                         return (
-                            <NextImage
-                                key={src}
+                            <LightboxImage
+                                unique={src}
                                 src={src}
                                 alt={alt || "detail page image"}
                                 width={width} // 서버에서 받은 크기 사용
                                 height={height} // 서버에서 받은 크기 사용
                                 style={finalStyle} // 서버에서 받은 기존 스타일 유지
-                                loading='lazy'
+                                allImages={imageUrls}
                             />
+                            // <NextImage
+                            //     key={src}
+                            //     src={src}
+                            //     alt={alt || "detail page image"}
+                            //     width={width} // 서버에서 받은 크기 사용
+                            //     height={height} // 서버에서 받은 크기 사용
+                            //     style={finalStyle} // 서버에서 받은 기존 스타일 유지
+                            //     quality={100}
+                            //     sizes={`(max-width: 334px) 100vw, ${width}px`}
+                            //     loading='lazy'
+                            // />
                         );
                     }
                 },
@@ -145,62 +153,83 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                     const isAuthor = await fetchIsAuthor(postId, blogId, accessToken);
 
                     if (isAuthor) setIsAuthor(isAuthor);
-                } catch (error: unknown) {
-                    // ux측면에서 작성자 확인이 실패하였습니다. 잠시 후 다시 시도해주세요. 할필요가 있을까 일단 보류
-                    if (error instanceof CustomHttpError) {
-                        if (error.status === 500) {
-                            toast.error(
-                                <span>
-                                    <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
-                                </span>
-                            );
-                        }
-                    }
+                } catch (error) {
+                    console.error("작성자 확인 실패 오류: ", error);
                 }
             };
 
             fetchAuthorStatus();
         }
     }, [isInitialized]);
-
-    // 아래 상세페이지에서 파일 다운할 수 있게 하는 코드.
-
     useEffect(() => {
-        const anchorEl = document.querySelectorAll(".file-container__item") as NodeListOf<HTMLAnchorElement>;
-        anchorEl.forEach((el: HTMLAnchorElement) => {
-            el.addEventListener("click", (e) => {
-                e.preventDefault();
+        let observer: MutationObserver;
 
-                const fileUrl: string | null = el.getAttribute("href");
+        const setupFileDownload = () => {
+            const anchorEl = document.querySelectorAll(".ql-file") as NodeListOf<HTMLAnchorElement>;
 
-                console.log("el", el);
-                console.log("el", fileUrl);
+            console.log("anchorEl >>>", anchorEl);
 
-                if (fileUrl) {
-                    const lastHyphenIndex = fileUrl.lastIndexOf("-");
-                    const originalFileNameFromFileUrl = lastHyphenIndex !== -1 ? fileUrl.substring(lastHyphenIndex + 1) : fileUrl;
+            let allElementsHaveListeners = true;
 
-                    fetch(fileUrl)
-                        .then((response) => response.blob())
-                        .then((blob) => {
-                            const blobUrl = window.URL.createObjectURL(blob); // Object URL 생성
+            anchorEl.forEach((el: HTMLAnchorElement) => {
+                if (!el.dataset.hasListener) {
+                    allElementsHaveListeners = false;
+                    el.dataset.hasListener = 'true';
+                    el.addEventListener("click", (e) => {
+                        e.preventDefault();
 
-                            console.log("blolbUrl >>>", blobUrl);
+                        const fileUrl: string | null = el.getAttribute("href");
 
-                            const link = document.createElement("a");
-                            link.href = blobUrl;
-                            // 한글 깨지는 현상 해결. URL 인코딩된 파일명을 올바른 한글 텍스트로 변환한다.
-                            link.download = decodeURIComponent(originalFileNameFromFileUrl);
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                        if (fileUrl) {
+                            const lastHyphenIndex = fileUrl.lastIndexOf("-");
+                            const originalFileNameFromFileUrl = lastHyphenIndex !== -1 ? fileUrl.substring(lastHyphenIndex + 1) : fileUrl;
 
-                            window.URL.revokeObjectURL(blobUrl); // Object URL 해제
-                        })
-                        .catch(console.error);
+                            fetch(fileUrl)
+                                .then((response) => response.blob())
+                                .then((blob) => {
+                                    const blobUrl = window.URL.createObjectURL(blob);
+                                    const link = document.createElement("a");
+                                    link.href = blobUrl;
+                                    link.download = decodeURIComponent(originalFileNameFromFileUrl);
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    window.URL.revokeObjectURL(blobUrl);
+                                })
+                                .catch(console.error);
+                        }
+                    });
+                }
+            });
+
+            // 모든 요소에 리스너가 설정되어 있고, 요소가 하나 이상 존재하면 옵저버 중단
+            if (allElementsHaveListeners && anchorEl.length > 0) {
+                observer?.disconnect();
+            }
+        };
+
+        // 초기 설정
+        setupFileDownload();
+
+        // MutationObserver 설정
+        observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.addedNodes.length) {
+                    setupFileDownload();
                 }
             });
         });
+
+        // 관찰 시작
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        // 클린업
+        return () => {
+            observer.disconnect();
+        };
     }, []);
 
     const handleEdit: () => Promise<void> = async (): Promise<void> => {
@@ -211,7 +240,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
             // router.push를 쓰면 클라이언트 측에서 페이지 이동이 일어나기 때문에, 수정 페이지로 접근 시 페이지 전체가 새로고침 되지 않아 에디터 기능이 제대로 작동하지 않는다.
             // 따라서 수정 페이지로 이동할땐 window.location.href를 사용하여 수정 페이지 전체 새로고침이 일어나도록 한다.
             // router.push(`/posts/${postId}/edit`);
-            window.location.assign(`/${blogId}/posts/${postId}/edit`);
+            router.push(`/${blogId}/posts/${postId}/edit`);
         }
 
         if (isValidToken === false) {
@@ -227,7 +256,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                     localStorage.removeItem("access_token");
 
                     toast.error(
-                        <span>
+                        <span style={{ whiteSpace: "pre-line" }}>
                             <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
                         </span>,
                         {
@@ -241,34 +270,35 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         }
     };
 
+    // 아래 toast, setTimeout 캐시 무효화 순서 저렇게 해야만 올바르게 작동함. 시간만 조정 가능
     const handleDelete: () => void = (): void => {
         const onSuccess = async (data: { message: string } | undefined, variables: void, context: unknown) => {
-            // 검색어 추천 캐시 무효화. 실제 데이터 재요청은 백그라운드에서 발생하기 떄문에 빠른 응답을 위해 await 불필요
-            // 캐시 무효화가 안되어서 일단 보류 새로고침으로 적용
-            // invalidateSearchSuggestions(queryClient);
-
-            localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE");
-
             sessionStorage.setItem("isDeleting", "true");
+
+            sessionStorage.removeItem("cached-users-posts");
 
             toast.success(
                 <span>
-                    <span style={{ fontSize: "0.7rem" }}>{data?.message}</span>
+                    <span style={{ fontSize: "0.8rem", whiteSpace: "pre-line" }}>{data?.message || "게시글이 성공적으로 삭제되었습니다."}</span>
                 </span>,
                 {
-                    onClose: async () => {
-                        await revalidatePostsAndSearch(blogId);
-                        await revalidatePagination();
-                        await revalidateCategories(blogId);
-                        await revalidatePostsCategories();
-                        await revalidatePostsCategoriesPagination();
-                        // router.replace 쓰고 싶은데 invalidateSearchSuggestions(queryClient, blogId);가 안먹음
-                        window.location.replace(`/${blogId}/posts`);
-                        // router.replace(`/${blogId}/posts`);
-                    },
-                    autoClose: 2500,
+                    autoClose: 500,
                 }
             );
+
+            setTimeout(async () => {
+                await revalidateAllRelatedCaches(blogId);
+
+                await revalidatePostDetailPage(blogId, postId);
+                await revalidatePostEditPage(blogId, postId);
+
+                router.replace(`/${blogId}/posts`);
+            }, 1000);
+
+            // setTimeout(() => {
+            //     // window.location.replace(`/${blogId}/posts`);
+            //     router.replace(`/${blogId}/posts`);
+            // }, 2500);
         };
 
         const onError = (error: unknown) => {
@@ -330,11 +360,20 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                         <button onClick={handlePostStatus} className='text-sm text-gray-500'>
                             {post.postStatus === "PUBLIC" ? "비공개로 변경" : "공개로 변경"}
                         </button>
-                        <button onClick={handleDelete} className='text-sm text-gray-500'>
+                        <button type='button' className='text-sm text-gray-500' onClick={() => setIsDeleteModalOpen(true)}>
                             삭제
                         </button>
                     </div>
                 )}
+
+                <DeleteModal
+                    isOpen={isDeleteModalOpen}
+                    onClose={() => setIsDeleteModalOpen(false)}
+                    onConfirm={() => {
+                        handleDelete();
+                        setIsDeleteModalOpen(false);
+                    }}
+                />
 
                 {/* Content */}
                 <div className='quill'>

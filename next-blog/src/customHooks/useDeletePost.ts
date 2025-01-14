@@ -1,7 +1,7 @@
-import { CustomHttpError } from "@/utils/CustomHttpError";
-import { refreshToken } from "@/utils/refreshToken";
+import { CustomHttpError } from "@/utils/CustomHttpError"; 
 import { useEffect, useState } from "react";
-import { useMutation } from "react-query";
+import { useMutation } from "@tanstack/react-query";
+import { refreshToken } from "@/services/api";
 
 const deletePost: (postId: string, accessToken: string | null, blogId: string) => Promise<Response> = async (
     postId: string,
@@ -26,8 +26,8 @@ function useDeletePost(postId: string, blogId: string) {
         setAccessToken(token);
     }, []);
 
-    return useMutation(
-        async () => {
+    return useMutation({
+        mutationFn: async () => {
             if (accessToken === null) return;
 
             let response = await deletePost(postId, accessToken, blogId);
@@ -39,10 +39,11 @@ function useDeletePost(postId: string, blogId: string) {
                         if (newAccessToken) {
                             response = await deletePost(postId, newAccessToken, blogId);
                         }
-                    } catch (error: unknown) { // 리프레시 토큰 까지 만료되면 재로그인 필요
+                    } catch (error: unknown) {
+                        // 리프레시 토큰 까지 만료되면 재로그인 필요
                         if (error instanceof CustomHttpError) {
                             setAccessToken(null);
-                            throw new CustomHttpError(error.status, error.message);
+                            throw new CustomHttpError(error.status, "세션이 만료되었습니다.\n재로그인 해주세요.");
                         }
                     }
                 }
@@ -52,11 +53,11 @@ function useDeletePost(postId: string, blogId: string) {
                 throw new CustomHttpError(response.status, "게시글 삭제에 실패하였습니다. 잠시 뒤에 다시 시도해주세요.");
             }
 
-           const responseData = await response.json();
-           return {
-            message: responseData.message,
-           }
-        }
+            const responseData = await response.json();
+            return {
+                message: responseData.message,
+            };
+        },
         // {
         //     onSuccess: () => {
         //         // 포스트 목록을 다시 불러오게 만듦
@@ -75,7 +76,7 @@ function useDeletePost(postId: string, blogId: string) {
         //         queryClient.invalidateQueries(["posts"]);
         //     },
         // }
-    );
+    });
 }
 
 export default useDeletePost;

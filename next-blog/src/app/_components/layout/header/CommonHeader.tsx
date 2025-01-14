@@ -1,44 +1,52 @@
 "use client";
-import { checkAccessToken, logoutUser } from "@/services/api";
+import { checkAccessToken, logoutUser, refreshToken } from "@/services/api";
 import { useAuthStore, userProfileStore } from "@/store/appStore";
 import { FiMenu } from "react-icons/fi";
 import { CiSettings } from "react-icons/ci";
 
 import NextImage from "next/image";
 
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 
 import React, { useEffect, useRef, useState } from "react";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { toast } from "react-toastify";
-import { refreshToken } from "@/utils/refreshToken"; 
 import Link from "next/link";
-import { jwtDecode } from "jwt-decode";
 import SearchContainer from "../../search/SearchContainer";
 import MenuModal from "../../modal/MenuModal";
+import { getUserPrivateProfile } from "@/actions/user-actions";
 
-interface DecodedToken {
+interface UserPrivateProfile {
     blogId: string;
-    username: string;
     email: string;
+    username: string;
+    blogName: string;
+    profileImageUrl: string;
 }
 
 export default function CommonHeader() {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
     const { isInitialized, setShowLogin, isAuthenticated, setHeaderLogin } = useAuthStore();
-    const { blogUsername } = userProfileStore();
+    const { blogName, blogUsername, profileImage } = userProfileStore();
 
-    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-    const [isHamburgerMenuOpen, setIsHamburgerMenuOpen] = useState(false);
+    const [userPrivateProfile, setUserPrivateProfile] = useState<UserPrivateProfile>({
+        blogId: "",
+        email: "",
+        username: "",
+        blogName: "",
+        profileImageUrl: "",
+    });
+
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState<boolean>(false);
+    const [isHamburgerMenuOpen, setIsHamburgerMenuOpen] = useState<boolean>(false);
 
     const menuRef = useRef<HTMLDivElement>(null);
     const hamburgerMenuModalRef = useRef<HTMLDivElement>(null);
     const hamburgerMenuButtonRef = useRef<HTMLButtonElement>(null);
 
-    const [blogIdFromToken, setBlogIdFromToken] = useState<string | null>(null);
-    const [usernameFromToken, setUsernameFromToken] = useState<string | null>(null);
-    const [emailFromToken, setEmailFromToken] = useState<string | null>(null);
+    
+    const router = useRouter();
 
     const params = useParams();
     const pathBlogId = params.blogId as string | undefined;
@@ -51,27 +59,14 @@ export default function CommonHeader() {
     const isManagePage = pathname?.includes("/manage");
     const isPostListPage = pathname === `/${pathBlogId}/posts` || pathname.includes(`/${pathBlogId}/posts/page`);
     const isCategoryPage = pathname?.includes(`/${pathBlogId}/categories`);
+    const isSearchPage = pathname?.includes(`/${pathBlogId}/posts/search`);
 
-    const TOKEN_KEY = "access_token";
-
-    useEffect(() => {
-        try {
-            const token = localStorage.getItem(TOKEN_KEY);
-            if (token) {
-                const decodedToken = jwtDecode<DecodedToken>(token);
-
-                setBlogIdFromToken(decodedToken.blogId);
-                setUsernameFromToken(decodedToken.username);
-                setEmailFromToken(decodedToken.email);
-            }
-        } catch (error) {
-            console.error("Error decoding token:", error);
-        }
-    }, [isLoggedIn]); // 로그인 할때마다 새로운 액세스 토큰으로 blogId를 가져옴.
 
     // zustand의 상태관리는 휘발성이기 때문에 zustand 전역상태로 로그인을 관리하기 보다 페이지를 새로고침 시키면서 아래 useEffect 재실행 시킴.
     // 재실행됨에 따라 액세스 토큰 유무로 로그인 상태를 관리.
     useEffect(() => {
+        console.log("헤더실행");
+
         const handleClickOutside = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
                 setIsUserMenuOpen(false);
@@ -94,10 +89,22 @@ export default function CommonHeader() {
 
             const isAccessToken = accessToken && accessToken !== null && accessToken !== undefined && accessToken !== "";
 
-            if (isAccessToken) {
+            if (isAccessToken) { 
+
                 setIsLoggedIn(true);
                 //setHeaderLogin는 AuthCheck부분을 위해. window.location 새로고침 기능 대신 router.push 기능을 사용하기 위해, 즉 ux향상을 위해 사용
                 setHeaderLogin(true);
+
+                const fetchUserProfile = async () => {
+                    try {
+                        const response = await getUserPrivateProfile(accessToken);
+                        setUserPrivateProfile(response.data);
+                    } catch (error) {
+                        console.error("프로필 조회 실패:", error);
+                    }
+                };
+
+                fetchUserProfile();
             }
 
             // 초기화(원래값인 false로)를 하면 의도치 않은 결과가 나오게 됨
@@ -109,7 +116,7 @@ export default function CommonHeader() {
             };
         }
     }, [isInitialized, isAuthenticated]);
-
+ 
     const handleLogoutClick = async () => {
         if (isLoggedIn) {
             try {
@@ -138,7 +145,7 @@ export default function CommonHeader() {
             try {
                 const newAccessToken = await refreshToken();
                 if (newAccessToken) {
-                    window.location.assign(`/${blogIdFromToken}/posts/new`);
+                    router.push(`/${userPrivateProfile.blogId}/posts/new`);
                     // router.push("/posts/new");
                 }
             } catch (error: unknown) {
@@ -159,21 +166,21 @@ export default function CommonHeader() {
                 }
             }
         } else if (isValidToken === true) {
-            window.location.assign(`/${blogIdFromToken}/posts/new`);
+            // window.location.assign(`/${userPrivateProfile.blogId}/posts/new`);
+            router.push(`/${userPrivateProfile.blogId}/posts/new`);
         }
     };
 
     return (
         <>
-            {/* MenuModalWrapper이 없으면 useGetAllCategories함수 내에 localstorage에 접근할 때 서버사이드 렌더링 오류가 발생하게 됨(undefined 오류) */}
-            {(isCategoryPage || isPostListPage) && (
+            {(isCategoryPage || isPostListPage || isSearchPage) && (
                 <div ref={hamburgerMenuModalRef}>
                     <MenuModal isOpen={isHamburgerMenuOpen} onClose={() => setIsHamburgerMenuOpen(false)} />
                 </div>
             )}
 
             {/* 로그인 모달의 z-index는 999 헤더는 998로 해야 로그인 모달이 띄워지면서 백드랍 효과 발생 */}
-            <header className='bg-white flex items-center justify-between h-[5rem] fixed top-0 left-0 w-full z-[998] border-b-2 px-10'>
+            <header className='bg-white flex items-center justify-between h-[5rem] fixed top-0 left-0 w-full z-[1300] border-b-2 px-12'>
                 {/* 왼쪽: 로고와 검색창 */}
                 <div className='flex items-center gap-6'>
                     <div className='flex items-center gap-2'>
@@ -201,19 +208,19 @@ export default function CommonHeader() {
                 {pathBlogId && !isWriteOrEditPage && !isManagePage && (
                     <div className='absolute left-1/2 transform -translate-x-1/2'>
                         <Link href={`/${pathBlogId}/posts`}>
-                            <h2 className='text-xl font-bold cursor-pointer'>{`${blogUsername}의 DevLog`}</h2>
+                            <h2 className='text-xl font-bold cursor-pointer'>{`${blogName}`}</h2>
                         </Link>
                     </div>
                 )}
 
-                {isWriteOrEditPage && <div className='flex items-center ql-toolbar-container' role='toolbar' aria-label='에디터 툴바'></div>}
+                {isWriteOrEditPage && <div className='relative flex items-center ql-toolbar-container' role='toolbar' aria-label='에디터 툴바'></div>}
 
                 {isLoggedIn ? (
                     <div className='relative' ref={menuRef}>
                         <div className='flex items-center gap-4'>
                             {!isWriteOrEditPage && (
                                 <button
-                                    className='px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-full  hover:bg-gray-700 transition-colors duration-200 ease-in-out focus:outline-none'
+                                    className='px-5 py-2 text-sm font-medium text-white bg-gray-800 rounded-full  hover:bg-gray-700 transition-colors duration-200 ease-in-out focus:outline-none'
                                     onClick={handleNewPost}
                                 >
                                     새 글 작성
@@ -221,32 +228,34 @@ export default function CommonHeader() {
                             )}
 
                             <NextImage
-                                src={"https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-avatar-profile.webp"}
+                                src={profileImage ||userPrivateProfile.profileImageUrl || "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-avatar-profile.webp"}
                                 width={36}
                                 height={36}
                                 alt='사용자 계정 이미지'
                                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                                className='w-9 h-9 rounded-full cursor-pointer hover:ring-2 hover:ring-gray-300 transition-all'
-                                priority={true}
+                                quality={100}
+                                sizes="(max-width: 160px) 100vw, 36px"  
+                                className='w-11 h-11 object-cover rounded-full cursor-pointer hover:ring-2 hover:ring-gray-300 transition-all'
+                              
                             />
                         </div>
                         {isUserMenuOpen && (
                             <div className='absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100'>
                                 <div className='px-4 py-2'>
-                                    <p className='pt-2 text-gray-800'>{usernameFromToken}</p>
-                                    <p className='text-sm text-gray-800 pt-2'>{emailFromToken}</p>
+                                    <p className='pt-2 text-gray-800'>{blogUsername || userPrivateProfile.username}</p>
+                                    <p className='text-sm text-gray-800 pt-2'>{userPrivateProfile.email}</p>
                                 </div>
                                 <div className='px-4 pb-2 flex flex-col gap-2'>
                                     <Link
-                                        href={`/${blogIdFromToken}/posts`}
+                                        href={`/${userPrivateProfile.blogId}/posts`}
                                         className='w-full text-left rounded-lg transition-colors text-gray-800 hover:text-gray-500'
                                         onClick={() => setIsUserMenuOpen(false)}
                                     >
-                                        {`${usernameFromToken}의 DevLog`}
+                                        {blogName || `${userPrivateProfile.blogName}`}
                                     </Link>
 
                                     <Link
-                                        href={`/${blogIdFromToken}/manage`}
+                                        href={`/${userPrivateProfile.blogId}/manage`}
                                         className='flex justify-between w-full text-left text-gray-800 hover:text-gray-500 rounded-lg transition-colors'
                                         onClick={() => setIsUserMenuOpen(false)}
                                     >

@@ -1,8 +1,7 @@
 import React from "react";
 
 import { PostResponse } from "@/types/PostTypes";
-import PostsGrid from "./PostsGrid";
-import ClientWrapper from "@/providers/ClientWrapper";
+import PostsGrid from "./PostsGrid"; 
 
 interface IndexProps {
     initialData: PostResponse[];
@@ -10,9 +9,5 @@ interface IndexProps {
 }
 
 export default function Index({ initialData, totalElements }: IndexProps) {
-    return (
-        <ClientWrapper>
-            <PostsGrid initialData={initialData} totalElements={totalElements}/>
-        </ClientWrapper>
-    );
+    return <PostsGrid initialData={initialData} totalElements={totalElements} />;
 }

@@ -29,14 +29,12 @@ import { v4 as uuidv4 } from "uuid";
 import CategoryItem from "./CategoryItem";
 
 import useAddCategory from "@/customHooks/useAddCategory";
-import { useGetAllCategories } from "@/customHooks/useGetCategories";
-import { useQueryClient } from "react-query";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { CategoryType } from "@/types/CateogryTypes";
 import CommonSideNavigation from "@/app/_components/layout/sidebar/CommonSideNavigation";
 import { useCategoryStore } from "@/store/appStore";
 import { revalidateCategories } from "@/actions/revalidate";
-import { revalidatePath } from "next/cache";
+import { CustomHttpError } from "@/utils/CustomHttpError";
 
 // 컴포넌트 외부에 헬퍼 함수 정의
 const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
@@ -76,17 +74,12 @@ const Category: React.FC = () => {
 
     const [isButtonVisible, setIsButtonVisible] = useState<boolean>(false);
 
-    const categoryToDeleteRef = useRef<string[] | null>(null);
+    const categoryToDeleteRef = useRef<CategoryType[] | null>(null);
 
     const params = useParams();
     const blogId = params.blogId as string;
 
-    const router = useRouter();
-
     const createCategoryMutation = useAddCategory(blogId);
-
-    console.log("categoriesByStore >>>>>>>>", categoriesByStore);
-    console.log("categories >>>>>>>>", categories);
 
     useEffect(() => {
         if (categoryInputRef.current) {
@@ -248,7 +241,6 @@ const Category: React.FC = () => {
         };
 
         const onSuccess = async () => {
-  
             try {
                 await revalidateCategories(blogId); // 성공 후 캐시 무효화9해당 서버컴포넌트 재실행 됨)
             } finally {
@@ -256,10 +248,35 @@ const Category: React.FC = () => {
             }
         };
 
-        const onError = (error: any) => {
-            // console.log(isEditingRef.current ? "Blog Edit Form 실패 실행" : "Blog 작성 실패 실행");
-            console.error("카테고리 저장 실패 Error:", error); // 오류 로그 확인
-            // errorMessageRef.current = error.message;
+        const onError = (error: unknown) => {
+            if (error instanceof CustomHttpError) {
+                if (error.status === 401) {
+                    localStorage.removeItem("access_token");
+
+                    toast.error(
+                        <span style={{ whiteSpace: "pre-line" }}>
+                            <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                        </span>,
+                        {
+                            onClose: () => {
+                                window.location.reload();
+                            },
+                        }
+                    );
+                } else {
+                    console.error("카테고리 저장 실패 CustomHttpError:", error); // 오류 로그 확인
+                    toast.error(
+                        <span style={{ whiteSpace: "pre-line" }}>
+                            <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                        </span>,
+                        {
+                            onClose: () => {},
+                        }
+                    );
+                }
+            } else {
+                console.error("카테고리 저장 실패 Unknown Error:", error);
+            }
         };
 
         createCategoryMutation.mutate(categoryPayLoad, { onSuccess, onError });
@@ -280,13 +297,13 @@ const Category: React.FC = () => {
                 categoryToDeleteRef.current = [];
             }
 
-            categoryToDeleteRef.current = [...categoryToDeleteRef.current, categoryToDelete.categoryUuid];
+            categoryToDeleteRef.current = [...categoryToDeleteRef.current, categoryToDelete];
         }
 
         // 최상위 카테고리이고 자식을 가진 경우 삭제 중단 및 최상위 카테고리, 자식 카테고리 각각 post를 가진 경우 삭제 중단.
-        // CategoryType에 postCount, childrenCount에 ?를 붙여서 null일 경우를 대비해야 함. 붙인 이유는 postCount, childrenCount속성은 응답시에만 오는 데이터이기 때문.
+
         if (
-            (categoryToDelete && categoryToDelete.categoryUuidParent === null && categoryToDelete.childrenCount! > 0) ||
+            (categoryToDelete && categoryToDelete.categoryUuidParent === null && categoryToDelete.children && categoryToDelete.children.length > 0) ||
             (categoryToDelete && categoryToDelete.postCount! > 0)
         ) {
             return;
@@ -535,49 +552,58 @@ const Category: React.FC = () => {
                             {categories.length !== 0 && (
                                 <DndProvider backend={HTML5Backend}>
                                     <ul className='space-y-3 mt-7'>
-                                        {categories.map((parentCategory) => (
-                                            <React.Fragment key={parentCategory.categoryUuid}>
-                                                <CategoryItem
-                                                    category={parentCategory}
-                                                    index={categories.findIndex((cat) => cat.categoryUuid === parentCategory.categoryUuid)}
-                                                    moveCategory={moveCategory}
-                                                    openModal={openModal}
-                                                    deleteCategory={handleDeleteCategory}
-                                                    onDragStateChange={(isDragging) => handleDragStateChange(isDragging, parentCategory.categoryUuid)}
-                                                    isDeleteDisabled={
-                                                        (parentCategory.categoryUuidParent === null && parentCategory.childrenCount! > 0) ||
-                                                        parentCategory.postCount! > 0
-                                                    }
-                                                />
+                                        {categories.map(
+                                            (parentCategory) => (
+                                                console.log("parentCategory", parentCategory),
+                                                (
+                                                    <React.Fragment key={parentCategory.categoryUuid}>
+                                                        <CategoryItem
+                                                            category={parentCategory}
+                                                            index={categories.findIndex((cat) => cat.categoryUuid === parentCategory.categoryUuid)}
+                                                            moveCategory={moveCategory}
+                                                            openModal={openModal}
+                                                            deleteCategory={handleDeleteCategory}
+                                                            onDragStateChange={(isDragging) =>
+                                                                handleDragStateChange(isDragging, parentCategory.categoryUuid)
+                                                            }
+                                                            isDeleteDisabled={
+                                                                (parentCategory.categoryUuidParent === null &&
+                                                                    parentCategory.children &&
+                                                                    parentCategory.children?.length > 0) ||
+                                                                parentCategory.postCount! > 0
+                                                            }
+                                                        />
 
-                                                {/* 2단계 하위 카테고리 */}
-                                                {/* 부모가 드래깅 시작하면 그 자식까지 동일한 css  */}
-                                                {parentCategory.children && (
-                                                    <ul
-                                                        className={`ml-6 space-y-2 ${
-                                                            draggingCategoryId === parentCategory.categoryUuid && !draggingFromChild
-                                                                ? "opacity-50 border-blue-500"
-                                                                : ""
-                                                        }`}
-                                                    >
-                                                        {parentCategory.children.map((childCategory, childIdx) => (
-                                                            <CategoryItem
-                                                                key={childCategory.categoryUuid}
-                                                                category={childCategory}
-                                                                index={childIdx}
-                                                                moveCategory={moveCategory}
-                                                                openModal={openModal}
-                                                                deleteCategory={handleDeleteCategory}
-                                                                onDragStateChange={(isDragging) =>
-                                                                    handleDragStateChange(isDragging, parentCategory.categoryUuid, true)
-                                                                }
-                                                                isDeleteDisabled={childCategory.postCount! > 0}
-                                                            />
-                                                        ))}
-                                                    </ul>
-                                                )}
-                                            </React.Fragment>
-                                        ))}
+                                                        {/* 2단계 하위 카테고리 */}
+                                                        {/* 부모가 드래깅 시작하면 그 자식까지 동일한 css  */}
+                                                        {parentCategory.children && (
+                                                            <ul
+                                                                className={`ml-6 space-y-2 ${
+                                                                    draggingCategoryId === parentCategory.categoryUuid && !draggingFromChild
+                                                                        ? "opacity-50 border-blue-500"
+                                                                        : ""
+                                                                }`}
+                                                            >
+                                                                {parentCategory.children.map((childCategory, childIdx) => (
+                                                                    <CategoryItem
+                                                                        key={childCategory.categoryUuid}
+                                                                        category={childCategory}
+                                                                        index={childIdx}
+                                                                        moveCategory={moveCategory}
+                                                                        openModal={openModal}
+                                                                        deleteCategory={handleDeleteCategory}
+                                                                        onDragStateChange={(isDragging) =>
+                                                                            handleDragStateChange(isDragging, parentCategory.categoryUuid, true)
+                                                                        }
+                                                                        isDeleteDisabled={childCategory.postCount! > 0}
+                                                                    />
+                                                                ))}
+                                                            </ul>
+                                                        )}
+                                                    </React.Fragment>
+                                                )
+                                            )
+                                        )}
                                     </ul>
                                 </DndProvider>
                             )}
@@ -587,16 +613,16 @@ const Category: React.FC = () => {
                         <div className='px-8 py-5 flex justify-end mt-6 bg-[#FAFBFC]'>
                             <button
                                 onClick={handleSaveCategoryToServer}
-                                disabled={isInitialLoad || createCategoryMutation.isLoading || createCategoryMutation.isSuccess}
+                                disabled={isInitialLoad || createCategoryMutation.isPending || createCategoryMutation.isSuccess}
                                 className={`w-[9rem] font-medium text-sm px-4 py-2   ${
                                     isButtonVisible && !createCategoryMutation.isSuccess
                                         ? "cursor-pointer shadow-md  bg-gray-800 text-white hover:bg-gray-700 hover:shadow-md transition-all"
                                         : "cursor-not-allowed bg-white text-gray-400 border-2 border-manageBgColor"
                                 }`}
                             >
-                                {createCategoryMutation.isSuccess && !createCategoryMutation.isLoading ? (
+                                {createCategoryMutation.isSuccess && !createCategoryMutation.isPending ? (
                                     "저장 완료"
-                                ) : createCategoryMutation.isLoading ? (
+                                ) : createCategoryMutation.isPending ? (
                                     <ClipLoader color='#ffffff' size={20} />
                                 ) : (
                                     "변경사항 저장"
@@ -608,7 +634,7 @@ const Category: React.FC = () => {
             </div>
 
             {/* 모달 다이얼로그 */}
-            <Dialog open={isModalOpen} as='div' onClose={closeModal} className='fixed z-10 inset-0 overflow-y-auto'>
+            <Dialog open={isModalOpen} as='div' onClose={closeModal} className='fixed z-[1500] inset-0 overflow-y-auto'>
                 <div className='flex items-center justify-center min-h-screen'>
                     <DialogBackdrop className='fixed inset-0 bg-black opacity-30' />
                     <DialogPanel
@@ -617,7 +643,8 @@ const Category: React.FC = () => {
                     >
                         <div className='flex'>
                             <DialogTitle className='text-lg font-bold'>카테고리 편집</DialogTitle>
-                            <Description className='mt-1 text-sm font-medium'>
+
+                            <div className='mt-1 text-sm font-medium'>
                                 <a
                                     className='inline-block ml-2 text-gray-500 text-sm'
                                     data-tooltip-id='category-edit-tooltip'
@@ -625,12 +652,12 @@ const Category: React.FC = () => {
                                 >
                                     ?
                                 </a>
-                                <Tooltip id='category-edit-tooltip' place='top' />
-                            </Description>
+                            </div>
+                            <Tooltip id='category-edit-tooltip' place='top' />
                         </div>
 
                         {/* 카테고리 이름 입력 */}
-                        <form className='mt-4' onSubmit={handleSaveCategoryFromModal}>
+                        <form className='mt-</form>4' onSubmit={handleSaveCategoryFromModal}>
                             <fieldset>
                                 <legend className='sr-only'>카테고리 편집 모달</legend>
 
@@ -655,7 +682,7 @@ const Category: React.FC = () => {
                                             }}
                                         >
                                             <div className='flex items-center justify-between mb-3'>
-                                                <ListboxButton className='mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-left'>
+                                                <ListboxButton className='cursor-not-allowed mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-left'>
                                                     {selectedParentCategoryId
                                                         ? categories.find((cat) => cat.categoryUuid === selectedParentCategoryId)?.name
                                                         : "최상위 카테고리"}

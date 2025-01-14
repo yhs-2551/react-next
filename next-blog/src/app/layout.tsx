@@ -4,7 +4,7 @@ import "@/app/globals.css";
 import AuthProvider from "@/providers/AuthProvider";
 import ToastProvider from "@/providers/ToastProvider";
 import CommonFooter from "./_components/layout/footer/CommonFooter";
-import CommonHeader from "./_components/layout/header/CommonHeader";  
+import CommonHeader from "./_components/layout/header/CommonHeader";
 
 // import { config } from "@fortawesome/fontawesome-svg-core";
 // import "@fortawesome/fontawesome-svg-core/styles.css";

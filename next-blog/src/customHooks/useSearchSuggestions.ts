@@ -1,5 +1,5 @@
 import { extractTextWithoutImages } from "@/utils/extractTextWithoutImages";
-import { useQuery } from "react-query";
+import { useQuery } from "@tanstack/react-query";
 
 interface SearchSuggestion {
     id: number;
@@ -8,23 +8,39 @@ interface SearchSuggestion {
     content?: string;
 }
 
-export const SEARCH_SUGGESTIONS_KEY = "searchSuggestions";
+const SEARCH_SUGGESTIONS_KEY = "searchSuggestions";
+const ONE_MINUTE = 1000 * 60; // 1000 = ms로 1s
+const ONE_HOUR = ONE_MINUTE * 60;
 
-export const useSearchSuggestions = (blogId: string | undefined, keyword: string, searchType: string) => {
+// 아래 로직은 따로 무효화 안해도, 브라우저 뒤로가기 앞으로가기만으로도 캐시가 무효화 됨(router.push, replace도 당연히 무효화). 이유는 못찾았음..
+export const useSearchSuggestions = (
+    blogId: string | undefined,
+    keyword: string,
+    searchType: string,
+    categoryName: string | undefined,
+    categoryNameByQueryParams: string | null
+) => {
     return useQuery({
-        queryKey: [SEARCH_SUGGESTIONS_KEY, blogId, keyword, searchType],
+        queryKey: [SEARCH_SUGGESTIONS_KEY, blogId, keyword, searchType, categoryName, categoryNameByQueryParams],
         queryFn: async () => {
-            if (!keyword) return [];
-
+            if (!keyword.trim()) return [];
 
             console.log("쿼리 실행");
 
             let res;
 
             if (blogId) {
-                res = await fetch(
-                    `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?keyword=${keyword}&searchType=${searchType}&size=5`
-                );
+                if (categoryName || categoryNameByQueryParams) {
+                    res = await fetch(
+                        `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?category=${
+                            categoryName || categoryNameByQueryParams
+                        }&keyword=${keyword}&searchType=${searchType}&size=5`
+                    );
+                } else {
+                    res = await fetch(
+                        `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?keyword=${keyword}&searchType=${searchType}&size=5`
+                    );
+                }
             } else {
                 res = await fetch(
                     `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/posts?keyword=${keyword}&searchType=${searchType}&size=5`
@@ -45,19 +61,10 @@ export const useSearchSuggestions = (blogId: string | undefined, keyword: string
             );
         },
         enabled: keyword.length > 0,
-        staleTime: Infinity,
-        cacheTime: Infinity,
+        staleTime: ONE_MINUTE * 30, // 30분
+        gcTime: ONE_HOUR, // 1시간
         refetchOnWindowFocus: false,
         refetchOnMount: false,
         refetchOnReconnect: true,
     });
 };
-
-// 위의 쿼리키와 달라도 [A, B]로 무효화하면 [A, B, ...]로 시작하는 모든 쿼리 무효화.
-// 블로그 글이 변경되면(생성, 수정, 삭제) 모든 검색 결과 캐시를 무효화해야 함
-// export const invalidateSearchSuggestions = (queryClient: any) => {
-//     queryClient.invalidateQueries({
-//         queryKey: [SEARCH_SUGGESTIONS_KEY],
-//         exact: false,
-//     });
-// };

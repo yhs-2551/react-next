@@ -52,7 +52,7 @@ export default function EmailVerificationModal({ user }: EmailVerificationModalP
                             <span style={{ fontSize: "0.9rem" }}>{verifyResponse.message}</span>
                         </span>,
                         {
-                            autoClose: 3000, // 2초
+                            autoClose: 3000, // 3초
                             style: {
                                 padding: "16px",
                             },
@@ -119,7 +119,7 @@ export default function EmailVerificationModal({ user }: EmailVerificationModalP
     };
 
     return (
-        <div className='fixed inset-0 z-[999] flex items-center justify-center overflow-hidden bg-black/30'>
+        <div className='fixed inset-0 z-[1500] flex items-center justify-center overflow-hidden bg-black/30'>
             <AnimatePresence
                 mode='wait'
                 onExitComplete={() => {

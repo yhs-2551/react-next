@@ -1,8 +1,9 @@
-import React from "react";
+import React, { Suspense } from "react";
 
 import Pagination from "@/app/_components/pagination/Pagination";
 import BlogList from "@/app/[blogId]/posts/components/BlogList";
 import { notFound } from "next/navigation";
+import { CacheTimes } from "@/constants/cache-constants";
 
 export default async function CategoryPostListPage({ params }: { params: Promise<{ blogId: string; categoryName: string }> }) {
     const { blogId, categoryName } = await params;
@@ -13,14 +14,17 @@ export default async function CategoryPostListPage({ params }: { params: Promise
             cache: "force-cache",
             next: {
                 tags: ["posts-categories"],
+                revalidate: CacheTimes.MODERATE.POSTS_CATEGORY,
             },
         }
     );
 
-    if (!res.ok) {
+    if (!res.ok && res.status === 404) {
         notFound();
+    } else if (!res.ok) {
+        throw new Error("특정 사용자의 카테고리 목록 데이터를 불러오는데 실패하였습니다.");
     }
-
+    
     const response = await res.json();
 
     const { totalPages, content, currentPage, totalElements } = response.data;
@@ -30,7 +34,7 @@ export default async function CategoryPostListPage({ params }: { params: Promise
     const decodedCategoryName = decodeURIComponent(categoryName);
 
     return (
-        <>
+        <Suspense>
             <BlogList initialData={content} isSearch={false} totalElements={totalElements} />
             <Pagination
                 isExistContent={isExistContent}
@@ -39,6 +43,6 @@ export default async function CategoryPostListPage({ params }: { params: Promise
                 blogId={blogId}
                 category={decodedCategoryName}
             />
-        </>
+        </Suspense>
     );
 }

@@ -5,17 +5,17 @@
 /* @import '@fortawesome/fontawesome-free/css/all.min.css'; */
 
 * {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
 }
-
+ 
 body {
-  /* layout.tsx 부분에 나중에 변경  */
+    /* layout.tsx 부분에 나중에 변경  */
 
-  /* font-size: .938rem;
+    /* font-size: .938rem;
   font-weight: 500; */
-  /* background-color: var(--body-color);
+    /* background-color: var(--body-color);
   color: var(--text-color);  */
 }
 
@@ -25,14 +25,14 @@ body {
 } */
 
 a {
-  text-decoration: none;
+    text-decoration: none;
 }
 
 /* next.js 이미지 조정 때문에 주석  */
 img {
-  display: block;
-  max-width: 100%;
-  height: auto;
+    display: block;
+    max-width: 100%;
+    height: auto;
 }
 
 /* toast  */

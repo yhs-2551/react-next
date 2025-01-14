@@ -1,20 +1,4 @@
-// export const extractImageFromPost = (post: any) => {
-//     let imageUrl: string | undefined;
-
 import { PostResponse } from "@/types/PostTypes";
-
-//     if (post?.featuredImage?.fileUrl) {
-//         imageUrl = post.featuredImage.fileUrl;
-//     } else if (post?.content) {
-//         const imgRegex = /<img.*?src=["'](.*?)["']/;
-//         const match = post.content.match(imgRegex);
-//         imageUrl = match ? match[1] : undefined;
-//     }
-
-//     console.log(imageUrl);
-
-//     return imageUrl;
-// };
 
 export const extractImageFromPost = (post: PostResponse) => {
     if (typeof window === "undefined") return undefined;

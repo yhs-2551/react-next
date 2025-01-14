@@ -1,12 +1,12 @@
 "use client";
 
-import { useInView } from "react-intersection-observer";
-import { useInfiniteQuery } from "react-query";
-import { useEffect } from "react";
+import { useInView } from "react-intersection-observer"; 
+import { useEffect, useState } from "react";
 import { PostResponse } from "@/types/PostTypes";
 import EmptyState from "../_components/search/EmptyState";
 import PostCardWithContent from "./PostCardWithContent";
-import { AiOutlineClockCircle } from "react-icons/ai";
+import { AiOutlineClockCircle } from "react-icons/ai"; 
+import { getInfiniteScrollPosts } from "@/actions/post.actions";
 
 interface PostsGridProps {
     initialData: PostResponse[];
@@ -14,33 +14,62 @@ interface PostsGridProps {
 }
 
 export default function PostsGrid({ initialData, totalElements }: PostsGridProps) {
+    const [indexPageIsInitialized, setIndexPageIsInitialized] = useState(false);
+
+    const [page, setPage] = useState<number>(2); // 초기에 20개 가져오기 때문 3페이지부터 시작해야함.
+    const [posts, setPosts] = useState<PostResponse[]>(initialData);
+
+    const [hasNext, setHasNext] = useState<boolean>(true);
+
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+
     const { ref, inView } = useInView();
 
-    const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
-        queryKey: ["posts", "allUsers", "recent"],
-        queryFn: async ({ pageParam = 1 }) => {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/posts?page=${pageParam}&size=10`);
-            return res.json();
-        },
-        getNextPageParam: (serverResponse) => {
-            3;
-            if (serverResponse.data.hasNext) {
-                return serverResponse.data.currentPage + 1; // 반환값이 다음 queryFn의 pageParam으로 전달후 queryFn 실행
-            }
-            return undefined;
-        },
-        // 컴포넌트 마운트 시점에 서버에서 받은 데이터로 초기화
-        initialData: {
-            pages: [{ data: { content: initialData, currentPage: 1, hasNext: true } }], // hasNext초기값 true 설정 따라서 hasNextPage도 초기에 true
-            pageParams: [1], // 초기 상태에서 이미 요청한 페이지 번호 기록
-        },
-        enabled: false,
-    });
+    // 무한 스크롤 방식에서 뒤로가기로 돌아올 때 이전 스크롤 위치를 유지하기 위해 필요
+    useEffect(() => {
+        const cachedPosts = sessionStorage.getItem("cached-users-posts");
+
+        if (cachedPosts) {
+            setPosts(JSON.parse(cachedPosts));
+        }
+        setIndexPageIsInitialized(true);
+    }, []);
+
+    // 무한 스크롤 방식에서 스크롤 위치를 유지하기 위해 필요
+    useEffect(() => {
+        if (indexPageIsInitialized && posts.length > 0) {
+            sessionStorage.setItem("cached-users-posts", JSON.stringify(posts));
+        }
+    }, [posts, indexPageIsInitialized]);
 
     useEffect(() => {
-        if (inView && hasNextPage) {
-            fetchNextPage(); // getNextPageParam실행
-        }
+        const loadMore = async () => {
+            if (!inView || isLoading || !hasNext || posts.length === totalElements) return;
+
+            setIsLoading(true);
+            try {
+                const response = await getInfiniteScrollPosts(page + 1);
+                const newPosts = response.data.content;
+
+                if (newPosts.length > 0) {
+                    setPosts((prev) => {
+                        // 새로운 데이터 추가 시, 기존 데이터와 키값 중복 오류 발생. 이에 따라 중복 제거
+                        // filter를 쓰면 o(n^2)이라서  Map을 사용(o(n). Map은 키 값 중복(x) 동일한 키값은 최신 키 값으로 덮어씌움. 데이터가 많을수록 성능상 유리하다.
+                        const combined = [...prev, ...newPosts];
+                        return Array.from(new Map(combined.map((post) => [post.id, post])).values());
+                    });
+                    setPage((prev) => prev + 1);
+                }
+
+                setHasNext(response.data.hasNext);
+            } catch (error) {
+                console.error("무한 스크롤 데이터 로드 실패:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadMore();
     }, [inView]);
 
     return (
@@ -59,13 +88,13 @@ export default function PostsGrid({ initialData, totalElements }: PostsGridProps
                                 </h2>
                             </div>
                             <div className='grid grid-cols-[repeat(auto-fit,19.65rem)] justify-center gap-8 w-full'>
-                                {data?.pages.map((page) =>
-                                    page.data.content.map((post: PostResponse) => <PostCardWithContent key={post.id} {...post} />)
-                                )}
+                                {posts.map((post) => (
+                                    <PostCardWithContent key={post.id} {...post} />
+                                ))}
                             </div>
                         </div>
                     </div>
-                    <div ref={ref} className='h-10' />
+                    <div ref={ref} className='' />
                 </>
             )}
         </>

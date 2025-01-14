@@ -2,29 +2,28 @@ import { CategoryType } from "@/types/CateogryTypes";
 import { SignupUser } from "@/types/SignupUserTypes";
 import { create } from "zustand";
 
+// public과 private의 차이는 사용자 email 개인정보 유무 차이 
 interface ProfileState {
     blogName: string;
     blogUsername: string;
     blogId: string;
-    blogDescription: string;
-    profileImage: string | null;
+    profileImage: string;
+    defaultProfileImage: string;
     setBlogName: (name: string) => void;
     setBlogUsername: (username: string) => void;
     setBlogId: (id: string) => void;
-    setBlogDescription: (description: string) => void;
-    setProfileImage: (image: string | null) => void;
+    setProfileImage: (image: string) => void;
 }
 
 export const userProfileStore = create<ProfileState>((set) => ({
     blogName: "",
     blogUsername: "",
     blogId: "",
-    blogDescription: "블로그 설명을 입력해 주세요.",
-    profileImage: null,
+    profileImage: "",
+    defaultProfileImage: "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-avatar-profile.webp",
     setBlogName: (name) => set({ blogName: name }),
     setBlogUsername: (username) => set({ blogUsername: username }),
     setBlogId: (id) => set({ blogId: id }),
-    setBlogDescription: (description) => set({ blogDescription: description }),
     setProfileImage: (image) => set({ profileImage: image }),
 }));
 
@@ -61,7 +60,6 @@ interface AuthState {
     setShowOAuth2NewUserModal: (status: boolean) => void;
     setTempOAuth2UserUniqueId: (id: string) => void;
     setOAuth2Redirect: (status: boolean) => void;
-    // reset: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -87,11 +85,4 @@ export const useAuthStore = create<AuthState>((set) => ({
     setShowOAuth2NewUserModal: (status) => set({ isShowOAuth2NewUserModal: status }),
     setTempOAuth2UserUniqueId: (id) => set({ tempOAuth2UserUniqueId: id }),
     setOAuth2Redirect: (status) => set({ isOAuth2Redirect: status }),
-
-    // reset: () => set({
-    //   showLogin: false,
-    //   showSignUp: false,
-    //   showEmailVerification: false,
-    //   signupUser: {blogId: '', username: '', email: '', password: '', passwordConfirm: ''},
-    // })
 }));

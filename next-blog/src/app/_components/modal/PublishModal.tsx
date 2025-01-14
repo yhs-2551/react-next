@@ -3,8 +3,8 @@ import React, { ChangeEvent, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import NextImage from "next/image";
 import { FileMetadata } from "@/types/PostTypes";
-import { uploadFile } from "@/utils/uploadFile";
 import { useParams } from "next/navigation";
+import { uploadFile } from "@/services/api";
 
 interface PublishModalProps {
     // isOpen: boolean;
@@ -106,39 +106,10 @@ function PublishModal({
         }
 
         deletedImageUrlsInFutureRef.current = [...deletedImageUrlsInFutureRef.current, featuredImage?.fileUrl ?? ""];
-
-        console.log("deletedImageUrlsInFutureRef >>>", deletedImageUrlsInFutureRef.current);
-        // const deleteFile: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
-        //     return await fetch("http://localhost:8000/api/posts/file/delete-temp-featured-file", {
-        //         method: "POST",
-        //         headers: {
-        //             "Content-Type": "application/json",
-        //             Authorization: `Bearer ${token}`,
-        //         },
-        //         body: JSON.stringify({ url: featuredImage?.fileUrl, featured: "featured" }),
-        //     });
-        // };
-
-        // const accessToken: string | false = localStorage.getItem("access_token") ?? false;
-        // let response = await deleteFile(accessToken);
-
-        // if (!response.ok && response.status === 401) {
-        //     const newAccessToken = await refreshToken();
-
-        //     console.log("newAccessToken >>" + newAccessToken);
-
-        //     if (newAccessToken) {
-        //         response = await deleteFile(newAccessToken);
-        //     }
-        // }
-
-        // if (!response.ok) {
-        //     throw new Error("Failed to delete temporary featured file, please retry again.");
-        // }
     };
 
     return (
-        <div className='fixed inset-0 bg-gray-600 bg-opacity-50 z-[1001] flex justify-center items-center'>
+        <div className='fixed inset-0 bg-gray-600 bg-opacity-50 z-[1500] flex justify-center items-center'>
             <div className='bg-white p-6 rounded-md shadow-md w-96'>
                 <h2 className='text-2xl font-bold mb-4'>발행</h2>
 
@@ -169,8 +140,9 @@ function PublishModal({
                                 src={featuredImage.fileUrl}
                                 alt='Representative Image'
                                 className='rounded-md object-cover'
-                                fill
-                                sizes='(max-width: 334px) 100vw'
+                                fill 
+                                quality={100}
+                                sizes='(max-width: 334px) 100vw 334px'
                                 priority={true}
                             />
                             <button

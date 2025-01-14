@@ -11,6 +11,7 @@ import { loginUser } from "@/services/api";
 
 import { useAuthStore } from "@/store/appStore";
 import { CustomHttpError } from "@/utils/CustomHttpError";
+import { toast } from "react-toastify";
 
 export interface LoginFormData {
     email: string;
@@ -114,8 +115,8 @@ function LoginModal() {
             }, 300);
 
             setTimeout(() => {
-                //   window.location.reload();
                 setAuthenticated(true);
+
             }, 350);
         } catch (error: unknown) {
             if (error instanceof CustomHttpError) {
@@ -150,11 +151,11 @@ function LoginModal() {
         sessionStorage.setItem("lastVisitedPath", currentPath);
 
         // rememberMe는 boolean인데 template literal에서 자동으로 string으로 변환됨
-        window.location.assign(`${process.env.NEXT_PUBLIC_BACKEND_URL}/oauth2/authorization/google?remember_me=${formData.rememberMe}`);
+        router.push(`${process.env.NEXT_PUBLIC_BACKEND_URL}/oauth2/authorization/google?remember_me=${formData.rememberMe}`);
     };
 
     return (
-        <div className='fixed inset-0 z-[999] flex items-center justify-center overflow-hidden bg-black bg-opacity-30'>
+        <div className='fixed inset-0 z-[1500] flex items-center justify-center overflow-hidden bg-black bg-opacity-30'>
             <AnimatePresence
                 mode='wait'
                 onExitComplete={() => {
@@ -275,7 +276,7 @@ function LoginModal() {
                                     text-gray-700 font-medium text-sm'
                                     onClick={handleGoogleLogin}
                                 >
-                                    <FcGoogle className="text-xl" />
+                                    <FcGoogle className='text-xl' />
                                     <span>Google로 계속하기</span>
                                 </button>
                             </div>

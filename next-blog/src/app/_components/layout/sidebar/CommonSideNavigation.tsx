@@ -1,3 +1,4 @@
+
 import { userProfileStore } from "@/store/appStore";
 import NextImage from "next/image";
 import Link from "next/link";
@@ -11,10 +12,6 @@ import { TbFileText } from "react-icons/tb";
 function CommonSideNavigation() {
     const { profileImage, blogName, blogId } = userProfileStore();
 
-    const handleMoveWritePage = () => {
-        window.location.assign(`/${blogId}/posts/new`);
-    };
-
     return (
         <aside className='fixed top-20 left-0 w-[16rem] bg-white shadow-md border h-screen' aria-label='블로그 관리 내비게이션'>
             <div className='mb-6'>
@@ -25,6 +22,8 @@ function CommonSideNavigation() {
                         height={216}
                         src={profileImage || "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-avatar-profile.webp"}
                         alt='사용자 프로필 이미지'
+                        quality={100}
+                        sizes="(max-width: 160px) 100vw, 254px"  
                         priority={true}
                         className='h-full w-full object-cover'
                     />

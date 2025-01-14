@@ -5,24 +5,24 @@
 // 얘를 사용하려면  refetchOnWindowFocus: false, refetchOnReconnect: true, refetchOnMount: true,로 지정해야 한다.
 
 import React from "react";
-import { persistQueryClient } from "react-query/persistQueryClient-experimental";
-import { createWebStoragePersistor } from "react-query/createWebStoragePersistor-experimental";
-import { QueryClient, QueryClientProvider } from "react-query";
-import { ReactQueryDevtools } from "react-query/devtools";
+import { persistQueryClient } from "@tanstack/react-query-persist-client";
+
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export default function ReactQueryPersistProvider({ children }: { children: React.ReactNode }) {
-   
-    console.log("얘 실행됨");
-  const queryClient = new QueryClient();
+    const queryClient = new QueryClient();
 
     if (typeof window !== "undefined") {
-        const localStoragePersistor = createWebStoragePersistor({
-            storage: window.localStorage,
+        const persister = createSyncStoragePersister({
+            storage: window.sessionStorage,
         });
 
         persistQueryClient({
             queryClient,
-            persistor: localStoragePersistor,
+            persister,
             maxAge: Infinity, // 로컬 스토리지에 캐시되는 시간 30분 설정, 즉 새로 고침 및 offline 상태여도 유지 됨. 지정 안하면 무제한으로 저장 된다.
         });
     }

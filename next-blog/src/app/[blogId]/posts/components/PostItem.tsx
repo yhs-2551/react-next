@@ -37,6 +37,9 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
 
     useEffect(() => {
         const extractedText = extractTextWithoutImages(content);
+
+        console.log("extractedText", extractedText);
+
         setTextContentWithoutImages(extractedText);
         setIsContentLong(extractedText.length > 100); // content가 100글자 이상인지 체크
     }, []);
@@ -58,6 +61,8 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
                         width={192} // 12rem = 192px
                         height={192} // 12rem = 192px
                         className='object-cover rounded'
+                        quality={100}
+                        sizes='(max-width: 334px) 100vw 192px'
                         style={{ minWidth: "12rem", minHeight: "12rem" }}
                         priority={true}
                     />

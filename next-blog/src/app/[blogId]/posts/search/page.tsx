@@ -1,7 +1,8 @@
-import React from "react";
+import React, { Suspense } from "react";
 import BlogList from "../components/BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { notFound } from "next/navigation";
+import { CacheTimes } from "@/constants/cache-constants";
 
 export default async function PostSearchResultsPage({
     params,
@@ -29,24 +30,33 @@ export default async function PostSearchResultsPage({
         keyword,
         size: "8",
     });
+
     const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?${queryParams}`, {
-        cache: "force-cache"
+        cache: "force-cache",
+        next: {
+            tags: [`${blogId}-posts-search`],
+            revalidate: CacheTimes.MODERATE.POSTS_SEARCH_RESULTS,
+        },
     });
 
-    if (!res.ok) {
+    if (!res.ok && res.status === 404) {
         notFound();
+    } else if (!res.ok) { 
+        throw new Error("특정 사용자 게시글 검색 데이터를 불러오는데 실패하였습니다");
     }
 
     const response = await res.json();
+
+    console.log("response>>>>>>>>>>>>", response);
 
     const { totalPages, content, currentPage, totalElements } = response.data;
 
     const isExistContent = content.length > 0;
 
     return (
-        <>
+        <Suspense>
             <BlogList initialData={content} keyword={keyword} isSearch={true} totalElements={totalElements} />
             <Pagination isExistContent={isExistContent} totalPages={totalPages} currentPage={currentPage} blogId={blogId} />
-        </>
+        </Suspense>
     );
 }

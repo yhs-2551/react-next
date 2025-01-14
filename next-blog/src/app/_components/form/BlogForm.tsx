@@ -10,18 +10,19 @@ import useAddPost from "@/customHooks/useAddPost";
 import { useParams, useRouter } from "next/navigation";
 import { extractTextFromHtml } from "@/utils/extractTextFromHtml";
 import useUpdatePost from "@/customHooks/useUpdatePost";
-import { UseMutationResult } from "react-query";
+import { UseMutationResult } from "@tanstack/react-query";
 
 import "highlight.js/styles/atom-one-dark-reasonable.css";
 
 import dynamic from "next/dynamic";
 import { FileMetadata, PostRequest, PostResponse } from "@/types/PostTypes";
 import { Tag } from "@/types/TagTypes";
-import { CategoryType } from "@/types/CateogryTypes"; 
+import { CategoryType } from "@/types/CateogryTypes";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import PublishModal from "../modal/PublishModal";
-import { revalidateCategories, revalidatePagination, revalidatePostsAndSearch, revalidatePostsCategories, revalidatePostsCategoriesPagination } from "@/actions/revalidate";
+import { revalidateAllRelatedCaches, revalidatePostDetailPage, revalidatePostEditPage } from "@/actions/revalidate";
 import { useCategoryStore } from "@/store/appStore";
+import ConfirmModal from "../modal/ConfirmModal";
 
 // QuillEditor 컴포넌트를 동적으로 임포트하면서 highlight.js도 함께 설정
 const QuillEditor = dynamic(
@@ -75,6 +76,8 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 
     const errorMessageRef = useRef<string | null>(null);
 
+    const confirmModalRef = useRef<HTMLDivElement>(null);
+
     const router = useRouter();
 
     const params = useParams();
@@ -88,10 +91,9 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         updatePostMutation = useUpdatePost(postId, blogId);
     }
 
-    const {categories} = useCategoryStore();
+    const { categories } = useCategoryStore();
 
-    useEffect(() => { 
-
+    useEffect(() => {
         if (categoryRef.current && categories) {
             // 기존 옵션 제거
             categoryRef.current.innerHTML = "";
@@ -128,7 +130,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                 categoryRef.current.value = initialData.categoryName;
             }
         }
-    }, [categories, initialData]);  
+    }, [categories, initialData]);
 
     useEffect(() => {
         if (titleInputRef.current && initialData?.title) {
@@ -165,6 +167,9 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
     };
 
     const handleComplete = () => {
+
+        console.log("totalUploadedImagesUrlRef >>>" + totalUploadedImagesUrlRef.current);
+
         console.log("컨텐츠 >>>>" + categoryRef.current?.value);
 
         // quillContentRef.current함수를 실행해서 DOMPurify.sanitize(html)로 정화?된 quill.innerhtml 즉 에디터 내의 모든 html 내용을 가져옴
@@ -243,36 +248,28 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         };
 
         const onSuccess = async () => {
-            console.log(isEditingRef.current ? "Blog Edit Form 성공 실행" : "Blog 작성 성공 실행");
+            sessionStorage.removeItem("cached-users-posts");
+
+            if (isEditingRef.current && postId) {
+                await revalidatePostDetailPage(blogId, postId);
+                await revalidatePostEditPage(blogId, postId);
+            }
+
+            await revalidateAllRelatedCaches(blogId);
 
             if (modalRef.current) {
                 modalRef.current.style.display = "none";
             }
-
-            // 검색어 추천 캐시 무효화. 실제 데이터 재요청은 백그라운드에서 발생하기 떄문에 빠른 응답을 위해 await 불필요
-            // 이 부분 무효화가 안돼서 일단 보류. 새로고침으로 적용. 글쓰기 및 글수정 페이지 접근 시 새로고침 되니까
-            // invalidateSearchSuggestions(queryClient);
-
-            // 글목록 서버 컴포넌트 캐시 무효화. 변경사항을 적용하기 위해 await 필수
-            // 캐시 무효화 후 아래에서 router.replace로 페이지 이동하면 서버 컴포넌트 재실행
-            // revalidatePath는 await없어도 되지만 안정성을 위해 추가
-            await revalidatePostsAndSearch(blogId);
-            // 태그 무효화의 경우 await 필수, await 없으면 태그 무효화 적용 안됨
-            await revalidatePagination();
-            await revalidateCategories(blogId);
-            await revalidatePostsCategories();
-            await revalidatePostsCategoriesPagination();
-            // window.location.replace사용하기 전인 router push, router refresh관련 주석은 이전 커밋 기록에서 확인
             const replacePath = isEditingRef.current ? `/${blogId}/posts/${postId}` : `/${blogId}/posts`;
             // window.location.replace(replacePath);
             router.replace(replacePath);
-
-            localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE"); // 글 작성 성공 후 캐시 삭제. 카테고리 페이지로 갔을 떄 새로운 데이터로 불러오기 위함
         };
 
         const onError = (error: unknown) => {
             if (error instanceof CustomHttpError) {
                 if (error.status === 401) {
+                    localStorage.removeItem("access_token");
+
                     toast.error(
                         <span style={{ whiteSpace: "pre-line" }}>
                             <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
@@ -374,6 +371,18 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         }
     };
 
+    const showModal = () => {
+        if (confirmModalRef.current) {
+            confirmModalRef.current.classList.remove("hidden");
+        }
+    };
+
+    const hideModal = () => {
+        if (confirmModalRef.current) {
+            confirmModalRef.current.classList.add("hidden");
+        }
+    };
+
     // const handleCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
     //     setCategory(e.target.value);
     // };
@@ -412,7 +421,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 
                         또한 header가 998인데, QuillEditor의 DropdownMenu가 헤더 위쪽 부분에 보여야 하기 때문에 아래 z-999로 설정
                     */}
-                    <div className='ql-custom-container relative min-h-[500px] z-[999]'>
+                    <div className='ql-custom-container relative min-h-[500px] z-[1200]'>
                         <QuillEditor
                             contentValue={contentRef.current}
                             fileRef={fileRef}
@@ -439,12 +448,12 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                     </div>
                 </fieldset>
 
-                <div className='fixed bottom-0 left-0 right-0 bg-gray-50 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] px-6 py-4 z-[1000]'>
+                <div className='fixed bottom-0 left-0 right-0 bg-gray-50 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] px-6 py-4 z-[1300]'>
                     <div className='max-w-screen-xl mx-auto flex justify-between items-center'>
                         <button
                             type='button'
-                            className='px-6 py-2.5 bg-gray-800 text-white rounded-md hover:bg-gray-700 focus:outline-none active:bg-gray-800 transition-colors opacity-80'
-                            onClick={() => router.back()}
+                            className='px-6 py-2.5 bg-gray-800 text-white rounded-md hover:bg-gray-700 focus:outline-none active:bg-gray-800 transition-colors'
+                            onClick={showModal}
                         >
                             나가기
                         </button>
@@ -457,6 +466,15 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                         </button>
                     </div>
                 </div>
+
+                <ConfirmModal
+                    modalRef={confirmModalRef}
+                    onClose={hideModal}
+                    onConfirm={() => {
+                        hideModal();
+                        router.back();
+                    }}
+                />
 
                 <div ref={modalRef} className='hidden'>
                     <PublishModal
