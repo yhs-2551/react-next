@@ -1,4 +1,4 @@
-import { useSearchSuggestions } from "@/customHooks/useSearchSuggestions";
+ 
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useDebounce } from "use-debounce";
@@ -47,17 +47,14 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
     const inputRef = useRef<HTMLInputElement>(null);
 
     const [debouncedKeyword] = useDebounce(keyword, 200);
-
-    // keyword가 변경될때마다 상태가 업데이트 되고, 재렌더링 -> debouncedKeyword 및 searchType이 변경될때마다 새로운 캐시키로 인해 새로운 쿼리가 실행됨
-    // const { data: suggestions = [], isLoading } = useSearchSuggestions(blogId, debouncedKeyword, searchType, categoryName, categoryNameByQueryParams);
-        
+ 
     const router = useRouter();
 
 
     useEffect(() => {
         const fetchSuggestions = async () => {
             try {
-                const data = await getSearchSuggestions(blogId, debouncedKeyword, searchType);
+                const data = await getSearchSuggestions(blogId, debouncedKeyword, searchType, categoryName, categoryNameByQueryParams);
                 const processedData = data.map((item: SearchSuggestionProps) => {
                     if (!item.content) return { ...item, content: "" };
                     const cleanText = extractTextWithoutImages(item.content);

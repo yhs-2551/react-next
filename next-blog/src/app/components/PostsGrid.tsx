@@ -24,7 +24,7 @@ export default function PostsGrid({ initialData, totalElements }: PostsGridProps
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const { ref, inView } = useInView();
-
+ 
     // 무한 스크롤 방식에서 뒤로가기로 돌아올 때 이전 스크롤 위치를 유지하기 위해 필요
     useEffect(() => {
         const cachedPosts = sessionStorage.getItem("cached-users-posts");
@@ -72,6 +72,16 @@ export default function PostsGrid({ initialData, totalElements }: PostsGridProps
         loadMore();
     }, [inView]);
 
+    // 새로고침시 최신 데이터를 불러올 수 있도록 함
+    useEffect(() => {
+        const beforeUnload = () => {
+            sessionStorage.removeItem("cached-users-posts");
+        };
+
+        window.addEventListener("beforeunload", beforeUnload);
+
+    }, [])
+
     return (
         <>
             {initialData.length === 0 ? (
@@ -94,7 +104,7 @@ export default function PostsGrid({ initialData, totalElements }: PostsGridProps
                             </div>
                         </div>
                     </div>
-                    <div ref={ref} className='' />
+                    <div ref={ref} className='h-10' />
                 </>
             )}
         </>

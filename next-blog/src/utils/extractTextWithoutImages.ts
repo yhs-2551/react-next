@@ -13,8 +13,6 @@ export function extractTextWithoutImages(html: string): string {
      // 클래스가 ql-file인 요소 (파일)제거
      const fileContainers = div.getElementsByClassName("ql-file");
 
-    console.log("fileContainers>>>>>>>>>>>>", fileContainers);
-
      while (fileContainers.length > 0) {
          fileContainers[0].parentNode?.removeChild(fileContainers[0]);
      }
