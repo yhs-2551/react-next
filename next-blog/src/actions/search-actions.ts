@@ -1,7 +1,7 @@
 "use server";
 
-import { CacheTimes } from "@/constants/cache-constants";
 
+import { CacheTimes } from "@/constants/cache-constants";
 interface SearchSuggestionProps {
     id: number;
     title: string;
