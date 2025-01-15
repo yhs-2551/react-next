@@ -12,6 +12,9 @@ export default function PostCardWithContent(props: PostResponse) {
     const [content, setContent] = useState<string>("");  
 
     useEffect(() => {
+
+        console.log("PostCardWithContentProps", props);
+
         setImageUrl(extractImageFromPost(props));
         setContent(extractTextWithoutImages(props.content));
     }, [props]);

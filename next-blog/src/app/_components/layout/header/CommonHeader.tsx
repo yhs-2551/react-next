@@ -171,6 +171,11 @@ export default function CommonHeader() {
         }
     };
 
+    const handleLogoClick = () => {
+        sessionStorage.removeItem("cached-users-posts");
+        router.push("/");
+    }
+
     return (
         <>
             {(isCategoryPage || isPostListPage || isSearchPage) && (
@@ -184,11 +189,11 @@ export default function CommonHeader() {
                 {/* 왼쪽: 로고와 검색창 */}
                 <div className='flex items-center gap-6'>
                     <div className='flex items-center gap-2'>
-                        <Link href='/'>
+                        <button onClick={handleLogoClick}>
                             <h1 className='cursor-pointer'>
                                 <span className='text-xl font-bold'>DevLog</span>
                             </h1>
-                        </Link>
+                        </button>
 
                         {pathBlogId && !isWriteOrEditPage && !isPostDetailPage && !isManagePage && (
                             <button

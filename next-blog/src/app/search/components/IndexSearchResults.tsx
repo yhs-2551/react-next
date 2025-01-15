@@ -1,5 +1,6 @@
 import EmptyState from "@/app/_components/search/EmptyState";
 import PostCard from "@/app/components/PostCard";
+import PostCardWithContent from "@/app/components/PostCardWithContent";
 import { PostResponse } from "@/types/PostTypes";
 import { FiFileText } from "react-icons/fi";
 
@@ -25,7 +26,7 @@ export default function IndexSearchResults({ searchData, keyword, totalElements 
 
                         <div className='grid grid-cols-[repeat(auto-fit,19.65rem)] justify-center gap-8 w-full'>
                             {searchData.map((post: PostResponse) => (
-                                <PostCard key={post.id} {...post} />
+                                <PostCardWithContent key={post.id} {...post} />
                             ))}
                         </div>
                     </div>
