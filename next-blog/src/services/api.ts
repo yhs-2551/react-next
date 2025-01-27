@@ -229,13 +229,13 @@ export const signupOAuth2User = async (additionalInfo: OAuth2UserAdditionalInfo,
     };
 };
 
-export const verifyEmailCode = async (email: string, code: string) => {
+export const verifyEmailCode = async (blogId: string, code: string) => {
     const verify = {
-        email,
+        blogId,
         code,
     };
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/verify-email`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/verify-code`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -257,7 +257,7 @@ export const verifyEmailCode = async (email: string, code: string) => {
 };
 
 export const loginUser = async (loginData: { email: string; password: string; rememberMe: boolean }) => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/login`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/auth/login`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -293,7 +293,7 @@ export const logoutUser = async () => {
             return;
         }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/users/logout`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/auth/logout`, {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${accessToken}`,

@@ -3,7 +3,7 @@ import React, { Suspense } from "react";
 import BlogList from "@/app/[blogId]/posts/components/BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { notFound } from "next/navigation";
-import { CacheTimes } from "@/constants/cache-constants";
+// import { CacheTimes } from "@/constants/cache-constants";
 
 export default async function PostListByCategoryPaginationPage({
     params,
@@ -15,8 +15,8 @@ export default async function PostListByCategoryPaginationPage({
     const res = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/categories/${categoryName}/posts/page/${pageNum}?size=8`,
         {
-            cache: "force-cache",
-            next: { tags: ["posts-categories-pagination"], revalidate: CacheTimes.MODERATE.POSTS_CATEGORY_PAGINATION },
+            cache: "no-cache",
+            // next: { tags: ["posts-categories-pagination"], revalidate: CacheTimes.MODERATE.POSTS_CATEGORY_PAGINATION },
         }
     );
 

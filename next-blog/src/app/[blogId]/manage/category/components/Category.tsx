@@ -242,7 +242,7 @@ const Category: React.FC = () => {
 
         const onSuccess = async () => {
             try {
-                await revalidateCategories(blogId); // 성공 후 캐시 무효화9해당 서버컴포넌트 재실행 됨)
+                await revalidateCategories(blogId); // 성공 후 캐시 무효화. 해당 서버컴포넌트 재실행 됨)
             } finally {
                 localStorage.removeItem("category_revalidation_status");
             }
@@ -291,15 +291,6 @@ const Category: React.FC = () => {
             categories.find((category) => category.categoryUuid === categoryId) ||
             categories.flatMap((category) => category.children || []).find((child) => child.categoryUuid === categoryId); // flatMap을 통해 children 배열을 하나의 배열로 평탄화하고, 해당 카테고리를 찾음
 
-        if (categoryToDelete) {
-            // categoryToDeleteRef가 null일 경우 빈 배열로 초기화. 초기값을 null로 설정했기 때문에 필요. 즉 초기값을 null로 설정했기 때문에 아래 조건식에서 !null이 되어 true가 됨.
-            if (!categoryToDeleteRef.current) {
-                categoryToDeleteRef.current = [];
-            }
-
-            categoryToDeleteRef.current = [...categoryToDeleteRef.current, categoryToDelete];
-        }
-
         // 최상위 카테고리이고 자식을 가진 경우 삭제 중단 및 최상위 카테고리, 자식 카테고리 각각 post를 가진 경우 삭제 중단.
 
         if (
@@ -307,6 +298,15 @@ const Category: React.FC = () => {
             (categoryToDelete && categoryToDelete.postCount! > 0)
         ) {
             return;
+        }
+
+        if (categoryToDelete) {
+            // categoryToDeleteRef가 null일 경우 빈 배열로 초기화. 초기값을 null로 설정했기 때문에 필요. 즉 초기값을 null로 설정했기 때문에 아래 조건식에서 !null이 되어 true가 됨.
+            if (!categoryToDeleteRef.current) {
+                categoryToDeleteRef.current = [];
+            }
+
+            categoryToDeleteRef.current = [...categoryToDeleteRef.current, categoryToDelete];
         }
 
         const updatedCategories = categories

@@ -20,7 +20,7 @@ import { Tag } from "@/types/TagTypes";
 import { CategoryType } from "@/types/CateogryTypes";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import PublishModal from "../modal/PublishModal";
-import { revalidateAllRelatedCaches, revalidatePostDetailPage, revalidatePostEditPage } from "@/actions/revalidate";
+import { revalidatePostsAndCategories } from "@/actions/revalidate";
 import { useCategoryStore } from "@/store/appStore";
 import ConfirmModal from "../modal/ConfirmModal";
 
@@ -228,8 +228,15 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 
         let categoryName = categoryRef.current!.value as string | null;
 
+        // 위쪽에 defaultOption에서 "null"로 설정했음. 위에서 null로 하면 오류 발생
+        if (categoryName === "null") {
+            categoryName = null;
+        }
+
         console.log("타이틀 >>>>" + title);
         console.log("컨텐츠 >>>>" + content);
+
+        console.log("카테고리 >>>>" + categoryName);
 
         console.log("postStatus >>>>" + postStatus);
         console.log("댓글 허용 여부 >>" + commentsEnabled);
@@ -250,12 +257,14 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         const onSuccess = async () => {
             sessionStorage.removeItem("cached-users-posts");
 
-            if (isEditingRef.current && postId) {
-                await revalidatePostDetailPage(blogId, postId);
-                await revalidatePostEditPage(blogId, postId);
-            }
+            // if (isEditingRef.current && postId) {
+            //     await revalidatePostDetailPage(blogId, postId);
+            //     await revalidatePostEditPage(blogId, postId);
+            // }
 
-            await revalidateAllRelatedCaches(blogId);
+            // await revalidateAllRelatedCaches(blogId);
+
+            await revalidatePostsAndCategories(blogId);
 
             if (modalRef.current) {
                 modalRef.current.style.display = "none";

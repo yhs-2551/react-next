@@ -2,7 +2,7 @@ import React, { Suspense } from "react";
 import BlogList from "../components/BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { notFound } from "next/navigation";
-import { CacheTimes } from "@/constants/cache-constants";
+// import { CacheTimes } from "@/constants/cache-constants";
 
 export default async function PostSearchResultsPage({
     params,
@@ -32,11 +32,11 @@ export default async function PostSearchResultsPage({
     });
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?${queryParams}`, {
-        cache: "force-cache",
-        next: {
-            tags: [`${blogId}-posts-search`],
-            revalidate: CacheTimes.MODERATE.POSTS_SEARCH_RESULTS,
-        },
+        cache: "no-cache",
+        // next: {
+        //     tags: [`${blogId}-posts-search`],
+        //     revalidate: CacheTimes.MODERATE.POSTS_SEARCH_RESULTS,
+        // },
     });
 
     if (!res.ok && res.status === 404) {

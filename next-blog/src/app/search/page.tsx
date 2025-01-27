@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
 import IndexSearchResults from "./components/IndexSearchResults";
 import Pagination from "../_components/pagination/Pagination";
-import { CacheTimes } from "@/constants/cache-constants";
+// import { CacheTimes } from "@/constants/cache-constants";
 export default async function IndexSearchPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
     const { page, searchType, keyword } = await searchParams;
 
@@ -21,11 +21,11 @@ export default async function IndexSearchPage({ searchParams }: { searchParams: 
     });
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/posts?${queryParams}`, {
-        cache: "force-cache",
-        next: {
-            tags: ["index-posts-search"],
-            revalidate: CacheTimes.FREQUENT.INDEX_POSTS_SEARCH_RESULTS,
-        },
+        cache: "no-cache",
+        // next: {
+        //     tags: ["index-posts-search"],
+        //     revalidate: CacheTimes.FREQUENT.INDEX_POSTS_SEARCH_RESULTS,
+        // },
     });
 
     if (!res.ok) throw new Error ("검색 결과 데이터를 불러오는데 실패하였습니다.");

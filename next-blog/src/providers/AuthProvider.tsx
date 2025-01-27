@@ -25,12 +25,7 @@ export default function AuthProvider() {
     useEffect(() => {
         const handleOAuth2Login = async () => {
             if (isOAuth2Redirect) {
-                const OAuth2User = sessionStorage.getItem("OAuth2User");
-                const isRegistered = sessionStorage.getItem("OAuth2NewUserIsRegistered");
-
-                if (OAuth2User === "existingUser" || (OAuth2User === "newUser" && isRegistered === "true")) {
-                    await fetchAccessToken(); // OAUTh2 로그인 사용자 초기 액세스 토큰 발급 처리
-                }
+                await fetchAccessToken(); // 기존 OAUTh2 로그인 사용자 초기 액세스 토큰 발급 처리
 
                 setOAuth2Redirect(false);
                 setInitialized(true);

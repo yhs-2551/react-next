@@ -273,9 +273,6 @@ function SignUpModal() {
 
     const checkAvailability = async (field: AvailabilityField) => {
       
-        
-        console.log("checkAvailabilit실행dddd");
-
         // 중복확인 버튼 클릭 시 포커스 경고 초기화
         setAvailabilityFocusWarning((prev) => ({
             ...prev,
@@ -401,8 +398,8 @@ function SignUpModal() {
         setIsLoading(true);
 
         try {
-            const response = await signupUser(formData);
-            setSignupUser(response.signupUser);
+             await signupUser(formData);
+            setSignupUser(formData); // 인증코드 발급 및 재발급에 필요 
 
             setIsClosing(true);
             setTimeout(() => {

@@ -17,7 +17,7 @@ export default async function BlogLayout({ children, params }: { children: React
         }),
         fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/categories`, {
             cache: "force-cache",
-            next: { tags: [`${blogId}-categories`], revalidate: CacheTimes.MODERATE.USER_CATEGORY },
+            next: { tags: [`${blogId}-categories`], revalidate: CacheTimes.MODERATE.PUBLIC_USER_CATEGORY },
         }),
     ]);
 

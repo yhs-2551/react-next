@@ -21,7 +21,7 @@ import { CustomHttpError } from "@/utils/CustomHttpError";
 import { useAuthStore } from "@/store/appStore";
 import ToastProvider from "@/providers/ToastProvider";
 
-import { revalidateAllRelatedCaches, revalidatePostDetailPage, revalidatePostEditPage } from "@/actions/revalidate";
+import { revalidatePostsAndCategories } from "@/actions/revalidate";
 
 import DeleteModal from "@/app/_components/modal/DeleteModal";
 import { LightboxImage } from "./LightboxImage";
@@ -287,10 +287,10 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
             );
 
             setTimeout(async () => {
-                await revalidateAllRelatedCaches(blogId);
-
-                await revalidatePostDetailPage(blogId, postId);
-                await revalidatePostEditPage(blogId, postId);
+                revalidatePostsAndCategories(blogId);
+                // await revalidateAllRelatedCaches(blogId);
+                // await revalidatePostDetailPage(blogId, postId);
+                // await revalidatePostEditPage(blogId, postId);
 
                 router.replace(`/${blogId}/posts`);
             }, 1000);

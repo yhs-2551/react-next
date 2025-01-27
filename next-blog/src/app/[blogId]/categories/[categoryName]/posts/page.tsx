@@ -3,7 +3,7 @@ import React, { Suspense } from "react";
 import Pagination from "@/app/_components/pagination/Pagination";
 import BlogList from "@/app/[blogId]/posts/components/BlogList";
 import { notFound } from "next/navigation";
-import { CacheTimes } from "@/constants/cache-constants";
+// import { CacheTimes } from "@/constants/cache-constants";
 
 export default async function CategoryPostListPage({ params }: { params: Promise<{ blogId: string; categoryName: string }> }) {
     const { blogId, categoryName } = await params;
@@ -11,11 +11,11 @@ export default async function CategoryPostListPage({ params }: { params: Promise
     const res = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/categories/${categoryName}/posts?size=8`,
         {
-            cache: "force-cache",
-            next: {
-                tags: ["posts-categories"],
-                revalidate: CacheTimes.MODERATE.POSTS_CATEGORY,
-            },
+            cache: "no-cache",
+            // next: {
+            //     tags: ["posts-categories"],
+            //     revalidate: CacheTimes.MODERATE.POSTS_CATEGORY,
+            // },
         }
     );
 

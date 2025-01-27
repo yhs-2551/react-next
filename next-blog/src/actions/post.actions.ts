@@ -1,15 +1,15 @@
 "use server";
 
-import { CacheTimes } from "@/constants/cache-constants"; 
+// import { CacheTimes } from "@/constants/cache-constants"; 
 
 export async function getInfiniteScrollPosts(page: number = 3, size: number = 10) {
 
     const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/posts?page=${page}&size=${size}`, {
-        cache: "force-cache",
-        next: {
-            tags: ["infinite-scroll-posts"],
-            revalidate: CacheTimes.FREQUENT.INDEX_INFINITE_SCROLL_POSTS,
-        },
+        cache: "no-cache",
+        // next: {
+        //     tags: ["infinite-scroll-posts"],
+        //     revalidate: CacheTimes.FREQUENT.INDEX_INFINITE_SCROLL_POSTS,
+        // },
     });
 
     if (!response.ok) {

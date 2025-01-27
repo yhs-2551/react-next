@@ -18,19 +18,14 @@ export default function OAuth2RedirectHandler() {
         const isDirect = searchParams.get("direct");
 
         if (showNewUserModal === "true") {
-            // 리다이렉트 후 액세스 토큰 발급을 위해
-            sessionStorage.setItem("OAuth2User", "newUser");
-
             setShowOAuth2NewUserModal(true);
             setTempOAuth2UserUniqueId(tempOAuth2UserUniqueId!);
 
-            router.replace(lastVisitedPath); 
+            router.replace(lastVisitedPath);
         }
 
         if (isDirect === "true") {
             // 리다이렉트 후 액세스 토큰 발급을 위해
-            sessionStorage.setItem("OAuth2User", "existingUser");
-
             // 리다이렉트 후 액세스 토큰 발급 과정에서 AuthProvider가 먼저 실행되는 현상 제어를 위함
             setOAuth2Redirect(true);
 

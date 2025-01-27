@@ -29,7 +29,7 @@ export default function EmailVerificationModal({ user }: EmailVerificationModalP
 
     const { setShowEmailVerification, setSignupUser } = useAuthStore();
 
-    console.log("signUpUserEmail", user.email);
+    console.log("signUpUserBlogId", user.blogId);
     console.log("signUpUser", user);
 
     const handleVerification = async (e: React.FormEvent) => {
@@ -38,11 +38,10 @@ export default function EmailVerificationModal({ user }: EmailVerificationModalP
         setVerifyCodeErrors("");
         setIsLoading(true);
         try {
-            const verifyResponse = await verifyEmailCode(user.email, code);
+            const verifyResponse = await verifyEmailCode(user.blogId, code);
             if (verifyResponse.status === 200 || verifyResponse.status === 201) {
                 setSignupUser({ blogId: "", username: "", email: "", password: "", passwordConfirm: "" });
-                console.log("signUpUser", user);
-
+ 
                 handleModalClose();
 
                 setTimeout(() => {
