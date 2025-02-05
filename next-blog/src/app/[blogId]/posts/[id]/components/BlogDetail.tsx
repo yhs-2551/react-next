@@ -150,7 +150,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
 
             const fetchAuthorStatus: () => Promise<void> = async (): Promise<void> => {
                 try {
-                    const isAuthor = await fetchIsAuthor(postId, blogId, accessToken);
+                    const isAuthor = await fetchIsAuthor(blogId, accessToken);
 
                     if (isAuthor) setIsAuthor(isAuthor);
                 } catch (error) {

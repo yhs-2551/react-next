@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 // 서버액션은 무조건 async function으로 만들어야 함
 // revalidateTag를 실행하면 관련있는 해당 서버 컴포넌트 재실행, revalidatePath는 실험해보지 않았지만 Tag와 같이 서버컴포넌트 재실행할것 같음
@@ -66,8 +66,8 @@ export async function revalidatePagination() {
     }
 }
 
-export async function revalidatePostsCategories() {
-    try {
+export async function revalidatePostsCategories(blogId: string) {
+    try { 
         revalidateTag("posts-categories");
     } catch (error) {
         console.error("revalidatePostsCategories 캐시 무효화 실패:", error);

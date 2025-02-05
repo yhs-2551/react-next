@@ -7,14 +7,12 @@ import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/appStore";
 
 import GlobalLoading from "@/app/loading";
-
-import { jwtDecode } from "jwt-decode";
-
-interface JwtPayload {
-    blogId: string;
-}
+ 
+import { fetchIsAuthor } from "@/services/api";
+ 
 
 export default function AuthCheck({ children }: { children: React.ReactNode }) {
+ 
     const [isChecking, setIsChecking] = useState<boolean>(true);
     const params = useParams();
     const pathBlogId = params.blogId as string;
@@ -29,16 +27,22 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
         if (isHeaderLogin || isInitialized || isAuthenticated) {
             console.log("isHeaderLogin isHeaderLogin>>>", isHeaderLogin);
 
-            try {
-                const decoded = jwtDecode<JwtPayload>(accessToken);
-                if (decoded.blogId !== pathBlogId) {
-                    throw new Error("접근 권한이 없습니다.");
+            const fetchAuthorStatus: () => Promise<void> = async (): Promise<void> => {
+                try {
+                    const isAuthor = await fetchIsAuthor(pathBlogId, accessToken);
+                    if (!isAuthor) {
+                        throw new Error("접근 권한이 없습니다.");
+                    } else {
+                        return;
+                    }
+                } catch (error) {
+                    console.error("작성자 확인 실패 오류: ", error);
                 }
+            };
 
-                setIsChecking(false);
-            } catch (error) {
-                throw new Error("접근 권한이 없습니다.");
-            }
+            fetchAuthorStatus();
+
+            setIsChecking(false);
         }
     }, [isHeaderLogin, pathBlogId, isAuthenticated, isInitialized]);
 

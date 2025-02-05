@@ -38,8 +38,6 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
     useEffect(() => {
         const extractedText = extractTextWithoutImages(content);
 
-        console.log("extractedText", extractedText);
-
         setTextContentWithoutImages(extractedText);
         setIsContentLong(extractedText.length > 100); // content가 100글자 이상인지 체크
     }, []);

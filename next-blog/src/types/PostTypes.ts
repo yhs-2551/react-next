@@ -13,9 +13,8 @@ export interface PostRequest {
     title: string;
     content: string;
     tags?: string[];
-    editPageDeletedTags?: string[];
-    files?: FileMetadata[];
-    deleteTempImageUrls?: string[];
+    deletedImageUrlsInFuture?: string[];
+    files?: FileMetadata[]; 
     postStatus: "PUBLIC" | "PRIVATE";
     commentsEnabled: "ALLOW" | "DISALLOW",
     featuredImage?: FileMetadata | null,

@@ -35,6 +35,7 @@ import CommonSideNavigation from "@/app/_components/layout/sidebar/CommonSideNav
 import { useCategoryStore } from "@/store/appStore";
 import { revalidateCategories } from "@/actions/revalidate";
 import { CustomHttpError } from "@/utils/CustomHttpError";
+import { revalidatePath } from "next/cache";
 
 // 컴포넌트 외부에 헬퍼 함수 정의
 const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
@@ -169,7 +170,10 @@ const Category: React.FC = () => {
 
         resetUIStates(); // toast error 앞쪽에서 호출하면 토스트 에러 알림창이 나오면서 동시에 변경사항 저장 버튼이 활성화 되는 문제가 있기 때문에, 뒤쪽에서 호출
 
-        setCategories([...categories, { categoryUuid: uuidv4(), name: newCategoryName, categoryUuidParent: null, children: [] }]);
+        setCategories([
+            ...categories,
+            { categoryUuid: uuidv4(), name: newCategoryName, categoryUuidParent: null, children: [], postCount: 0, isNew: true },
+        ]);
         setNewCategoryName("");
     };
 
@@ -240,6 +244,8 @@ const Category: React.FC = () => {
             categoryToDelete: categoryToDeleteRef.current,
         };
 
+        console.log("categoryPayLoad >>>", categoryPayLoad);
+
         const onSuccess = async () => {
             try {
                 await revalidateCategories(blogId); // 성공 후 캐시 무효화. 해당 서버컴포넌트 재실행 됨)
@@ -300,7 +306,8 @@ const Category: React.FC = () => {
             return;
         }
 
-        if (categoryToDelete) {
+        if (categoryToDelete && !categoryToDelete.isNew) {
+            // categoryToDelete.isNew가 undefined일때 즉 서버측에 저장된 카테고리만 삭제 요청에 포함시킴
             // categoryToDeleteRef가 null일 경우 빈 배열로 초기화. 초기값을 null로 설정했기 때문에 필요. 즉 초기값을 null로 설정했기 때문에 아래 조건식에서 !null이 되어 true가 됨.
             if (!categoryToDeleteRef.current) {
                 categoryToDeleteRef.current = [];
@@ -666,7 +673,15 @@ const Category: React.FC = () => {
                                     <input
                                         type='text'
                                         value={selectedCategory?.name || ""}
-                                        onChange={(e) => setSelectedCategory({ categoryUuid: selectedCategory!.categoryUuid, name: e.target.value })}
+                                        onChange={(e) =>
+                                            setSelectedCategory((prev) => {
+                                                if (!prev) return null;
+                                                return {
+                                                    ...prev, // 기존 값 유지
+                                                    name: e.target.value, // name만 업데이트
+                                                } as CategoryType;
+                                            })
+                                        }
                                         className='mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm'
                                     />
                                 </div>

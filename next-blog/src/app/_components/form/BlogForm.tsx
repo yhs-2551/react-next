@@ -248,7 +248,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
             tags: tags.current?.map((tag) => tag.value), // 태그 값만 전달
             editPageDeletedTags: editPageDeletedTags.current, // 수정페이지에서 삭제된 태그 전송
             files: fileRef.current,
-            deleteTempImageUrls: deletedImageUrlsInFutureRef.current,
+            deletedImageUrlsInFuture: deletedImageUrlsInFutureRef.current,
             postStatus,
             commentsEnabled,
             featuredImage,

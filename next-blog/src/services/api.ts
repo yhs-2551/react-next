@@ -72,9 +72,9 @@ export const checkAccessToken = async () => {
 //     }
 // }
 
-export const fetchIsAuthor = async (postId: string, blogId: string, accessToken: string | null) => {
+export const fetchIsAuthor = async (blogId: string, accessToken: string | null) => {
     const verifyPostAuthor = async (accessToken: string | null) => {
-        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/${postId}/verify-author`, {
+        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/auth/${blogId}/verify-author`, {
             method: "GET",
             headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -82,14 +82,14 @@ export const fetchIsAuthor = async (postId: string, blogId: string, accessToken:
         });
     };
 
-    const response = await verifyPostAuthor(accessToken);
+    const responseFromServer = await verifyPostAuthor(accessToken);
 
-    if (!response.ok && response.status === 500) {
+    if (!responseFromServer.ok && responseFromServer.status === 500) {
         throw new Error("서버측 오류로 인해 작성자 확인이 불가능합니다.");
     }
 
-    const data = await response.json();
-    return data.isAuthor; // 서버에서 isAuthor 값을 반환받아 true or false값을 반환
+    const response = await responseFromServer.json();
+    return response.data; // 서버에서 isAuthor 값을 반환받아 true or false값을 반환
 };
 
 export const fetchCategories = async (blogId: string) => {
@@ -301,9 +301,15 @@ export const logoutUser = async () => {
             credentials: "include", // 쿠키 삭제를 위해 사용
         });
 
-        if (!response.ok) {
+        if (!response.ok && response.status === 401) {
+            localStorage.removeItem("access_token"); // 변조된 토큰일때 로컬스토리지에서 액세스 토큰 제거
+
             const errorData = await response.json();
-            throw new Error(errorData.message || "Fail to logout Please try again.");
+            throw new Error(errorData.message || "유효하지 않은 토큰입니다. 재 로그인 해주세요.");
+        }
+        if (!response.ok && !(response.status === 401)) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "로그아웃에 실패하였습니다. 잠시 후 다시 시도해 주세요.");
         }
 
         // 로그아웃 성공시 로컬스토리지에서 토큰 제거

@@ -9,7 +9,7 @@ import { notFound } from "next/navigation";
 export default async function PostEditPage({ params }: { params: Promise<{ id: string; blogId: string }> }) {
     const { blogId, id } = await params;
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/${id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/${id}/edit`, {
         cache: "no-cache",
         // next: {
         //     tags: [`${blogId}-post-${id}-edit`],
@@ -23,12 +23,12 @@ export default async function PostEditPage({ params }: { params: Promise<{ id: s
         throw new Error("특정 사용자 게시글 데이터를 불러오는데 실패하였습니다. - 수정 페이지");
     }
 
-    const post = await res.json();  
+    const response = await res.json();  
     return (
         <div className='container max-w-4xl mt-[120px] mx-auto bg-white'>
             <ClientWrapper>
                 <AuthCheck>
-                    <BlogForm initialData={post} postId={id} />
+                    <BlogForm initialData={response.data} postId={id} />
                 </AuthCheck>
             </ClientWrapper>
         </div>

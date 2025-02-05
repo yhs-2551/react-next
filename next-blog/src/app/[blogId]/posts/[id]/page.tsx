@@ -21,11 +21,11 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
         throw new Error("특정 사용자 게시글 데이터를 불러오는데 실패하였습니다.");
     }
 
-    const post = await res.json();
+    const response = await res.json();
 
     return (
         <ClientWrapper>
-            <BlogDetail initialData={post} postId={id} />
+            <BlogDetail initialData={response.data} postId={id} />
         </ClientWrapper>
     );
 }
