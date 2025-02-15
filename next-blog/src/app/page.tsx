@@ -18,8 +18,6 @@ export default async function IndexPage() {
 
     const { content, totalElements } = response.data;
 
-    console.log("content >>>>", content);
-
     return (
         <>
             <Index initialData={content} totalElements={totalElements}/>

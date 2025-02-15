@@ -5,8 +5,8 @@ export const extractImageFromPost = (post: PostResponse) => {
 
     let imageUrl: string | undefined;
 
-    if (post?.featuredImage?.fileUrl) {
-        imageUrl = post.featuredImage.fileUrl;
+    if (post?.featuredImageUrl) {
+        imageUrl = post.featuredImageUrl;
     } else if (post?.content) {
         try {
             const parser = new DOMParser();

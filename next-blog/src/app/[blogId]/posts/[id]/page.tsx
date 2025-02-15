@@ -23,6 +23,8 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
 
     const response = await res.json();
 
+    console.log("상세페이지 데이터", response.data);
+
     return (
         <ClientWrapper>
             <BlogDetail initialData={response.data} postId={id} />

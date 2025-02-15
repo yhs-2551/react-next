@@ -6,7 +6,7 @@ import { CacheTimes } from "@/constants/cache-constants";
 export default async function PostListPage({ params }: { params: Promise<{ blogId: string }> }) {
     const { blogId } = await params;
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?size=8`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?page=0&size=8`, {
         cache: "force-cache",
         next: {
             tags: [`${blogId}-posts`],

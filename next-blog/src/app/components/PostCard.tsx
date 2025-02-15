@@ -36,6 +36,9 @@ export default function PostCard({ title, content, createdAt, username, imageUrl
                             height={160}
                             alt='게시글 대표 이미지'
                             className='object-cover'
+                            style={{ minWidth: "314.4px", maxWidth: "314.4px", minHeight: "160px", maxHeight: "160px" }}
+                            quality={100}
+                            sizes={`(max-width: 334px) 100vw, 314px`}
                             // loading='lazy'
                             priority={true}
                         />

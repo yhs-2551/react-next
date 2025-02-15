@@ -14,7 +14,7 @@ export const CacheTimes = {
         // POSTS_CATEGORY: 21600,
         // POSTS_CATEGORY_PAGINATION: 21600, // 6시간 (60 * 60 * 6)
         // POSTS_CATEGORY_SEARCH_SUGGESTIONS: 21600,
-        POSTS: 21600, // 특정 사용자 첫 페이지는 조회수가 상대적으로 많은편이고, 수정이 빈번하지 않으므로 6시간
+        POSTS: 21600, // 특정 사용자 첫 페이지는 조회수가 상대적으로 많은편이고, 수정이 빈번하지 않다고 판단하여 6시간으로 설정
         // POSTS_PAGINATION: 21600,
         // POSTS_SEARCH_SUGGESTIONS: 21600,
         // POSTS_SEARCH_RESULTS: 21600,

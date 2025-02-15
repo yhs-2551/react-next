@@ -61,7 +61,12 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
                         className='object-cover rounded'
                         quality={100}
                         sizes='(max-width: 334px) 100vw 192px'
-                        style={{ minWidth: "12rem", minHeight: "12rem" }}
+                        style={{
+                            minWidth: "12rem", // 최소 크기 192px
+                            minHeight: "12rem", // 최소 크기 192px
+                            maxWidth: "12rem", // 👈 최대 크기 제한 필요
+                            maxHeight: "12rem", // 👈 최대 크기 제한 필요
+                        }}
                         priority={true}
                     />
                 </div>

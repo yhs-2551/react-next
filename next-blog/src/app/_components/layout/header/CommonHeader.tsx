@@ -64,8 +64,7 @@ export default function CommonHeader() {
 
     // zustand의 상태관리는 휘발성이기 때문에 zustand 전역상태로 로그인을 관리하기 보다 페이지를 새로고침 시키면서 아래 useEffect 재실행 시킴.
     // 재실행됨에 따라 액세스 토큰 유무로 로그인 상태를 관리.
-    useEffect(() => {
-        console.log("헤더실행");
+    useEffect(() => { 
 
         const handleClickOutside = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -175,6 +174,7 @@ export default function CommonHeader() {
         sessionStorage.removeItem("cached-users-posts");
         router.push("/");
     }
+ 
 
     return (
         <>

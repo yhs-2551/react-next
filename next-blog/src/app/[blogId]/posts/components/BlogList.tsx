@@ -20,6 +20,8 @@ function BlogList({ initialData, keyword, isSearch, totalElements }: BlogListPro
     const posts = initialData;
     const { isInitialized } = useAuthStore();
 
+    console.log("post>>>>>>>>>>>>>>", posts);
+
     const params = useParams();
     const categoryName = params.categoryName as string | undefined;
     const searchParams = useSearchParams();
@@ -34,7 +36,12 @@ function BlogList({ initialData, keyword, isSearch, totalElements }: BlogListPro
         }
     }, [isInitialized]);
 
-    const getListTitle = (categoryNameByQueryParams?: string | null, categoryName?: string | undefined ,keyword?: string, isSearch?: boolean): string => {
+    const getListTitle = (
+        categoryNameByQueryParams?: string | null,
+        categoryName?: string | undefined,
+        keyword?: string,
+        isSearch?: boolean
+    ): string => {
         if (isSearch && categoryNameByQueryParams && keyword) {
             return `카테고리 ${decodeURIComponent(categoryNameByQueryParams)} / "${keyword}" 검색 결과`;
         }
@@ -75,9 +82,8 @@ function BlogList({ initialData, keyword, isSearch, totalElements }: BlogListPro
                             categoryName={post.categoryName}
                             postStatus={post.postStatus}
                             thumbnailUrl={
-                                post.featuredImage
-                                    ? post.featuredImage.fileUrl
-                                    : "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-featured-image.jpg"
+                                post.featuredImageUrl ||
+                                "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-featured-image.jpg"
                             }
                         />
                     ))}

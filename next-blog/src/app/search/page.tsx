@@ -36,6 +36,8 @@ export default async function IndexSearchPage({ searchParams }: { searchParams: 
 
     const isExistContent = content.length > 0;
 
+    console.log("검색 content >>>>", content);
+
     return (
         <>
             <IndexSearchResults keyword={keyword} searchData={content} totalElements={totalElements} />

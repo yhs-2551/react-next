@@ -37,6 +37,7 @@ export interface PostResponse {
     createdAt: string; // 디테일 페이지에서 사용
     username: string; // 디테일 페이지에서 사용
     blogId: string;
+    featuredImageUrl?: string | null;
     // commentCount?: number;
     // id?: number;
     // replyCount?: number;
