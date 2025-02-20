@@ -222,7 +222,7 @@ export default React.memo(
             const handlePaste = async (e: ClipboardEvent) => {
                 const quill = quillRef.current?.getEditor();
 
-                // 기능은 안되지만 잘라내고 다시 붙여넣었을떄 quill link나오는거 못하게 하도록
+                //  잘라내고 다시 붙여넣었을떄 ql-file 클래스 추가
                 setTimeout(() => {
                     const links = quill?.root.querySelectorAll("a");
 

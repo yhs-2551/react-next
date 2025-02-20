@@ -38,9 +38,6 @@ function PublishModal({
 
     // let isPublishClick: boolean = false;
 
-    console.log("totalFileRef.current >>>", totalFileRef.current);
-    console.log("featuredImage >>>", featuredImage);
-
     const [postStatus, setPostStatus] = useState<"PUBLIC" | "PRIVATE">("PUBLIC");
 
     const handlePublish = () => {

@@ -6,7 +6,10 @@ import { checkAvailabilityRequest, signupUser } from "@/services/api";
 import { useDebounce } from "use-debounce";
 import { useAuthStore } from "@/store/appStore";
 import { CustomHttpError } from "@/utils/CustomHttpError";
+
 import { FaCheck } from "react-icons/fa";
+import { HiEye } from "react-icons/hi";
+import { HiEyeOff } from "react-icons/hi";
 
 // 폼 필드 타입 정의
 type FormField = "blogId" | "username" | "email" | "password" | "passwordConfirm";
@@ -272,7 +275,6 @@ function SignUpModal() {
     }, [debouncedPasswordConfirm, formData.password]);
 
     const checkAvailability = async (field: AvailabilityField) => {
-      
         // 중복확인 버튼 클릭 시 포커스 경고 초기화
         setAvailabilityFocusWarning((prev) => ({
             ...prev,
@@ -398,8 +400,8 @@ function SignUpModal() {
         setIsLoading(true);
 
         try {
-             await signupUser(formData);
-            setSignupUser(formData); // 인증코드 발급 및 재발급에 필요 
+            await signupUser(formData);
+            setSignupUser(formData); // 인증코드 발급 및 재발급에 필요
 
             setIsClosing(true);
             setTimeout(() => {
@@ -631,7 +633,7 @@ function SignUpModal() {
                                             onClick={() => setShowPassword(!showPassword)}
                                             className='absolute right-2 top-1/2 transform -translate-y-1/2'
                                         >
-                                            {showPassword ? "숨기기" : "보기"}
+                                            {showPassword ? <HiEyeOff /> : <HiEye />}
                                         </button>
                                     </div>
                                     {formValidateErrors.password && <p className='text-red-500 text-sm mt-1'>{formValidateErrors.password}</p>}
@@ -656,7 +658,7 @@ function SignUpModal() {
                                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                             className='absolute right-2 top-1/2 transform -translate-y-1/2'
                                         >
-                                            {showConfirmPassword ? "숨기기" : "보기"}
+                                            {showConfirmPassword ? <HiEyeOff /> : <HiEye />}
                                         </button>
                                     </div>
                                     {formValidateErrors.passwordConfirm && (

@@ -27,7 +27,7 @@ interface UserPrivateProfile {
 export default function CommonHeader() {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
-    const { isInitialized, setShowLogin, isAuthenticated, setHeaderLogin } = useAuthStore();
+    const { isInitialized, setShowLogin, isAuthenticated, setInitialized, setAuthenticated, setHeaderLogin } = useAuthStore();
     const { blogName, blogUsername, profileImage } = userProfileStore();
 
     const [userPrivateProfile, setUserPrivateProfile] = useState<UserPrivateProfile>({
@@ -83,12 +83,18 @@ export default function CommonHeader() {
 
         //isAuthenticated는 일반 form 로그인
         if (isInitialized || isAuthenticated) {
+
+            console.log("isInitialized: 실행입니다");
+
             // useEffect 내부가 아닌 외부에서 실행하면 서버사이드 렌더링에서 브라우저의 localStorage를 정의할 수 없다는 오류 발생.
             const accessToken = localStorage.getItem("access_token");
 
             const isAccessToken = accessToken && accessToken !== null && accessToken !== undefined && accessToken !== "";
 
             if (isAccessToken) { 
+
+                
+            console.log("isAccessToken: 실행입니다");
 
                 setIsLoggedIn(true);
                 //setHeaderLogin는 AuthCheck부분을 위해. window.location 새로고침 기능 대신 router.push 기능을 사용하기 위해, 즉 ux향상을 위해 사용
@@ -122,8 +128,10 @@ export default function CommonHeader() {
                 const logoutSuccessResponse = (await logoutUser()) as string;
 
                 if (logoutSuccessResponse) {
-                    setIsUserMenuOpen(false);
                     setIsLoggedIn(false);
+                    setAuthenticated(false);
+                    setInitialized(false);
+                    setIsUserMenuOpen(false);
                     // window.location.reload();
                 }
             } catch (error: any) {
@@ -191,7 +199,7 @@ export default function CommonHeader() {
                     <div className='flex items-center gap-2'>
                         <button onClick={handleLogoClick}>
                             <h1 className='cursor-pointer'>
-                                <span className='text-xl font-bold'>DevLog</span>
+                                <span className='text-xl font-bold'>DDuhaLog</span>
                             </h1>
                         </button>
 

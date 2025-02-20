@@ -18,6 +18,9 @@ export async function getSearchSuggestions(
 ) {
     if (!keyword.trim() || keyword.length === 0) return [];
 
+
+    console.log("getSearchSuggestions 함수 실행");
+
     let res;
 
     if (blogId) {
@@ -62,6 +65,9 @@ export async function getSearchSuggestions(
     if (!res.ok) throw new Error("자동 완성 검색어를 불러오는데 실패했습니다.");
 
     const response = await res.json();
+
+
+    console.log("response >>>>", response.data.content);
 
     return response.data.content.map(
         (item: any): SearchSuggestionProps => ({

@@ -135,7 +135,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         day: "numeric",
         hour: "numeric",
         minute: "numeric",
-        hour12: false, // 24-hour format
+        hour12: false, // 24-hour format 
     });
 
     const deletePost = useDeletePost(postId, blogId);

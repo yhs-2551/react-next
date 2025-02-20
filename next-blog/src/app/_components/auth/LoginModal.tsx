@@ -10,8 +10,12 @@ import { FcGoogle } from "react-icons/fc";
 import { loginUser } from "@/services/api";
 
 import { useAuthStore } from "@/store/appStore";
-import { CustomHttpError } from "@/utils/CustomHttpError";
-import { toast } from "react-toastify";
+import { CustomHttpError } from "@/utils/CustomHttpError"; 
+
+import { HiEye } from "react-icons/hi";
+import { HiEyeOff } from "react-icons/hi";
+
+
 
 export interface LoginFormData {
     email: string;
@@ -245,7 +249,7 @@ function LoginModal() {
                                         onClick={() => setShowPassword(!showPassword)}
                                         className='absolute right-2 top-1/2 transform -translate-y-1/2'
                                     >
-                                        {showPassword ? "숨기기" : "보기"}
+                                        {showPassword ? <HiEyeOff /> : <HiEye />}
                                     </button>
                                 </div>
 

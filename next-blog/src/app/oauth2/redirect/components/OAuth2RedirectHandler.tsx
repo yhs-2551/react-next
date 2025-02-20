@@ -18,18 +18,20 @@ export default function OAuth2RedirectHandler() {
         const isDirect = searchParams.get("direct");
 
         if (showNewUserModal === "true") {
-            setShowOAuth2NewUserModal(true);
-            setTempOAuth2UserUniqueId(tempOAuth2UserUniqueId!);
-
             router.replace(lastVisitedPath);
+
+            // 확실히 replace 후에 모달을 띄우기 위해 setTimeout 사용. 700ms 정도의 딜레이가 적당함.
+            setTimeout(() => {
+                setShowOAuth2NewUserModal(true);
+                setTempOAuth2UserUniqueId(tempOAuth2UserUniqueId!);
+            }, 700);
         }
 
         if (isDirect === "true") {
             // 리다이렉트 후 액세스 토큰 발급을 위해
             // 리다이렉트 후 액세스 토큰 발급 과정에서 AuthProvider가 먼저 실행되는 현상 제어를 위함
-            setOAuth2Redirect(true);
-
             router.replace(lastVisitedPath);
+            setOAuth2Redirect(true);
         }
     }, []);
 

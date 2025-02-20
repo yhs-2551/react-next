@@ -46,16 +46,23 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
     const wrapperRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const [debouncedKeyword] = useDebounce(keyword, 200);
+    const [debouncedKeyword] = useDebounce(keyword, 300);
  
     const router = useRouter();
 
 
     useEffect(() => {
         const fetchSuggestions = async () => {
+
+
+            console.log("getSearchSuggestions 함수 실행전");
+
             try {
                 const data = await getSearchSuggestions(blogId, debouncedKeyword, searchType, categoryName, categoryNameByQueryParams);
                 const processedData = data.map((item: SearchSuggestionProps) => {
+
+                    console.log("item >>>>", item);
+
                     if (!item.content) return { ...item, content: "" };
                     const cleanText = extractTextWithoutImages(item.content);
                     const sliceText = cleanText.slice(0, 15);
@@ -91,6 +98,8 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
             setRecentSearches(JSON.parse(saved));
         }
     }, []);
+
+    console.log("suggestiosn", suggestions);
 
     
     useEffect(() => {

@@ -233,13 +233,6 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
             categoryName = null;
         }
 
-        console.log("타이틀 >>>>" + title);
-        console.log("컨텐츠 >>>>" + content);
-
-        console.log("카테고리 >>>>" + categoryName);
-
-        console.log("postStatus >>>>" + postStatus);
-        console.log("댓글 허용 여부 >>" + commentsEnabled);
 
         const postData = {
             title,
