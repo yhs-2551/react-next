@@ -1,9 +1,11 @@
 import React, { Suspense } from "react";
 import IndexSearchResults from "./components/IndexSearchResults";
 import Pagination from "../_components/pagination/Pagination";
+import { cookies } from "next/headers";
 // import { CacheTimes } from "@/constants/cache-constants";
 export default async function IndexSearchPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
     const { page, searchType, keyword } = await searchParams;
+    const cookieStore = await cookies();
 
     const isValidSearch = searchType && keyword;
 
@@ -26,9 +28,12 @@ export default async function IndexSearchPage({ searchParams }: { searchParams: 
         //     tags: ["index-posts-search"],
         //     revalidate: CacheTimes.FREQUENT.INDEX_POSTS_SEARCH_RESULTS,
         // },
+        headers: {
+            Cookie: cookieStore.toString(),
+        },
     });
 
-    if (!res.ok) throw new Error ("검색 결과 데이터를 불러오는데 실패하였습니다.");
+    if (!res.ok) throw new Error("검색 결과 데이터를 불러오는데 실패하였습니다.");
 
     const response = await res.json();
 
@@ -47,4 +52,3 @@ export default async function IndexSearchPage({ searchParams }: { searchParams: 
         </>
     );
 }
- 

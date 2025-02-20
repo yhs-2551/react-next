@@ -2,6 +2,7 @@ import React, { Suspense } from "react";
 import BlogList from "../components/BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 // import { CacheTimes } from "@/constants/cache-constants";
 
 export default async function PostSearchResultsPage({
@@ -13,6 +14,8 @@ export default async function PostSearchResultsPage({
 }) {
     const { blogId } = await params;
     const { page, searchType, keyword, category } = await searchParams;
+
+    const cookieStore = await cookies();
 
     const isValidSearch = searchType && keyword;
 
@@ -37,17 +40,18 @@ export default async function PostSearchResultsPage({
         //     tags: [`${blogId}-posts-search`],
         //     revalidate: CacheTimes.MODERATE.POSTS_SEARCH_RESULTS,
         // },
+        headers: {
+            Cookie: cookieStore.toString(),
+        },
     });
 
     if (!res.ok && res.status === 404) {
         notFound();
-    } else if (!res.ok) { 
+    } else if (!res.ok) {
         throw new Error("특정 사용자 게시글 검색 데이터를 불러오는데 실패하였습니다");
     }
 
     const response = await res.json();
-
-    console.log("response>>>>>>>>>>>>", response);
 
     const { totalPages, content, currentPage, totalElements } = response.data;
 

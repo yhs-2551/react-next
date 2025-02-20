@@ -2,9 +2,11 @@ import React, { Suspense } from "react";
 import BlogList from "./components/BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { CacheTimes } from "@/constants/cache-constants";
+import { cookies } from "next/headers";
 
 export default async function PostListPage({ params }: { params: Promise<{ blogId: string }> }) {
     const { blogId } = await params;
+    const cookieStore = await cookies();
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts?page=0&size=8`, {
         cache: "force-cache",
@@ -12,6 +14,9 @@ export default async function PostListPage({ params }: { params: Promise<{ blogI
             tags: [`${blogId}-posts`],
             revalidate: CacheTimes.MODERATE.POSTS,
         },
+        headers: {
+            Cookie: cookieStore.toString()
+        }
     });
 
     if (!res.ok) throw new Error("특정 사용자 게시글 목록 데이터를 불러오는데 실패하였습니다.");

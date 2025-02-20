@@ -3,6 +3,7 @@ import React, { Suspense } from "react";
 import BlogList from "@/app/[blogId]/posts/components/BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 // import { CacheTimes } from "@/constants/cache-constants";
 
 export default async function PostListByCategoryPaginationPage({
@@ -11,12 +12,16 @@ export default async function PostListByCategoryPaginationPage({
     params: Promise<{ blogId: string; pageNum: string; categoryName: string }>;
 }) {
     const { blogId, categoryName, pageNum } = await params;
+    const cookieStore = await cookies();
 
     const res = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/categories/${categoryName}/posts/page/${pageNum}?size=8`,
         {
             cache: "no-cache",
             // next: { tags: ["posts-categories-pagination"], revalidate: CacheTimes.MODERATE.POSTS_CATEGORY_PAGINATION },
+            headers: {
+                Cookie: cookieStore.toString(),
+            },
         }
     );
 

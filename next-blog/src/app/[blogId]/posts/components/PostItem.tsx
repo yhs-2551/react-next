@@ -22,6 +22,7 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
     const params = useParams();
     const blogId = params.blogId as string;
 
+
     // const handleClick = () => {
     //     router.push(`/posts/${postId}`);
     // };
@@ -85,7 +86,8 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
                         {title}
                     </h3>
                     {/* 공개/비공개 상태 표시 */}
-                    <span className='ml-2 text-sm text-gray-500'>({postStatus === "PUBLIC" ? "공개" : "비공개"})</span>
+
+                    {postStatus && <span className='ml-2 text-sm text-gray-500'>({postStatus === "PUBLIC" ? "공개" : "비공개"})</span>}
                 </div>
 
                 {/* 카테고리와 날짜 부분 */}

@@ -54,14 +54,10 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
     useEffect(() => {
         const fetchSuggestions = async () => {
 
-
-            console.log("getSearchSuggestions 함수 실행전");
-
             try {
                 const data = await getSearchSuggestions(blogId, debouncedKeyword, searchType, categoryName, categoryNameByQueryParams);
                 const processedData = data.map((item: SearchSuggestionProps) => {
-
-                    console.log("item >>>>", item);
+ 
 
                     if (!item.content) return { ...item, content: "" };
                     const cleanText = extractTextWithoutImages(item.content);
@@ -98,9 +94,7 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
             setRecentSearches(JSON.parse(saved));
         }
     }, []);
-
-    console.log("suggestiosn", suggestions);
-
+ 
     
     useEffect(() => {
         const fetchSuggestions = async () => {

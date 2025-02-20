@@ -135,7 +135,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         day: "numeric",
         hour: "numeric",
         minute: "numeric",
-        hour12: false, // 24-hour format 
+        hour12: false, // 24-hour format
     });
 
     const deletePost = useDeletePost(postId, blogId);
@@ -174,7 +174,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
             anchorEl.forEach((el: HTMLAnchorElement) => {
                 if (!el.dataset.hasListener) {
                     allElementsHaveListeners = false;
-                    el.dataset.hasListener = 'true';
+                    el.dataset.hasListener = "true";
                     el.addEventListener("click", (e) => {
                         e.preventDefault();
 
@@ -223,7 +223,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         // 관찰 시작
         observer.observe(document.body, {
             childList: true,
-            subtree: true
+            subtree: true,
         });
 
         // 클린업
@@ -358,7 +358,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                             수정
                         </button>
                         <button onClick={handlePostStatus} className='text-sm text-gray-500'>
-                            {post.postStatus === "PUBLIC" ? "비공개로 변경" : "공개로 변경"}
+                            {post.postStatus && (post.postStatus === "PUBLIC" ? "비공개로 변경" : "공개로 변경")}
                         </button>
                         <button type='button' className='text-sm text-gray-500' onClick={() => setIsDeleteModalOpen(true)}>
                             삭제

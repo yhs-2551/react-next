@@ -20,8 +20,6 @@ function BlogList({ initialData, keyword, isSearch, totalElements }: BlogListPro
     const posts = initialData;
     const { isInitialized } = useAuthStore();
 
-    console.log("post>>>>>>>>>>>>>>", posts);
-
     const params = useParams();
     const categoryName = params.categoryName as string | undefined;
     const searchParams = useSearchParams();

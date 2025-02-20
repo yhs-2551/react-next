@@ -2,17 +2,21 @@ import React, { Suspense } from "react";
 import BlogList from "../../components/BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 // import { CacheTimes } from "@/constants/cache-constants";
 
 export default async function PostListPaginationPage({ params }: { params: Promise<{ blogId: string; pageNum: string }> }) {
     const { blogId, pageNum } = await params;
+    const cookieStore = await cookies();
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/page/${pageNum}?size=8`, {
         cache: "no-cache",
         // next: { tags: ["posts-pagination"], revalidate: CacheTimes.MODERATE.POSTS_PAGINATION },
+        headers: {
+            Cookie: cookieStore.toString(),
+        },
     });
 
-    
     if (!res.ok && res.status === 404) {
         notFound();
     } else if (!res.ok) {
