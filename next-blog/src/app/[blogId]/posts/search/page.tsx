@@ -2,7 +2,6 @@ import React, { Suspense } from "react";
 import BlogList from "../components/BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
 // import { CacheTimes } from "@/constants/cache-constants";
 
 export default async function PostSearchResultsPage({
@@ -14,8 +13,6 @@ export default async function PostSearchResultsPage({
 }) {
     const { blogId } = await params;
     const { page, searchType, keyword, category } = await searchParams;
-
-    const cookieStore = await cookies();
 
     const isValidSearch = searchType && keyword;
 
@@ -40,9 +37,6 @@ export default async function PostSearchResultsPage({
         //     tags: [`${blogId}-posts-search`],
         //     revalidate: CacheTimes.MODERATE.POSTS_SEARCH_RESULTS,
         // },
-        headers: {
-            Cookie: cookieStore.toString(),
-        },
     });
 
     if (!res.ok && res.status === 404) {

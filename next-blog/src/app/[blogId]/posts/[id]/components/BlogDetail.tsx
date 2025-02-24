@@ -13,7 +13,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { toast, ToastContainer } from "react-toastify";
-import { checkAccessToken, fetchIsAuthor, refreshToken } from "@/services/api";
+import { checkAccessToken, fetchIsAuthor, postStatusChange, refreshToken } from "@/services/api";
 
 import { FileMetadata, PostResponse } from "@/types/PostTypes";
 import DOMPurify from "dompurify";
@@ -28,6 +28,9 @@ import { LightboxImage } from "./LightboxImage";
 
 function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId: string }) {
     const [isAuthor, setIsAuthor]: [boolean, React.Dispatch<React.SetStateAction<boolean>>] = useState<boolean>(false); // 작성자 여부 상태
+
+    const [postStatus, setPostStatus] = useState<"PUBLIC" | "PRIVATE">(initialData.postStatus);
+
     const [parsedContent, setParsedContent] = useState<React.ReactNode | null>(null);
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -329,8 +332,32 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     };
 
     // 비공개로 변경도 클릭 시 토큰 검증 위와 같이 필요
-    const handlePostStatus: () => void = (): void => {
-        alert(`Change privacy setting from ${post.postStatus}`);
+    const handlePostStatus = async () => {
+        const accessToken = localStorage.getItem("access_token") as string;
+
+        const newStatus = postStatus === "PUBLIC" ? "PRIVATE" : "PUBLIC";
+
+        try {
+            await postStatusChange(blogId, accessToken, postId, newStatus);
+            setPostStatus(newStatus);
+            revalidatePostsAndCategories(blogId); // 현재는 게시글만 무효화 하면 되지만, 나중에 사용자 게시글 목록에 있는 카테고리에 PUBLIC 상태 게시글 총 수를 표시하기 위해 확장을 고려하여 이와 같이 유지
+        } catch (error: unknown) {
+            if (error instanceof CustomHttpError) {
+                if (error.status === 401) {
+                    localStorage.removeItem("access_token");
+                    toast.error(
+                        <span>
+                            <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                        </span>,
+                        {
+                            onClose: () => {
+                                window.location.reload();
+                            },
+                        }
+                    );
+                }
+            }
+        }
     };
 
     // 아래 ToastProvider 최상위 layout에 있는데, 삭제시에 toast가 작동을 안해서 아래와 같이 추가하니까 작동
@@ -358,8 +385,8 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                             수정
                         </button>
                         <button onClick={handlePostStatus} className='text-sm text-gray-500'>
-                            {post.postStatus && (post.postStatus === "PUBLIC" ? "비공개로 변경" : "공개로 변경")}
-                        </button>
+                            {postStatus && (postStatus === "PUBLIC" ? "비공개로 변경" : "공개로 변경")}
+                         </button>
                         <button type='button' className='text-sm text-gray-500' onClick={() => setIsDeleteModalOpen(true)}>
                             삭제
                         </button>
@@ -390,7 +417,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                 </div>
                 {/* <ReactQuill /> */}
             </div>
-            <div className='my-0 mx-auto max-w-4xl'>
+            <div className='my-0 mx-auto max-w-4xl pb-32'>
                 {post.tags?.map((tag: string) => {
                     return (
                         <a key={tag} className='py-1 px-3 text-tagColor hover:text-customGray' href='#' data-ref='tag'>

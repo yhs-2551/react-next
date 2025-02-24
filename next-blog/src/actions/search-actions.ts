@@ -1,7 +1,5 @@
 "use server";
-
-import { cookies } from "next/headers";
-
+ 
 // import { CacheTimes } from "@/constants/cache-constants";
 interface SearchSuggestionProps {
     id: number;
@@ -19,9 +17,6 @@ export async function getSearchSuggestions(
 ) {
     if (!keyword.trim() || keyword.length === 0) return [];
 
-    // 리프레시 토큰을 요청시에 같이 보낼 수 있도록 함. 공개/비공개 글 구분해서 조회하기 위해
-    const cookieStore = await cookies();
-
     let res;
 
     if (blogId) {
@@ -36,9 +31,6 @@ export async function getSearchSuggestions(
                     //     tags: [`${blogId}-categories-search-suggestions`],
                     //     revalidate: CacheTimes.MODERATE.POSTS_CATEGORY_SEARCH_SUGGESTIONS,
                     // },
-                    headers: {
-                        Cookie: cookieStore.toString(),
-                    },
                 }
             );
         } else {
@@ -50,9 +42,6 @@ export async function getSearchSuggestions(
                     //     tags: [`${blogId}-search-suggestions`],
                     //     revalidate: CacheTimes.MODERATE.POSTS_SEARCH_SUGGESTIONS,
                     // },
-                    headers: {
-                        Cookie: cookieStore.toString()
-                    }
                 }
             );
         }
@@ -65,9 +54,6 @@ export async function getSearchSuggestions(
                 //     tags: ["index-search-suggestions"],
                 //     revalidate: CacheTimes.FREQUENT.INDEX_SEARCH_SUGGESTIONS,
                 // },
-                headers: {
-                    Cookie: cookieStore.toString()
-                }
             }
         );
     }

@@ -1,11 +1,11 @@
 "use client";
 
-import { useInView } from "react-intersection-observer"; 
+import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
 import { PostResponse } from "@/types/PostTypes";
 import EmptyState from "../_components/search/EmptyState";
 import PostCardWithContent from "./PostCardWithContent";
-import { AiOutlineClockCircle } from "react-icons/ai"; 
+import { AiOutlineClockCircle } from "react-icons/ai";
 import { getInfiniteScrollPosts } from "@/actions/post.actions";
 
 interface PostsGridProps {
@@ -24,7 +24,7 @@ export default function PostsGrid({ initialData, totalElements }: PostsGridProps
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const { ref, inView } = useInView();
- 
+
     // 무한 스크롤 방식에서 뒤로가기로 돌아올 때 이전 스크롤 위치를 유지하기 위해 필요
     useEffect(() => {
         const cachedPosts = sessionStorage.getItem("cached-users-posts");
@@ -79,8 +79,7 @@ export default function PostsGrid({ initialData, totalElements }: PostsGridProps
         };
 
         window.addEventListener("beforeunload", beforeUnload);
-
-    }, [])
+    }, []);
 
     return (
         <>

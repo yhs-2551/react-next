@@ -2,13 +2,12 @@ import React, { Suspense } from "react";
 
 import Pagination from "@/app/_components/pagination/Pagination";
 import BlogList from "@/app/[blogId]/posts/components/BlogList";
-import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
+import { notFound } from "next/navigation"; 
 // import { CacheTimes } from "@/constants/cache-constants";
 
 export default async function CategoryPostListPage({ params }: { params: Promise<{ blogId: string; categoryName: string }> }) {
     const { blogId, categoryName } = await params;
-    const cookieStore = await cookies();
+ 
 
     const res = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/categories/${categoryName}/posts?size=8`,
@@ -18,9 +17,7 @@ export default async function CategoryPostListPage({ params }: { params: Promise
             //     tags: ["posts-categories"],
             //     revalidate: CacheTimes.MODERATE.POSTS_CATEGORY,
             // },
-            headers: {
-                Cookie: cookieStore.toString(),
-            },
+ 
         }
     );
 

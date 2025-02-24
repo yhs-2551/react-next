@@ -42,7 +42,7 @@ export const checkAccessToken = async () => {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
-                },
+                },  
             });
 
             // 액세스 토큰이 유효하지 않을때 서버측 에러. 즉, isLoggedIn false
@@ -110,6 +110,38 @@ export const fetchCategories = async (blogId: string) => {
     return responseData;
 };
 
+export const postStatusChange = async (blogId: string, accessToken: string, postId: string, postStatus: "PUBLIC" | "PRIVATE") => {
+    const updatePostStatus = async (token: string) => {
+        return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/${postId}/${postStatus}`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    };
+
+    let response = await updatePostStatus(accessToken);
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            try {
+                const newAccessToken = await refreshToken(); // 액세스 토큰을 못받아오면 리프레시 토큰도 만료라서 재로그인 필요
+                if (newAccessToken) {
+                    response = await updatePostStatus(newAccessToken);
+                }
+            } catch (error) {
+                if (error instanceof CustomHttpError) {
+                    throw new CustomHttpError(error.status, "세션이 만료되었습니다.\n재로그인 해주세요.");
+                }
+            }
+        } else {
+            const errorData = await response.json();
+            console.error("postStatusChange 함수 errorData >>> ", errorData); // 401 오류가 아닌 경우는 일단 로그만 남겨 놓기
+        }
+    }
+
+    return response.json();
+};
 export const checkAvailabilityRequest = {
     blogId: async (value: string): Promise<{ status: number; isExist: boolean; message: string }> => {
         const response = await fetch(
