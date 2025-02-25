@@ -6,8 +6,7 @@ import { fetchSpecificUserCategoryPosts } from "@/actions/post.actions";
 import { PostResponse, PostsReadBaseProps } from "@/types/PostTypes";
 import { refreshToken } from "@/services/api";
 import { CustomHttpError } from "@/utils/CustomHttpError";
-import { toast } from "react-toastify";
-import { revalidatePostsAndCategories } from "@/actions/revalidate";
+import { toast } from "react-toastify"; 
 import GlobalLoading from "@/app/loading";
 import BlogList from "@/app/[blogId]/posts/components/BlogList";
 
@@ -50,8 +49,7 @@ export default function CategoryPostListWrapper({
                         }
                     } catch (e: unknown) {
                         if (e instanceof CustomHttpError && e.status === 401) {
-                            await revalidatePostsAndCategories(blogId); // 리프레시 토큰까지 만료되면 공개글만 볼 수 있도록 함
-
+ 
                             localStorage.removeItem("access_token");
                             toast.error(
                                 <span>

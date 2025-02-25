@@ -167,7 +167,6 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
     };
 
     const handleComplete = () => {
-
         console.log("totalUploadedImagesUrlRef >>>" + totalUploadedImagesUrlRef.current);
 
         console.log("컨텐츠 >>>>" + categoryRef.current?.value);
@@ -232,7 +231,6 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         if (categoryName === "null") {
             categoryName = null;
         }
-
 
         const postData = {
             title,

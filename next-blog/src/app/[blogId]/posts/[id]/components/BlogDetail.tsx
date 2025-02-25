@@ -290,7 +290,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
             );
 
             setTimeout(async () => {
-                revalidatePostsAndCategories(blogId);
+                await revalidatePostsAndCategories(blogId);
                 // await revalidateAllRelatedCaches(blogId);
                 // await revalidatePostDetailPage(blogId, postId);
                 // await revalidatePostEditPage(blogId, postId);
@@ -340,7 +340,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         try {
             await postStatusChange(blogId, accessToken, postId, newStatus);
             setPostStatus(newStatus);
-            revalidatePostsAndCategories(blogId); // 현재는 게시글만 무효화 하면 되지만, 나중에 사용자 게시글 목록에 있는 카테고리에 PUBLIC 상태 게시글 총 수를 표시하기 위해 확장을 고려하여 이와 같이 유지
+            await revalidatePostsAndCategories(blogId); // 현재는 게시글만 무효화 하면 되지만, 나중에 사용자 게시글 목록에 있는 카테고리에 PUBLIC 상태 게시글 총 수를 표시하기 위해 확장을 고려하여 이와 같이 유지
         } catch (error: unknown) {
             if (error instanceof CustomHttpError) {
                 if (error.status === 401) {
