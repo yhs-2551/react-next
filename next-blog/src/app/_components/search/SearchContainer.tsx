@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import ClientWrapper from "@/providers/ClientWrapper";
 import SearchInput from "./SearchInput";
+import { useSearchStore } from "@/store/appStore";
 
 type SearchContainerType = "TITLE" | "CONTENT" | "ALL";
 
@@ -25,6 +26,8 @@ function SearchComponent() {
 
     const router = useRouter();
     const [searchType, setSearchType] = useState<SearchContainerType>("TITLE");
+
+    const { triggerSearch } = useSearchStore();
 
     const handleSearch = (keyword: string) => {
         if (!keyword.trim()) {
@@ -48,6 +51,8 @@ function SearchComponent() {
 
         params.set("searchType", searchType);
         params.set("keyword", keyword); // URLSearchParams가 자동으로 인코딩. 따라서 encodeURIComponent 사용 불필요
+
+        triggerSearch(); // 검색 트리거
 
         router.push(blogId ? `/${blogId}/posts/search?${params.toString()}` : `/search?${params.toString()}`);
     };

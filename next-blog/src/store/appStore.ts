@@ -2,7 +2,7 @@ import { CategoryType } from "@/types/CateogryTypes";
 import { SignupUser } from "@/types/SignupUserTypes";
 import { create } from "zustand";
 
-// public과 private의 차이는 사용자 email 개인정보 유무 차이 
+// public과 private의 차이는 사용자 email 개인정보 유무 차이
 interface ProfileState {
     blogName: string;
     blogUsername: string;
@@ -25,16 +25,6 @@ export const userProfileStore = create<ProfileState>((set) => ({
     setBlogUsername: (username) => set({ blogUsername: username }),
     setBlogId: (id) => set({ blogId: id }),
     setProfileImage: (image) => set({ profileImage: image }),
-}));
-
-interface CategoryState {
-    categories: CategoryType[];
-    setCategories: (categories: CategoryType[]) => void;
-}
-
-export const useCategoryStore = create<CategoryState>((set) => ({
-    categories: [],
-    setCategories: (categories) => set({ categories }),
 }));
 
 interface AuthState {
@@ -85,4 +75,24 @@ export const useAuthStore = create<AuthState>((set) => ({
     setShowOAuth2NewUserModal: (status) => set({ isShowOAuth2NewUserModal: status }),
     setTempOAuth2UserUniqueId: (id) => set({ tempOAuth2UserUniqueId: id }),
     setOAuth2Redirect: (status) => set({ isOAuth2Redirect: status }),
+}));
+
+interface CategoryState {
+    categories: CategoryType[];
+    setCategories: (categories: CategoryType[]) => void;
+}
+
+export const useCategoryStore = create<CategoryState>((set) => ({
+    categories: [],
+    setCategories: (categories) => set({ categories }),
+}));
+
+interface SearchState {
+    searchTriggerNum: number;
+    triggerSearch: () => void;
+}
+
+export const useSearchStore = create<SearchState>((set) => ({
+    searchTriggerNum: 0,
+    triggerSearch: () => set((state) => ({ searchTriggerNum: state.searchTriggerNum + 1 })),
 }));

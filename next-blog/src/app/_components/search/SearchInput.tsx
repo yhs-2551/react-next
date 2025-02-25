@@ -1,10 +1,12 @@
- 
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useDebounce } from "use-debounce";
-import { AiOutlineSearch } from "react-icons/ai"; 
-import { getSearchSuggestions } from "@/actions/search-actions";
+import { AiOutlineSearch } from "react-icons/ai";
 import { extractTextWithoutImages } from "@/utils/extractTextWithoutImages";
+import { getSearchSuggestions } from "@/actions/post.actions";
+import { toast } from "react-toastify";
+import { refreshToken } from "@/services/api";
+import { CustomHttpError } from "@/utils/CustomHttpError";
 
 interface SearchSuggestionProps {
     id: number;
@@ -33,10 +35,21 @@ interface RecentSearch {
     timestamp: number;
 }
 
+const processSearchSuggestions = (data: SearchSuggestionProps[]): SearchSuggestionProps[] => {
+    return data.map((item: SearchSuggestionProps) => {
+        if (!item.content) return { ...item, content: "" };
+        const cleanText = extractTextWithoutImages(item.content);
+        const sliceText = cleanText.slice(0, 15);
+        return {
+            ...item,
+            content: sliceText + (cleanText.length > 15 ? "..." : ""),
+        };
+    });
+};
+
 const STORAGE_KEY = "recentSearches";
 
 export default function SearchInput({ blogId, searchType, onSearch, categoryName, categoryNameByQueryParams }: SearchInputProps) {
-
     const [keyword, setKeyword] = useState<string>("");
     const [suggestions, setSuggestions] = useState<SearchSuggestionProps[]>([]);
 
@@ -47,30 +60,92 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
     const inputRef = useRef<HTMLInputElement>(null);
 
     const [debouncedKeyword] = useDebounce(keyword, 300);
- 
+
     const router = useRouter();
 
+    //   try {
+    //                 const response = await searchPostsForUserPage(blogId, queryParams, token);
+    //                 const { content, currentPage, totalPages, totalElements } = response.data;
+    //                 setSearchResults({ content, currentPage, totalPages, totalElements });
+    //             } catch (error: unknown) {
+    //                 if (error instanceof Error && error.message === "액세스 토큰 만료") {
+    //                     try {
+    //                         const newAccessToken = await refreshToken(); // 서버 액션에서 refreshToken을 호출하면 쿠키 전송이 안됨. refresh token을 use client쓰면 서버 액션 내에서 호출 불가
+    //                         if (newAccessToken) {
+    //                             const retryResponse = await searchPostsForUserPage(blogId, queryParams, newAccessToken);
+    //                             const { content, currentPage, totalPages, totalElements } = retryResponse.data;
+    //                             setSearchResults({ content, currentPage, totalPages, totalElements });
+    //                         }
+    //                     } catch (e: unknown) {
+    //                         if (e instanceof CustomHttpError && e.status === 401) {
+    //                             localStorage.removeItem("access_token");
+
+    //                             toast.error(
+    //                                 <span>
+    //                                     <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+    //                                 </span>,
+    //                                 {
+    //                                     onClose: () => {
+    //                                         window.location.reload();
+    //                                     },
+    //                                 }
+    //                             );
+    //                         } else {
+    //                             throw e;
+    //                         }
+    //                     }
+    //                 } else {
+    //                     throw error; //  throw new Error("특정 사용자 게시글 검색 데이터를 불러오는데 실패하였습니다"); 를 던져서 error.tsx가 실행될 수 있도록
+    //                 }
+    //             } finally {
+    //                 setIsLoading(false);
+    //             }
 
     useEffect(() => {
         const fetchSuggestions = async () => {
+            const token = localStorage.getItem("access_token");
 
             try {
-                const data = await getSearchSuggestions(blogId, debouncedKeyword, searchType, categoryName, categoryNameByQueryParams);
-                const processedData = data.map((item: SearchSuggestionProps) => {
- 
-
-                    if (!item.content) return { ...item, content: "" };
-                    const cleanText = extractTextWithoutImages(item.content);
-                    const sliceText = cleanText.slice(0, 15);
-                    return {
-                        ...item,
-                        content: sliceText + (cleanText.length > 15 ? "..." : ""),
-                    };
-                });
+                const data = await getSearchSuggestions(blogId, token, debouncedKeyword, searchType, categoryName, categoryNameByQueryParams);
+                const processedData = processSearchSuggestions(data);
 
                 setSuggestions(processedData);
-            } catch (error) {
-                console.error("검색어 자동완성 실패:", error);
+            } catch (error: unknown) {
+                if (error instanceof Error && error.message === "액세스 토큰 만료") {
+                    try {
+                        const newAccessToken = await refreshToken();
+                        if (newAccessToken) {
+                            const retryData = await getSearchSuggestions(
+                                blogId,
+                                newAccessToken,
+                                debouncedKeyword,
+                                searchType,
+                                categoryName,
+                                categoryNameByQueryParams
+                            );
+                            const retryProcessedData = processSearchSuggestions(retryData);
+                            setSuggestions(retryProcessedData);
+                        }
+                    } catch (e: unknown) {
+                        if (e instanceof CustomHttpError && e.status === 401) {
+                            localStorage.removeItem("access_token");
+                            toast.error(
+                                <span>
+                                    <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                                </span>,
+                                {
+                                    onClose: () => {
+                                        window.location.reload();
+                                    },
+                                }
+                            );
+                        } else {
+                            throw e;
+                        }
+                    }
+                } else {
+                    throw error;
+                }
             }
         };
 
@@ -94,32 +169,6 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
             setRecentSearches(JSON.parse(saved));
         }
     }, []);
- 
-    
-    useEffect(() => {
-        const fetchSuggestions = async () => {
-            try {
-                const data = await getSearchSuggestions(blogId, debouncedKeyword, searchType, categoryName, categoryNameByQueryParams);
-                const processedData = data.map((item: SearchSuggestionProps) => {
-                    if (!item.content) return { ...item, content: "" };
-                    const cleanText = extractTextWithoutImages(item.content);
-                    const sliceText = cleanText.slice(0, 15);
-                    return {
-                        ...item,
-                        content: sliceText + (cleanText.length > 15 ? "..." : ""),
-                    };
-                });
-                setSuggestions(processedData);
-            } catch (error) {
-                console.error("검색어 자동완성 실패:", error);
-            }
-        };
-
-        fetchSuggestions();
-    }, [debouncedKeyword, searchType]);
-
-
-    
 
     const handleDeleteRecentSearch = (e: React.MouseEvent, timestamp: number) => {
         e.stopPropagation();

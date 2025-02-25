@@ -13,7 +13,7 @@ interface BlogListProps {
     initialData: PostResponse[];
     keyword?: string;
     isSearch?: boolean;
-    totalElements?: number;
+    totalElements?: number; 
 }
 
 function BlogList({ initialData, keyword, isSearch, totalElements }: BlogListProps) {
