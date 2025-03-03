@@ -168,10 +168,6 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
     };
 
     const handleComplete = () => {
-        console.log("totalUploadedImagesUrlRef >>>" + totalUploadedImagesUrlRef.current);
-
-        console.log("컨텐츠 >>>>" + categoryRef.current?.value);
-
         // quillContentRef.current함수를 실행해서 DOMPurify.sanitize(html)로 정화?된 quill.innerhtml 즉 에디터 내의 모든 html 내용을 가져옴
         contentRef.current = quillContentRef.current();
         const title = titleInputRef.current?.value || "";
@@ -180,8 +176,6 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
         let hasError = false;
 
         const textContent = extractTextFromHtml(content).trim();
-
-        console.log("textContent >>" + textContent);
 
         if (!title.trim()) {
             toast.error(
@@ -298,8 +292,6 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                 editPageDeletedTags.current.push(removedTag.value);
             }
         }
-
-        console.log("editPageDeletedTags.current >>", editPageDeletedTags.current);
 
         tags.current = tags.current.filter((tag) => tag.id !== uuidToRemove);
         if (tagContainerRef.current) {

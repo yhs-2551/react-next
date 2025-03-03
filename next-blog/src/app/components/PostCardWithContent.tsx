@@ -16,5 +16,16 @@ export default function PostCardWithContent(props: PostResponse) {
         setContent(extractTextWithoutImages(props.content));
     }, [props]);
 
-    return <PostCard {...props} content={content} imageUrl={imageUrl} />;
+    // PostResponse Type에서 받아온걸 PostCardProps형식으로 변경해서 넘겨줘야 타입 오류 발생x
+    const postCardProps = {
+        id: props.id!, 
+        title: props.title,
+        content: content,
+        createdAt: props.createdAt!,
+        username: props.username!,
+        blogId: props.blogId!,
+        imageUrl: imageUrl
+    };
+ 
+    return <PostCard {...postCardProps} content={content} imageUrl={imageUrl} />;
 }

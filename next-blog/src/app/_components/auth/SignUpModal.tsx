@@ -293,8 +293,6 @@ function SignUpModal() {
             const response = await apiCalls[field](formData[field]); // 여기서 실패하면 catch문 실행
 
             if (response.status === 200) {
-                console.log("response", response);
-
                 setIsAvailabilityChecked((prev) => ({ ...prev, [field]: true }));
             }
         } catch (error: unknown) {
@@ -416,7 +414,7 @@ function SignUpModal() {
                         setRateLimitErrorsFromServer("");
                     }, 60000);
                 } else {
-                    console.log("회원가입 실패 SignUp Page: ", error);
+                    console.error("회원가입 실패 SignUp Page: ", error);
                     setErrorMessageSignUpFromServer(error.message);
                 }
             }

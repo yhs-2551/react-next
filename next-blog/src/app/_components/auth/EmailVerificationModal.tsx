@@ -29,9 +29,6 @@ export default function EmailVerificationModal({ user }: EmailVerificationModalP
 
     const { setShowEmailVerification, setSignupUser } = useAuthStore();
 
-    console.log("signUpUserBlogId", user.blogId);
-    console.log("signUpUser", user);
-
     const handleVerification = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -41,7 +38,7 @@ export default function EmailVerificationModal({ user }: EmailVerificationModalP
             const verifyResponse = await verifyEmailCode(user.blogId, code);
             if (verifyResponse.status === 200 || verifyResponse.status === 201) {
                 setSignupUser({ blogId: "", username: "", email: "", password: "", passwordConfirm: "" });
- 
+
                 handleModalClose();
 
                 setTimeout(() => {

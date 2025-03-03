@@ -31,8 +31,6 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
         }
 
         if (isHeaderLogin || isInitialized || isAuthenticated) {
-            console.log("isHeaderLogin isHeaderLogin>>>", isHeaderLogin);
-
             const fetchAuthorStatus: () => Promise<void> = async (): Promise<void> => {
                 try {
                     const isAuthor = await fetchIsAuthor(pathBlogId, accessToken);

@@ -4,11 +4,11 @@ import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 interface PostProps {
-    postId: string;
+    postId?: string;
     title: string;
     postStatus: "PUBLIC" | "PRIVATE";
     categoryName: string | null;
-    createdAt: string;
+    createdAt?: string;
     content: string;
     thumbnailUrl: string;
 }
@@ -27,7 +27,7 @@ function PostItem({ postId, title, postStatus, categoryName, createdAt, content,
     //     router.push(`/posts/${postId}`);
     // };
 
-    const formattedDate = new Date(createdAt).toLocaleString("ko-KR", {
+    const formattedDate = new Date(createdAt!).toLocaleString("ko-KR", {
         year: "numeric",
         month: "numeric",
         day: "numeric",

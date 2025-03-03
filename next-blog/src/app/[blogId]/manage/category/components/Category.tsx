@@ -245,8 +245,6 @@ const Category: React.FC = () => {
             categoryToDelete: categoryToDeleteRef.current,
         };
 
-        console.log("categoryPayLoad >>>", categoryPayLoad);
-
         const onSuccess = async () => {
             try {
                 await revalidateCategories(blogId); // 성공 후 캐시 무효화. 해당 서버컴포넌트 재실행 됨)
@@ -560,58 +558,51 @@ const Category: React.FC = () => {
                             {categories.length !== 0 && (
                                 <DndProvider backend={HTML5Backend}>
                                     <ul className='space-y-3 mt-7'>
-                                        {categories.map(
-                                            (parentCategory) => (
-                                                console.log("parentCategory", parentCategory),
-                                                (
-                                                    <React.Fragment key={parentCategory.categoryUuid}>
-                                                        <CategoryItem
-                                                            category={parentCategory}
-                                                            index={categories.findIndex((cat) => cat.categoryUuid === parentCategory.categoryUuid)}
-                                                            moveCategory={moveCategory}
-                                                            openModal={openModal}
-                                                            deleteCategory={handleDeleteCategory}
-                                                            onDragStateChange={(isDragging) =>
-                                                                handleDragStateChange(isDragging, parentCategory.categoryUuid)
-                                                            }
-                                                            isDeleteDisabled={
-                                                                (parentCategory.categoryUuidParent === null &&
-                                                                    parentCategory.children &&
-                                                                    parentCategory.children?.length > 0) ||
-                                                                parentCategory.postCount! > 0
-                                                            }
-                                                        />
+                                        {categories.map((parentCategory) => (
+                                            <React.Fragment key={parentCategory.categoryUuid}>
+                                                <CategoryItem
+                                                    category={parentCategory}
+                                                    index={categories.findIndex((cat) => cat.categoryUuid === parentCategory.categoryUuid)}
+                                                    moveCategory={moveCategory}
+                                                    openModal={openModal}
+                                                    deleteCategory={handleDeleteCategory}
+                                                    onDragStateChange={(isDragging) => handleDragStateChange(isDragging, parentCategory.categoryUuid)}
+                                                    isDeleteDisabled={
+                                                        (parentCategory.categoryUuidParent === null &&
+                                                            parentCategory.children &&
+                                                            parentCategory.children?.length > 0) ||
+                                                        parentCategory.postCount! > 0
+                                                    }
+                                                />
 
-                                                        {/* 2단계 하위 카테고리 */}
-                                                        {/* 부모가 드래깅 시작하면 그 자식까지 동일한 css  */}
-                                                        {parentCategory.children && (
-                                                            <ul
-                                                                className={`ml-6 space-y-2 ${
-                                                                    draggingCategoryId === parentCategory.categoryUuid && !draggingFromChild
-                                                                        ? "opacity-50 border-blue-500"
-                                                                        : ""
-                                                                }`}
-                                                            >
-                                                                {parentCategory.children.map((childCategory, childIdx) => (
-                                                                    <CategoryItem
-                                                                        key={childCategory.categoryUuid}
-                                                                        category={childCategory}
-                                                                        index={childIdx}
-                                                                        moveCategory={moveCategory}
-                                                                        openModal={openModal}
-                                                                        deleteCategory={handleDeleteCategory}
-                                                                        onDragStateChange={(isDragging) =>
-                                                                            handleDragStateChange(isDragging, parentCategory.categoryUuid, true)
-                                                                        }
-                                                                        isDeleteDisabled={childCategory.postCount! > 0}
-                                                                    />
-                                                                ))}
-                                                            </ul>
-                                                        )}
-                                                    </React.Fragment>
-                                                )
-                                            )
-                                        )}
+                                                {/* 2단계 하위 카테고리 */}
+                                                {/* 부모가 드래깅 시작하면 그 자식까지 동일한 css  */}
+                                                {parentCategory.children && (
+                                                    <ul
+                                                        className={`ml-6 space-y-2 ${
+                                                            draggingCategoryId === parentCategory.categoryUuid && !draggingFromChild
+                                                                ? "opacity-50 border-blue-500"
+                                                                : ""
+                                                        }`}
+                                                    >
+                                                        {parentCategory.children.map((childCategory, childIdx) => (
+                                                            <CategoryItem
+                                                                key={childCategory.categoryUuid}
+                                                                category={childCategory}
+                                                                index={childIdx}
+                                                                moveCategory={moveCategory}
+                                                                openModal={openModal}
+                                                                deleteCategory={handleDeleteCategory}
+                                                                onDragStateChange={(isDragging) =>
+                                                                    handleDragStateChange(isDragging, parentCategory.categoryUuid, true)
+                                                                }
+                                                                isDeleteDisabled={childCategory.postCount! > 0}
+                                                            />
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                            </React.Fragment>
+                                        ))}
                                     </ul>
                                 </DndProvider>
                             )}

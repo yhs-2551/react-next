@@ -40,8 +40,6 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
 
     // 외부 클릭 시 말풍선 닫기
     useEffect(() => {
-        console.log(category);
-
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setShowMenu(false);
@@ -84,10 +82,6 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
     const [{ isOver, canDrop, draggedItem }, drop] = useDrop({
         accept: "category",
         canDrop: (draggedItem: CategoryType) => {
-            console.log("dragggggg>>", draggedItem);
-
-            console.log("category>>>>>>>>>>>>>", category);
-
             // 드래그된 아이템이 하위 카테고리인 경우, 타겟이 최상위 카테고리여야 함
             if (draggedItem.categoryUuidParent && !category.categoryUuidParent) {
                 return true;
@@ -109,8 +103,6 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
             if (!draggedItem.categoryUuidParent && (!draggedItem.children || draggedItem.children.length === 0)) {
                 // 타겟이 최상위 카테고리이거나 하위 카테고리일 때 모두 허용
                 if (!category.categoryUuidParent) {
-                    console.log("얘 ㅣ실행");
-
                     return true;
                 }
             }
@@ -221,8 +213,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
             <div className='flex items-center ml-6'>
                 <FaFolder className='text-xl mr-2 opacity-60' />
                 {category.name}
-
-                &nbsp;<span className="text-base text-gray-600">({category.postCount ?? 0})</span>
+                &nbsp;<span className='text-base text-gray-600'>({category.postCount ?? 0})</span>
             </div>
 
             {/* 메뉴 토글 버튼 (일립스 아이콘) */}

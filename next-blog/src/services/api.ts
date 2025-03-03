@@ -93,8 +93,6 @@ export const fetchIsAuthor = async (blogId: string, accessToken: string) => {
 
     const response = await res.json();
 
-    console.log("fetchIsAuthor response >>> ", response.data);
-
     return response.data; // 서버에서 isAuthor 값을 반환받아 true or false값을 반환
 };
 
@@ -187,8 +185,6 @@ export const checkAvailabilityRequest = {
     },
 
     username: async (value: string): Promise<{ status: number; isExist: boolean; message: string }> => {
-        console.log("실행 userName 부분");
-
         const response = await fetch(
             `${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/check/username/duplicate/${value}`,
             {
@@ -196,8 +192,6 @@ export const checkAvailabilityRequest = {
             }
         );
         const responseData = await response.json();
-
-        console.log("responseDatauserName 부분", responseData);
 
         if (response.status === 429 || response.status === 409) {
             throw new CustomHttpError(response.status, responseData.message);

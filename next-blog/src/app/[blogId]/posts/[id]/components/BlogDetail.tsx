@@ -79,13 +79,8 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                     if (domNode instanceof Element && domNode.name === "img") {
                         const { src, alt, style } = domNode.attribs;
 
-                        console.log("style >>", style);
-
                         // 서버에서 받은 이미지 크기 정보를 가져오기
                         const { width, height } = getImageSize(src);
-
-                        console.log("width >>>" + width);
-                        console.log("height >>>" + height);
 
                         // 스타일을 객체로 변환하여 React의 style 속성에 적용 가능하도록 만듦
                         let styleAttributes = {};
@@ -99,8 +94,6 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                             width: `${width}px`, // width와 height를 명시적으로 추가하여 스타일에 포함
                             height: `${height}px`,
                         };
-
-                        console.log("finalStyle >>>", finalStyle);
 
                         return (
                             <LightboxImage
@@ -170,8 +163,6 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         const setupFileDownload = () => {
             const anchorEl = document.querySelectorAll(".ql-file") as NodeListOf<HTMLAnchorElement>;
 
-            console.log("anchorEl >>>", anchorEl);
-
             let allElementsHaveListeners = true;
 
             anchorEl.forEach((el: HTMLAnchorElement) => {
@@ -235,7 +226,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         };
     }, []);
 
-    // 권한 확인은 AuthCheck에서 진행. 즉 수정 페이지로 이동하면 AuthCheck가 실행 
+    // 권한 확인은 AuthCheck에서 진행. 즉 수정 페이지로 이동하면 AuthCheck가 실행
     // 문제는 수정 페이지의 서버 컴포넌트가 실행 되면서 권한 확인이 되지 않은 상태에서 데이터를 가져 온다는 점인데,
     // 즉 권한 확인 -> 완료 후에 해당 상세 페이지 데이터를 가져와야 하는데, 일단 보류
     const handleEdit: () => Promise<void> = async (): Promise<void> => {

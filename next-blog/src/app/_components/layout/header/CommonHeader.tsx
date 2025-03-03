@@ -78,8 +78,6 @@ export default function CommonHeader() {
 
         //isAuthenticated는 일반 form 로그인
         if (isInitialized || isAuthenticated) {
-            console.log("isInitialized: 실행입니다");
-
             // useEffect 내부가 아닌 외부에서 실행하면 서버사이드 렌더링에서 브라우저의 localStorage를 정의할 수 없다는 오류 발생.
             const accessToken = localStorage.getItem("access_token");
 
@@ -144,7 +142,7 @@ export default function CommonHeader() {
                 }
             } catch (error: any) {
                 // 로그아웃 실패의 경우 토스트 메시지로 사용자에게 알릴 순 있지만, 일단 보류
-                console.log("로그아웃 실패: ", error.message);
+                console.error("handleLogoutClick 로그아웃 실패: ", error);
             }
         }
     };

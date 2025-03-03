@@ -21,8 +21,6 @@ function useAddCategory(blogId: String) {
 
     return useMutation({
         mutationFn: async (category: CategoryPayload) => {
-            console.log("category >>>", category);
-
             const createCategory: (token: string | boolean) => Promise<Response> = async (token: string | boolean) => {
                 return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/categories`, {
                     method: "POST",
@@ -38,21 +36,17 @@ function useAddCategory(blogId: String) {
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    
                     try {
                         const newAccessToken = await refreshToken();
                         if (newAccessToken) {
                             response = await createCategory(newAccessToken);
                         }
                     } catch (error: unknown) {
-                        
                         if (error instanceof CustomHttpError) {
                             // 리프레시 토큰 까지 만료되어서 재로그인 필요
                             throw new CustomHttpError(error.status, "세션이 만료되었습니다.\n재로그인 해주세요.");
                         }
                     }
-
-                 
                 }
             }
 

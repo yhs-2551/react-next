@@ -55,7 +55,6 @@ function PublishModal({
                 // 대표 이미지만 있을 때
                 totalSizeInMB = featuredImageSize / (1024 * 1024);
             }
-            console.log("totalFileSize >>>", totalSizeInMB);
 
             if (totalSizeInMB > MAX_TOTAL_SIZE_MB) {
                 toast.error(`최대 ${MAX_TOTAL_SIZE_MB}MB까지 업로드할 수 있습니다.`);
@@ -137,7 +136,7 @@ function PublishModal({
                                 src={featuredImage.fileUrl}
                                 alt='Representative Image'
                                 className='rounded-md object-cover'
-                                fill 
+                                fill
                                 quality={100}
                                 sizes='(max-width: 334px) 100vw 334px'
                                 priority={true}

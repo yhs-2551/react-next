@@ -154,9 +154,6 @@ export default React.memo(
                                     ),
                                 ];
                             }
-
-                            console.log("op.delete fileRef.current", fileRef.current);
-                            console.log("op.delete fileRef.deletedImageUrlsInFutureRef.current", deletedImageUrlsInFutureRef.current);
                         });
                     }
                 });
@@ -242,10 +239,9 @@ export default React.memo(
                                         const sizeBytes = Math.round(sizeMB * 1024 * 1024); // MB를 bytes로 변환
 
                                         if (fileRef && fileRef.current) {
-                                      
                                             const fileExists = fileRef.current.some((file) => file.fileUrl === fileUrl);
 
-                                           // 모든 파일을 반복을 돌리기 때문에 붙여넣기로 추가했을때, 기존에 있는 파일은 추가하지 않고 새로운 파일만 추가
+                                            // 모든 파일을 반복을 돌리기 때문에 붙여넣기로 추가했을때, 기존에 있는 파일은 추가하지 않고 새로운 파일만 추가
                                             if (!fileExists) {
                                                 fileRef.current.push({
                                                     fileName: text,
@@ -896,7 +892,6 @@ export default React.memo(
         // handleAlign 함수 이미지를 클릭했을때 오버레이가 선택되면서, 이후에 툴바의 정렬 기능이 제대로 작동되게 하기 위함.
         // react quill의 정렬 툴바에서 왼쪽 정렬은 false값으로 설정해놨기 때문에 아래와 같이 추가적으로 처리함.
         const handleAlign = (value: false | "left" | "center" | "right") => {
-
             if (value === false) {
                 value = "left";
             }

@@ -90,7 +90,8 @@ function OAuth2NewUserModal() {
     const [isLoading, setIsLoading] = useState(false);
     // 최종 회원 가입 관련 상태 끝
 
-    const { setShowLogin, setInitialized, setShowOAuth2NewUserModal, setTempOAuth2UserUniqueId, tempOAuth2UserUniqueId, setOAuth2Redirect } = useAuthStore();
+    const { setShowLogin, setInitialized, setShowOAuth2NewUserModal, setTempOAuth2UserUniqueId, tempOAuth2UserUniqueId, setOAuth2Redirect } =
+        useAuthStore();
 
     // 폼 입력값이 시작되었는지 여부. 폼 입력이 시작되어야 유효성 검사를 시작한다.
     const [hasInteracted, setHasInteracted] = useState<Record<string, boolean>>({
@@ -149,8 +150,6 @@ function OAuth2NewUserModal() {
     }, [debouncedUsername]);
 
     const checkAvailability = async (field: AvailabilityField) => {
-        console.log("checkAvailabilit실행dddd");
-
         // 중복확인 버튼 클릭 시 포커스 경고 초기화
         setAvailabilityFocusWarning((prev) => ({
             ...prev,
@@ -168,8 +167,6 @@ function OAuth2NewUserModal() {
             const response = await apiCalls[field](formData[field]); // 여기서 실패하면 catch문 실행
 
             if (response.status === 200) {
-                console.log("response", response);
-
                 setIsAvailabilityChecked((prev) => ({ ...prev, [field]: true }));
             }
         } catch (error: unknown) {
@@ -265,9 +262,6 @@ function OAuth2NewUserModal() {
     };
 
     const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
-
-        console.log("tempOAuth2UserUniqueId>>>", tempOAuth2UserUniqueId);
-
         e.preventDefault();
 
         setIsLoading(true);
@@ -289,7 +283,8 @@ function OAuth2NewUserModal() {
                         {/* OAuth2 신규 사용자 등록에 성공하였습니다. 응답보다 로그인에 성공하였습니다. 응답이 좋은것 같아서 주석처리
                          <span style={{ fontSize: "0.7rem" }}>{response.message}</span>  */}
                         <span style={{ fontSize: "0.8rem", whiteSpace: "pre-line" }}>
-                            가입이 완료되었습니다.<br />
+                            가입이 완료되었습니다.
+                            <br />
                             블로그를 시작해보세요! ✨
                         </span>
                     </span>,
@@ -310,7 +305,8 @@ function OAuth2NewUserModal() {
                         setRateLimitErrorsFromServer("");
                     }, 60000);
                 } else {
-                    console.log("OAuth2 회원가입 실패 SignUp Page: ", error);
+                    
+                    console.error("OAuth2 회원가입 실패 SignUp Page: ", error);
 
                     // 서버에서 받은 메시지인 "OAuth2 신규 사용자 등록에 실패하였습니다." 응답보다 아래 응답이 좋은것 같아서 주석처리
                     //   setErrorMessageSignUpFromServer(error.message);

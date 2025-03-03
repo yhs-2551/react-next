@@ -1,9 +1,7 @@
 "use client";
 
-import { FileMetadata } from "@/types/PostTypes";
 import NextImage from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from "next/link"; 
 
 interface PostCardProps {
     id: string;
@@ -19,8 +17,6 @@ const formatDate = (date: string) => {
 };
 
 export default function PostCard({ title, content, createdAt, username, imageUrl, blogId, id }: PostCardProps) {
-    const router = useRouter();
-
     return (
         <Link
             href={`/${blogId}/posts/${id}`}
