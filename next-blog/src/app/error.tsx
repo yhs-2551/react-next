@@ -8,6 +8,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
     const router = useRouter();
     const isAuthError = error.message?.includes("권한");
     const isDataError = error.message?.includes("데이터");
+    const isServerError = error.message?.includes("서버");
 
     return (
         <div className='relative z-[1000] min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100'>
@@ -21,7 +22,11 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
                     <span className='text-7xl font-bold text-slate-800'>403</span>
                 </motion.div>
                 <h2 className='text-2xl font-semibold text-slate-700 mb-4'>
-                    {isAuthError ? "접근 권한이 없습니다." : "데이터를 불러오는데 실패하였습니다."}
+                    {isAuthError
+                        ? "접근 권한이 없습니다."
+                        : isServerError
+                        ? "서버측 문제가 발생했습니다."
+                        : "데이터를 불러오는데 실패하였습니다."}
                 </h2>
                 <p className='text-slate-600 mb-8'>{isAuthError ? "해당 페이지에 접근할 수 있는 권한이 없습니다." : "잠시 후 다시 시도해주세요."}</p>
                 <div className='space-y-3 sm:space-y-0 sm:space-x-4 flex flex-col sm:flex-row justify-center'>

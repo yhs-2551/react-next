@@ -1,6 +1,5 @@
 "use client";
 
-import { CiCirclePlus } from "react-icons/ci";
 import { FaPlus } from "react-icons/fa6";
 import NextImage from "next/image";
 import React, { useEffect, useRef, useState } from "react";
@@ -10,9 +9,9 @@ import { userProfileStore } from "@/store/appStore";
 import { ClipLoader } from "react-spinners";
 import useUpdateProfile from "@/customHooks/useUpdateProfile";
 import { CustomHttpError } from "@/utils/CustomHttpError";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { revalidateUserProfile } from "@/actions/revalidate";
-import { useRouter } from "next/navigation";
+import ToastProvider from "@/providers/ToastProvider";
 
 const UserManage = () => {
     const { profileImage, blogName, blogId, blogUsername, defaultProfileImage } = userProfileStore();
@@ -31,13 +30,13 @@ const UserManage = () => {
         username: "",
     });
 
+    const { setProfileUpdate } = userProfileStore();
+
     const [updateSuccess, setUpdateSuccess] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const [debouncedBlogName] = useDebounce(updateBlogName, 300);
     const [debouncedUsername] = useDebounce(updateBlogUsername, 300);
-
-    const router = useRouter();
 
     const updateProfileMutation = useUpdateProfile();
 
@@ -150,6 +149,7 @@ const UserManage = () => {
             const onSuccess = async () => {
                 await revalidateUserProfile();
                 setUpdateSuccess(true);
+                setProfileUpdate(true); // CommonHeader에서 개인 private 사용자 정보를 다시 불러오기 위해
             };
 
             const onError = (error: unknown) => {
@@ -197,13 +197,13 @@ const UserManage = () => {
         setInitialize();
     };
 
+    //컨텐츠 부분 전체 문서에 수평, 수직 정렬을 위해 profile-wrapper 사용
+
     return (
         <>
-            <ToastContainer position='top-center' />
-            // 컨텐츠 부분 전체 문서에 수평, 수직 정렬을 위해 profile-wrapper 사용
+            <ToastProvider />
             <div className='manage-wrapper min-h-screen w-full bg-gray-100 flex items-center justify-center'>
                 <CommonSideNavigation />
-
                 <section className='flex flex-col justify-end container lg:max-w-screen-lg pt-10 bg-white rounded-lg shadow-lg h-[41rem] mt-[5rem] ml-[16rem] relative'>
                     {/* 오른쪽 설정 섹션 */}
                     <div aria-label='블로그 설정'>

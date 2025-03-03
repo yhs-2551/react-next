@@ -9,6 +9,7 @@ import { CustomHttpError } from "@/utils/CustomHttpError";
 import { toast } from "react-toastify";
 import GlobalLoading from "@/app/loading";
 import BlogList from "../../../components/BlogList";
+import { useRouter } from "next/navigation";
 
 export default function UserPagePostListPaginationWrapper({ blogId, pageNum }: { blogId: string; pageNum: string }) {
     const [posts, setPosts] = useState<PostsReadBaseProps>({
@@ -19,6 +20,10 @@ export default function UserPagePostListPaginationWrapper({ blogId, pageNum }: {
     });
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
+
+    const [authError, setAuthError] = useState<Error | null>(null);
+
+    const router = useRouter();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -52,12 +57,16 @@ export default function UserPagePostListPaginationWrapper({ blogId, pageNum }: {
                                     },
                                 }
                             );
+                        } else if (error instanceof Error && error.message.includes("특정 사용자 페이지네이션 목록 데이터가 없습니다")) {
+                            router.push("/404");
                         } else if (e instanceof Error && e.message === "특정 사용자 페이지네이션 목록 데이터를 불러오는데 실패하였습니다.") {
-                            throw e;
+                            setAuthError(new Error("특정 사용자 페이지네이션 목록 데이터를 불러오는데 실패하였습니다."));
                         }
                     }
+                } else if (error instanceof Error && error.message.includes("특정 사용자 페이지네이션 목록 데이터가 없습니다")) {
+                    router.push("/404");
                 } else {
-                    throw error;
+                    setAuthError(new Error("특정 사용자 페이지네이션 목록 데이터를 불러오는데 실패하였습니다."));
                 }
             } finally {
                 setIsLoading(false);
@@ -68,6 +77,10 @@ export default function UserPagePostListPaginationWrapper({ blogId, pageNum }: {
     }, [blogId]);
 
     if (isLoading) return <GlobalLoading />;
+
+    if (authError) {
+        throw authError;
+    }
 
     const isExistContent = posts.content.length > 0;
 

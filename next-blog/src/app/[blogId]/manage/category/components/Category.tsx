@@ -1,6 +1,6 @@
 "use client";
 
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import ClipLoader from "react-spinners/ClipLoader";
@@ -36,6 +36,7 @@ import { useCategoryStore } from "@/store/appStore";
 import { revalidateCategories } from "@/actions/revalidate";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { revalidatePath } from "next/cache";
+import ToastProvider from "@/providers/ToastProvider";
 
 // 컴포넌트 외부에 헬퍼 함수 정의
 const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
@@ -509,7 +510,7 @@ const Category: React.FC = () => {
 
     return (
         <>
-            <ToastContainer position='top-center' />
+            <ToastProvider />
 
             <div className='manage-wrapper min-h-screen w-full bg-manageBgColor'>
                 <CommonSideNavigation />

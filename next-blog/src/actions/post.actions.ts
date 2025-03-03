@@ -1,9 +1,6 @@
 "use server";
 
-import { CacheTimes } from "@/constants/cache-constants";
-import { refreshToken } from "@/services/api";
-import { CustomHttpError } from "@/utils/CustomHttpError";
-import { notFound } from "next/navigation";
+import { CacheTimes } from "@/constants/cache-constants"; 
 
 // import { CacheTimes } from "@/constants/cache-constants";
 
@@ -41,8 +38,8 @@ export async function fetchSpecificUserPosts(blogId: string, token: string | nul
     }
 
     if (!res.ok) {
-        console.error("fetchSpecificUserPosts 특정 사용자 게시글 목록 조회 실패");
-        throw new Error("특정 사용자 게시글 목록 데이터를 불러오는데 실패하였습니다.");
+        console.error("fetchSpecificUserPosts 서버측 오류로 인해 특정 사용자 게시글 목록 조회 실패");
+        throw new Error("서버측 오류로 인해 특정 사용자 게시글 목록 데이터를 불러오는데 실패하였습니다.");
     }
     return res.json();
 }
@@ -61,7 +58,7 @@ export async function fetchSpecificUserPaginationPosts(blogId: string, pageNum: 
         throw new Error("액세스 토큰 만료");
     } else if (!res.ok && res.status === 404) {
         console.error("fetchSpecificUserPaginationPosts 404에러 실행");
-        notFound();
+        throw new Error("특정 사용자 페이지네이션 목록 데이터가 없습니다.");
     } else if (!res.ok) {
         console.error("fetchSpecificUserPaginationPosts 특정 사용자 페이지네이션 목록 데이터 조회 실패 실행");
         throw new Error("특정 사용자 페이지네이션 목록 데이터를 불러오는데 실패하였습니다.");
@@ -91,7 +88,7 @@ export async function fetchSpecificUserCategoryPosts(blogId: string, categoryNam
         throw new Error("액세스 토큰 만료");
     } else if (!res.ok && res.status === 404) {
         console.error("fetchSpecificUserCategoryPosts 404에러 실행");
-        notFound();
+        throw new Error("특정 사용자의 카테고리 목록 데이터가 없습니다.");
     } else if (!res.ok) {
         console.error("fetchSpecificUserCategoryPosts 특정 사용자의 카테고리 목록 데이터 조회 실패 실행");
         throw new Error("특정 사용자의 카테고리 목록 데이터를 불러오는데 실패하였습니다.");
@@ -118,13 +115,65 @@ export async function fetchSpecificUserCategoryPaginationPosts(blogId: string, c
         throw new Error("액세스 토큰 만료");
     } else if (!res.ok && res.status === 404) {
         console.error("fetchSpecificUserCategoryPaginationPosts 404에러 실행");
-        notFound();
+        throw new Error("특정 사용자의 카테고리 페이지네이션 목록 데이터가 없습니다.");
     } else if (!res.ok) {
         console.error("fetchSpecificUserCategoryPaginationPosts 특정 사용자의 카테고리 페이지네이션 데이터 조회 실패 실행");
         throw new Error("특정 사용자의 카테고리 페이지네이션 데이터를 불러오는데 실패하였습니다.");
     }
 
     return await res.json();
+}
+
+export async function fetchPostDetail(blogId: string, postId: string, token: string | null) {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/${postId}`, {
+        cache: "no-cache",
+        headers: {
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        // next: {
+        //     tags: [`${blogId}-post-${id}-detail`],
+        //     revalidate: CacheTimes.MODERATE.POST_DETAIL
+        // }
+    });
+
+    if (!res.ok && res.status === 401) {
+        console.error("fetchPostDetail  액세스 토큰 만료 실행");
+        throw new Error("액세스 토큰 만료");
+    } else if (!res.ok && res.status === 404) {
+        console.error(`fetchPostDetail ${postId} 404 에러 실행`);
+        throw new Error(`상세 페이지 ${postId} 게시글을 찾을 수 없습니다.`);
+       //  redirect("/404"); notfound()는 작동이 안함 try/catch로 감싸고 있는 유무와 상관 없이
+    } else if (!res.ok) {
+        console.error("fetchPostDetail 서버측 오류로 특정 사용자 상세 페이지 게시글 데이터를 불러오는데 실패");
+        throw new Error("특정 사용자 상세 페이지 게시글 데이터를 불러오는데 실패하였습니다.");
+    }
+    return res.json();
+}
+
+// 수정 페이지는 AuthCheck에서 이미 블로그 주인 검증 및 리프레시 토큰을 이용한 액세스 토큰 재발급까지 끝냈기 때문에 해당 사용자만 요청할 수 있음. 따라서 액세스 토큰이 무조건 존재
+// 또한 얘를 실행하는 클라이언트 컴포넌트는 클라이언트 컴포넌트에서 임포트해서 실행하기 때문에 클라이언트 환경에서 실행
+// 또한 얘는 try catch로 감싸지 않기 때문에 여기서 throw new Error 를 던지면 바로 error.tsx로 전파
+export async function fetchPostEditDetail(blogId: string, postId: string, token: string | null) {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/${postId}/edit`, {
+        cache: "no-cache",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+        // next: {
+        //     tags: [`${blogId}-post-${id}-edit`],
+        //     revalidate: CacheTimes.MODERATE.POST_EDIT,
+        // },
+    });
+
+    if (!res.ok && res.status === 404) {
+        console.error(`fetchPostEditDetail 특정 사용자 수정 페이지 ${postId} 404 에러 실행`);
+        throw new Error(`수정 페이지 ${postId} 게시글을 찾을 수 없습니다.`);
+    } else if (!res.ok) {
+        console.error("fetchPostEditDetail 특정 사용자 수정 페이지 게시글 데이터를 불러오는데 실패");
+        throw new Error("서버측 오류로 인해 수정 페이지 데이터를 불러오는데 실패"); // 형식상 여기서 던지고 실제 처리는 클라이언트 컴포넌트에서 상태를 이용해서 에러 처리를 해야 error.tsx로 전달됨
+    }
+
+    return res.json();
 }
 
 // 사용자 페이지 검색 결과
@@ -143,8 +192,8 @@ export async function searchPostsForUserPage(blogId: string, queryParams: string
         console.error("searchPostsForUserPage 액세스 토큰 만료 실행");
         throw new Error("액세스 토큰 만료");
     } else if (!response.ok && response.status === 404) {
-        console.error("searchPostsForUserPage 404에러 실행");
-        notFound();
+        console.error("특정 사용자 게시글 searchPostsForUserPage 404에러 실행");
+        throw new Error("특정 사용자 게시글 검색 결과가 없습니다.");
     } else if (!response.ok) {
         console.error("searchPostsForUserPage 특정 사용자 게시글 검색 조회 실패 실행");
         throw new Error("특정 사용자 게시글 검색 데이터를 불러오는데 실패하였습니다");

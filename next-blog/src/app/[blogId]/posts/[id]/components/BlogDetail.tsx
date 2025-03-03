@@ -8,12 +8,12 @@ import parse, { DOMNode, Element } from "html-react-parser";
 
 import useDeletePost from "@/customHooks/useDeletePost";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { useParams, useRouter } from "next/navigation";
 
-import { toast, ToastContainer } from "react-toastify";
-import { checkAccessToken, fetchIsAuthor, postStatusChange, refreshToken } from "@/services/api";
+import { toast } from "react-toastify";
+import { fetchIsAuthor, postStatusChange } from "@/services/api";
 
 import { FileMetadata, PostResponse } from "@/types/PostTypes";
 import DOMPurify from "dompurify";
@@ -132,7 +132,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         setParsedContent(parseContent(post.content));
     }, []);
 
-    const formattedDate: string = new Date(post.createdAt).toLocaleString("ko-KR", {
+    const formattedDate: string = new Date(post.createdAt!).toLocaleString("ko-KR", {
         year: "numeric",
         month: "numeric",
         day: "numeric",
@@ -235,42 +235,11 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
         };
     }, []);
 
+    // 권한 확인은 AuthCheck에서 진행. 즉 수정 페이지로 이동하면 AuthCheck가 실행 
+    // 문제는 수정 페이지의 서버 컴포넌트가 실행 되면서 권한 확인이 되지 않은 상태에서 데이터를 가져 온다는 점인데,
+    // 즉 권한 확인 -> 완료 후에 해당 상세 페이지 데이터를 가져와야 하는데, 일단 보류
     const handleEdit: () => Promise<void> = async (): Promise<void> => {
-        const isValidToken: boolean | undefined | null = await checkAccessToken();
-
-        if (isValidToken) {
-            // 토큰이 유효할 때 수정페이지로 접근
-            // router.push를 쓰면 클라이언트 측에서 페이지 이동이 일어나기 때문에, 수정 페이지로 접근 시 페이지 전체가 새로고침 되지 않아 에디터 기능이 제대로 작동하지 않는다.
-            // 따라서 수정 페이지로 이동할땐 window.location.href를 사용하여 수정 페이지 전체 새로고침이 일어나도록 한다.
-            // router.push(`/posts/${postId}/edit`);
-            router.push(`/${blogId}/posts/${postId}/edit`);
-        }
-
-        if (isValidToken === false) {
-            try {
-                const newAccessToken = await refreshToken();
-                if (newAccessToken) {
-                    // 토큰이 유효할 때 수정페이지로 접근
-                    router.push(`/posts/${postId}/edit`);
-                    // window.location.assign(`/${blogId}/posts/${postId}/edit`);
-                }
-            } catch (error: unknown) {
-                if (error instanceof CustomHttpError) {
-                    localStorage.removeItem("access_token");
-
-                    toast.error(
-                        <span style={{ whiteSpace: "pre-line" }}>
-                            <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
-                        </span>,
-                        {
-                            onClose: () => {
-                                window.location.reload();
-                            },
-                        }
-                    );
-                }
-            }
-        }
+        router.push(`/${blogId}/posts/${postId}/edit`);
     };
 
     // 아래 toast, setTimeout 캐시 무효화 순서 저렇게 해야만 올바르게 작동함. 시간만 조정 가능
@@ -378,7 +347,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                     <span className='text-sm text-gray-500'>{formattedDate}</span>
                     <span className='text-sm text-gray-500'>{post.username}</span>
                 </div>
-                {/* Action Buttons */}
+                {/* Action Buttons, 수정 버튼은 단순 이동이기 때문에 Link로 쓸수도 있지만 그 밑에 버튼과의 일관성을 위해 유지 */}
                 {isAuthor && (
                     <div className='flex space-x-4 mb-4'>
                         <button onClick={handleEdit} className='text-sm text-gray-500'>
@@ -386,7 +355,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
                         </button>
                         <button onClick={handlePostStatus} className='text-sm text-gray-500'>
                             {postStatus && (postStatus === "PUBLIC" ? "비공개로 변경" : "공개로 변경")}
-                         </button>
+                        </button>
                         <button type='button' className='text-sm text-gray-500' onClick={() => setIsDeleteModalOpen(true)}>
                             삭제
                         </button>

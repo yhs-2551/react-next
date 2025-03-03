@@ -3,12 +3,13 @@
 import { Suspense, useEffect, useState } from "react";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { fetchSpecificUserCategoryPaginationPosts } from "@/actions/post.actions";
-import { PostResponse, PostsReadBaseProps } from "@/types/PostTypes";
+import { PostsReadBaseProps } from "@/types/PostTypes";
 import { refreshToken } from "@/services/api";
 import { CustomHttpError } from "@/utils/CustomHttpError";
-import { toast } from "react-toastify"; 
+import { toast } from "react-toastify";
 import GlobalLoading from "@/app/loading";
 import BlogList from "@/app/[blogId]/posts/components/BlogList";
+import { useRouter } from "next/navigation";
 
 export default function CategoryPaginationPostListWrapper({
     blogId,
@@ -29,6 +30,10 @@ export default function CategoryPaginationPostListWrapper({
     });
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
+
+    const [authError, setAuthError] = useState<Error | null>(null);
+
+    const router = useRouter();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -51,7 +56,6 @@ export default function CategoryPaginationPostListWrapper({
                         }
                     } catch (e: unknown) {
                         if (e instanceof CustomHttpError && e.status === 401) {
- 
                             localStorage.removeItem("access_token");
                             toast.error(
                                 <span>
@@ -63,12 +67,16 @@ export default function CategoryPaginationPostListWrapper({
                                     },
                                 }
                             );
+                        } else if (error instanceof Error && error.message.includes("특정 사용자의 카테고리 페이지네이션 목록 데이터가 없습니다")) {
+                            router.push("/404");
                         } else if (e instanceof Error && e.message === "특정 사용자의 카테고리 페이지네이션 데이터를 불러오는데 실패하였습니다.") {
-                            throw e;
+                            setAuthError(new Error("특정 사용자의 카테고리 페이지네이션 데이터를 불러오는데 실패하였습니다."));
                         }
                     }
+                } else if (error instanceof Error && error.message.includes("특정 사용자의 카테고리 페이지네이션 목록 데이터가 없습니다")) {
+                    router.push("/404");
                 } else {
-                    throw error;
+                    setAuthError(new Error("특정 사용자의 카테고리 페이지네이션 데이터를 불러오는데 실패하였습니다."));
                 }
             } finally {
                 setIsLoading(false);
@@ -79,6 +87,10 @@ export default function CategoryPaginationPostListWrapper({
     }, [blogId]);
 
     if (isLoading) return <GlobalLoading />;
+
+    if (authError) {
+        throw authError;
+    }
 
     const isExistContent = posts.content.length > 0;
 

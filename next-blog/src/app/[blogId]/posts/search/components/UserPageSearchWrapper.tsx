@@ -10,6 +10,7 @@ import { refreshToken } from "@/services/api";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { toast } from "react-toastify";
 import GlobalLoading from "@/app/loading";
+import { useRouter } from "next/navigation";
 
 interface SearchWrapperProps {
     blogId: string;
@@ -35,7 +36,11 @@ export default function UserPageSearchWrapper({ blogId, searchParams }: SearchWr
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
+    const [authError, setAuthError] = useState<Error | null>(null);
+
     const { searchTriggerNum } = useSearchStore();
+
+    const router = useRouter();
 
     useEffect(() => {
         const fetchSearch = async () => {
@@ -84,12 +89,16 @@ export default function UserPageSearchWrapper({ blogId, searchParams }: SearchWr
                                     },
                                 }
                             );
+                        } else if (error instanceof Error && error.message.includes("검색 결과가 없습니다")) {
+                            router.push("/404");
                         } else {
-                            throw e;
+                            setAuthError(new Error("특정 사용자 게시글 검색 데이터를 불러오는데 실패하였습니다"));
                         }
                     }
+                } else if (error instanceof Error && error.message.includes("검색 결과가 없습니다")) {
+                    router.push("/404");
                 } else {
-                    throw error; //  throw new Error("특정 사용자 게시글 검색 데이터를 불러오는데 실패하였습니다"); 를 던져서 error.tsx가 실행될 수 있도록
+                    setAuthError(new Error("특정 사용자 게시글 검색 데이터를 불러오는데 실패하였습니다"));
                 }
             } finally {
                 setIsLoading(false);
@@ -104,6 +113,10 @@ export default function UserPageSearchWrapper({ blogId, searchParams }: SearchWr
     }
 
     if (isLoading) return <GlobalLoading />;
+
+    if (authError) {
+        throw authError;
+    }
 
     const isExistContent = searchResults.content.length > 0;
 

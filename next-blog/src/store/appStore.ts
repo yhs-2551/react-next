@@ -9,10 +9,12 @@ interface ProfileState {
     blogId: string;
     profileImage: string;
     defaultProfileImage: string;
+    profileUpdate: boolean;
     setBlogName: (name: string) => void;
     setBlogUsername: (username: string) => void;
     setBlogId: (id: string) => void;
     setProfileImage: (image: string) => void;
+    setProfileUpdate: (status: boolean) => void;
 }
 
 export const userProfileStore = create<ProfileState>((set) => ({
@@ -21,10 +23,12 @@ export const userProfileStore = create<ProfileState>((set) => ({
     blogId: "",
     profileImage: "",
     defaultProfileImage: "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-avatar-profile.webp",
+    profileUpdate: false,
     setBlogName: (name) => set({ blogName: name }),
     setBlogUsername: (username) => set({ blogUsername: username }),
     setBlogId: (id) => set({ blogId: id }),
     setProfileImage: (image) => set({ profileImage: image }),
+    setProfileUpdate: (status) => set({ profileUpdate: status }),
 }));
 
 interface AuthState {

@@ -1,4 +1,3 @@
- 
 import { OAuth2UserAdditionalInfo, SignupUser } from "@/types/SignupUserTypes";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 
@@ -43,7 +42,7 @@ export const checkAccessToken = async () => {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
-                },  
+                },
             });
 
             // 액세스 토큰이 유효하지 않을때 서버측 에러. 즉, isLoggedIn false
@@ -54,27 +53,13 @@ export const checkAccessToken = async () => {
             return true;
         }
     } catch (error) {
-        console.log("토큰 유효성 검사 실패", error);
+        console.error("checkAccessToken 토큰 유효성 검사 실패", error);
         return false;
     }
 };
 
-// if (response.status === 401) {
-//     try {
-//         const newAccessToken = await refreshToken();
-//         if (newAccessToken) {
-//             response = await deletePost(postId, newAccessToken, blogId);
-//         }
-//     } catch (error: unknown) { // 리프레시 토큰 까지 만료되면 재로그인 필요
-//         if (error instanceof CustomHttpError) {
-//             setAccessToken(null);
-//             throw new CustomHttpError(error.status, error.message);
-//         }
-//     }
-// }
-
-export const fetchIsAuthor = async (blogId: string, accessToken: string | null) => {
-    const verifyPostAuthor = async (accessToken: string | null) => {
+export const fetchIsAuthor = async (blogId: string, accessToken: string) => {
+    const verifyPostAuthor = async (accessToken: string) => {
         return await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/auth/${blogId}/verify-author`, {
             method: "GET",
             headers: {
@@ -83,13 +68,33 @@ export const fetchIsAuthor = async (blogId: string, accessToken: string | null) 
         });
     };
 
-    const responseFromServer = await verifyPostAuthor(accessToken);
+    let res = await verifyPostAuthor(accessToken);
 
-    if (!responseFromServer.ok && responseFromServer.status === 500) {
-        throw new Error("서버측 오류로 인해 작성자 확인이 불가능합니다.");
+    if (!res.ok && res.status === 401) {
+        console.error("fetchIsAuthor 401 에러(액세스 토큰 만료), 액세스 토큰 재발급 작업 시작");
+
+        try {
+            const newAccessToken = await refreshToken();
+            if (newAccessToken) {
+                res = await verifyPostAuthor(newAccessToken);
+            }
+        } catch (error: unknown) {
+            if (error instanceof CustomHttpError) {
+                console.error("fetchIsAuthor 리프레시 토큰을 통한 액세스 토큰 재발급 401 에러, 재로그인 필요");
+                throw new CustomHttpError(error.status, "세션이 만료되었습니다.\n재로그인 해주세요.");
+            }
+        }
     }
 
-    const response = await responseFromServer.json();
+    if (!res.ok && res.status === 500) {
+        console.error("fetchIsAuthor 500 서버측 에러");
+        throw new CustomHttpError(res.status, "서버측 오류로 인해 작성자 확인이 불가능합니다.");
+    }
+
+    const response = await res.json();
+
+    console.log("fetchIsAuthor response >>> ", response.data);
+
     return response.data; // 서버에서 isAuthor 값을 반환받아 true or false값을 반환
 };
 

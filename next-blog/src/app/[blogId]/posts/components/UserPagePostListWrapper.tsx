@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import BlogList from "./BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { fetchSpecificUserPosts } from "@/actions/post.actions";
-import { PostResponse, PostsReadBaseProps } from "@/types/PostTypes";
+import { PostsReadBaseProps } from "@/types/PostTypes";
 import { refreshToken } from "@/services/api";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { toast } from "react-toastify";
@@ -20,6 +20,9 @@ export default function UserPagePostListWrapper({ blogId }: { blogId: string }) 
     });
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
+
+    const [authError, setAuthError] = useState<Error | null>(null);
+     
 
     useEffect(() => {
         const fetchData = async () => {
@@ -56,11 +59,11 @@ export default function UserPagePostListWrapper({ blogId }: { blogId: string }) 
                                 }
                             );
                         } else if (e instanceof Error && e.message === "특정 사용자 게시글 목록 데이터를 불러오는데 실패하였습니다.") {
-                            throw e;
+                            setAuthError(new Error("특정 사용자 게시글 목록 데이터를 불러오는데 실패하였습니다."));
                         }
                     }
                 } else {
-                    throw error;
+                    setAuthError(new Error("특정 사용자 게시글 목록 데이터를 불러오는데 실패하였습니다."));
                 }
             } finally {
                 setIsLoading(false);
@@ -71,6 +74,10 @@ export default function UserPagePostListWrapper({ blogId }: { blogId: string }) 
     }, [blogId]);
 
     if (isLoading) return <GlobalLoading />;
+
+    if (authError) {
+        throw authError;
+    }
 
     const isExistContent = posts.content.length > 0;
 

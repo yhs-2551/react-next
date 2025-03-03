@@ -4,7 +4,7 @@ import React, { ChangeEvent, useEffect, useRef } from "react";
 
 import { v4 as uuidv4 } from "uuid";
 
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import useAddPost from "@/customHooks/useAddPost";
 import { useParams, useRouter } from "next/navigation";
@@ -23,6 +23,7 @@ import PublishModal from "../modal/PublishModal";
 import { revalidatePostsAndCategories } from "@/actions/revalidate";
 import { useCategoryStore } from "@/store/appStore";
 import ConfirmModal from "../modal/ConfirmModal";
+import ToastProvider from "@/providers/ToastProvider";
 
 // QuillEditor 컴포넌트를 동적으로 임포트하면서 highlight.js도 함께 설정
 const QuillEditor = dynamic(
@@ -389,8 +390,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
 
     return (
         <>
-            <ToastContainer position='top-center' />
-
+            <ToastProvider />
             <form onSubmit={(e) => e.preventDefault()} className='pb-32'>
                 <fieldset className=''>
                     <legend className='sr-only'>새로운 블로그 글 등록 폼</legend>

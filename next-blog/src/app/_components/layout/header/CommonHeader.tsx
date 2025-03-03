@@ -1,5 +1,5 @@
 "use client";
-import { checkAccessToken, logoutUser, refreshToken } from "@/services/api";
+import { logoutUser } from "@/services/api";
 import { useAuthStore, userProfileStore } from "@/store/appStore";
 import { FiMenu } from "react-icons/fi";
 import { CiSettings } from "react-icons/ci";
@@ -9,8 +9,6 @@ import NextImage from "next/image";
 import { useParams, usePathname, useRouter } from "next/navigation";
 
 import React, { useEffect, useRef, useState } from "react";
-import { CustomHttpError } from "@/utils/CustomHttpError";
-import { toast } from "react-toastify";
 import Link from "next/link";
 import SearchContainer from "../../search/SearchContainer";
 import MenuModal from "../../modal/MenuModal";
@@ -28,7 +26,7 @@ export default function CommonHeader() {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
     const { isInitialized, setShowLogin, isAuthenticated, setInitialized, setAuthenticated, setHeaderLogin } = useAuthStore();
-    const { blogName, blogUsername, profileImage } = userProfileStore();
+    const { blogName, profileImage, profileUpdate, setProfileUpdate } = userProfileStore();
 
     const [userPrivateProfile, setUserPrivateProfile] = useState<UserPrivateProfile>({
         blogId: "",
@@ -45,7 +43,6 @@ export default function CommonHeader() {
     const hamburgerMenuModalRef = useRef<HTMLDivElement>(null);
     const hamburgerMenuButtonRef = useRef<HTMLButtonElement>(null);
 
-    
     const router = useRouter();
 
     const params = useParams();
@@ -61,11 +58,9 @@ export default function CommonHeader() {
     const isCategoryPage = pathname?.includes(`/${pathBlogId}/categories`);
     const isSearchPage = pathname?.includes(`/${pathBlogId}/posts/search`);
 
-
     // zustand의 상태관리는 휘발성이기 때문에 zustand 전역상태로 로그인을 관리하기 보다 페이지를 새로고침 시키면서 아래 useEffect 재실행 시킴.
     // 재실행됨에 따라 액세스 토큰 유무로 로그인 상태를 관리.
-    useEffect(() => { 
-
+    useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
                 setIsUserMenuOpen(false);
@@ -83,7 +78,6 @@ export default function CommonHeader() {
 
         //isAuthenticated는 일반 form 로그인
         if (isInitialized || isAuthenticated) {
-
             console.log("isInitialized: 실행입니다");
 
             // useEffect 내부가 아닌 외부에서 실행하면 서버사이드 렌더링에서 브라우저의 localStorage를 정의할 수 없다는 오류 발생.
@@ -91,11 +85,7 @@ export default function CommonHeader() {
 
             const isAccessToken = accessToken && accessToken !== null && accessToken !== undefined && accessToken !== "";
 
-            if (isAccessToken) { 
-
-                
-            console.log("isAccessToken: 실행입니다");
-
+            if (isAccessToken) {
                 setIsLoggedIn(true);
                 //setHeaderLogin는 AuthCheck부분을 위해. window.location 새로고침 기능 대신 router.push 기능을 사용하기 위해, 즉 ux향상을 위해 사용
                 setHeaderLogin(true);
@@ -121,7 +111,25 @@ export default function CommonHeader() {
             };
         }
     }, [isInitialized, isAuthenticated]);
- 
+
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            const accessToken = localStorage.getItem("access_token");
+
+            if (!accessToken || !profileUpdate) return; // 로그인된 사용자이면서, profileUpdate가 true일때만 실행. !profileUpdate가 있어야 새로고침 했을때 불필요하게 요청을 보내지 않음
+
+            try {
+                const response = await getUserPrivateProfile(accessToken);
+                setUserPrivateProfile(response.data);
+                setProfileUpdate(false);
+            } catch (error) {
+                console.error("프로필 조회 실패:", error);
+            }
+        };
+
+        fetchUserProfile();
+    }, [profileUpdate]);
+
     const handleLogoutClick = async () => {
         if (isLoggedIn) {
             try {
@@ -141,48 +149,10 @@ export default function CommonHeader() {
         }
     };
 
-    const handleNewPost = async () => {
-        const isValidToken = await checkAccessToken();
-
-        if (isValidToken === null) {
-            return;
-        }
-
-        if (isValidToken === false) {
-            try {
-                const newAccessToken = await refreshToken();
-                if (newAccessToken) {
-                    router.push(`/${userPrivateProfile.blogId}/posts/new`);
-                    // router.push("/posts/new");
-                }
-            } catch (error: unknown) {
-                // 리프레시 토큰까지 만료되어서 재로그인 필요
-                if (error instanceof CustomHttpError) {
-                    localStorage.removeItem("access_token");
-
-                    toast.error(
-                        <span>
-                            <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
-                        </span>,
-                        {
-                            onClose: () => {
-                                window.location.reload();
-                            },
-                        }
-                    );
-                }
-            }
-        } else if (isValidToken === true) {
-            // window.location.assign(`/${userPrivateProfile.blogId}/posts/new`);
-            router.push(`/${userPrivateProfile.blogId}/posts/new`);
-        }
-    };
-
     const handleLogoClick = () => {
         sessionStorage.removeItem("cached-users-posts");
         router.push("/");
-    }
- 
+    };
 
     return (
         <>
@@ -232,30 +202,33 @@ export default function CommonHeader() {
                     <div className='relative' ref={menuRef}>
                         <div className='flex items-center gap-4'>
                             {!isWriteOrEditPage && (
-                                <button
+                                <Link
+                                    href={`/${userPrivateProfile.blogId}/posts/new`} // 권한 확인은 AuthCheck에서 처리
                                     className='px-5 py-2 text-sm font-medium text-white bg-gray-800 rounded-full  hover:bg-gray-700 transition-colors duration-200 ease-in-out focus:outline-none'
-                                    onClick={handleNewPost}
                                 >
                                     새 글 작성
-                                </button>
+                                </Link>
                             )}
 
                             <NextImage
-                                src={profileImage ||userPrivateProfile.profileImageUrl || "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-avatar-profile.webp"}
+                                src={
+                                    profileImage ||
+                                    userPrivateProfile.profileImageUrl ||
+                                    "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-avatar-profile.webp"
+                                }
                                 width={36}
                                 height={36}
                                 alt='사용자 계정 이미지'
                                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                 quality={100}
-                                sizes="(max-width: 160px) 100vw, 36px"  
+                                sizes='(max-width: 160px) 100vw, 36px'
                                 className='w-11 h-11 object-cover rounded-full cursor-pointer hover:ring-2 hover:ring-gray-300 transition-all'
-                              
                             />
                         </div>
                         {isUserMenuOpen && (
                             <div className='absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100'>
                                 <div className='px-4 py-2'>
-                                    <p className='pt-2 text-gray-800'>{blogUsername || userPrivateProfile.username}</p>
+                                    <p className='pt-2 text-gray-800'>{userPrivateProfile.username}</p>
                                     <p className='text-sm text-gray-800 pt-2'>{userPrivateProfile.email}</p>
                                 </div>
                                 <div className='px-4 pb-2 flex flex-col gap-2'>
@@ -264,7 +237,7 @@ export default function CommonHeader() {
                                         className='w-full text-left rounded-lg transition-colors text-gray-800 hover:text-gray-500'
                                         onClick={() => setIsUserMenuOpen(false)}
                                     >
-                                        {blogName || `${userPrivateProfile.blogName}`}
+                                        {`${userPrivateProfile.blogName}`}
                                     </Link>
 
                                     <Link
