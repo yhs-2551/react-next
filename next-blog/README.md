@@ -1,36 +1,212 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+## 개인 블로그 프론트엔드 프로젝트
 
-## Getting Started
+Next.js와 TypeScript를 활용한 개인 블로그 플랫폼입니다. 서버 컴포넌트와 서버 액션을 통한 효율적인 데이터 관리, 커스터마이징된 Quill 에디터, 사용자별 블로그 공간, 사용자 프로필 페이지를 제공합니다.
 
-First, run the development server:
+**프로젝트 개요**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+나만의 블로그를 구축하기 위해 깔끔하고 직관적인 UI와 Next.js의 SSR/Cache 기능을 활용하여 빠른 로딩 속도를 통한 사용자 경험 향상을 목표로 개발한 블로그 프론트엔드 프로젝트입니다.
+
+**관련 백엔드 프로젝트**
+
+이 프론트엔드는 다음 백엔드 프로젝트와 함께 동작합니다: https://github.com/yhs-2551/spring-boot/tree/main/blog-springboot-jpa
+
+**데모 서비스**
+
+실제 구현된 블로그는 다음 링크에서 확인 가능합니다: https://dduhalog.duckdns.org/
+
+**기술 스택**
+
+**프레임워크**
+
+*   Next.js: 서버 사이드 렌더링, 서버 컴포넌트, 서버 액션, 캐싱
+*   TypeScript: 타입 안정성
+
+**상태 관리 & 데이터 페칭**
+
+*   React Query: 클라이언트 Mutation 요청, Next.js 캐시 기능을 사용함에 따라 추후 클라이언트측 캐시 확장성 고려
+*   Zustand: 전역 상태 관리
+* Next.js 서버 컴포넌트/서버 액션: GET 요청 및 캐시
+  * 서버 컴포넌트: 액세스 토큰이 필요 없는 공개 데이터 처리(ex: 인덱스 페이지)
+  * 서버 액션: 액세스 토큰이 필요한 인증 데이터 처리
+  * 모두 Next.js 캐시 기능 사용 및 향후 캐시 확장성 고려
+
+**UI/UX 라이브러리**
+
+*   React Quill: 위지윅 에디터 (커스텀 확장)
+*   Framer-motion: 팝업 애니메이션
+*   React-dnd: 드래그 앤 드롭 기능
+*   React-spinner: 로딩 스피너
+*   React-toastify: 알림 메시지
+*   React-tooltip: 기능 설명
+*   React-intersection-observer: 무한 스크롤
+*   yet-another-react-lightbox: 이미지 확대 기능
+
+**스타일링**
+
+*   TailwindCSS: 유틸리티 기반 스타일링
+*   React-icons: 아이콘 라이브러리
+
+**보안 & 파싱**
+
+*   DOMPurify: HTML 정화
+*   HTML-react-parser: HTML 컨텐츠를 React 컴포넌트로 변환
+
+**코드 하이라이팅**
+
+*   Highlight.js
+
+**주요 기능**
+
+**위지윅 에디터 커스터마이징**
+
+*   React Quill는 동적 로딩
+*   이미지 리사이즈 기능
+*   왼쪽, 가운데, 오른쪽 정렬 리사이즈
+*   Quill Delta와 React State 충돌 문제 해결 (Ref 기반 비제어 방식)
+*   확장 기능
+    *   툴바 헤더 위쪽으로 이동  
+    *   파일 업로드
+    *   이미지 정렬 오버레이 버튼
+    *   캡처 이미지 처리
+    *   복사/붙여넣기 (외부 이미지 포함) 처리
+    *   Proxy 방식의 외부 이미지 정보 획득
+    *   CTRL+X/V로 이미지 자르기/붙여넣기 기능
+    *   AWS S3 기반 이미지 저장
+
+**사용자 인증 시스템**
+
+*   회원가입
+    *   필드 유효성 검사
+    *   이메일 인증 코드 검증 및 재발급(1분 3회 제한)
+    *   사용자명(닉네임), 블로그 고유 식별자, 이메일 중복 확인 (1분 3회 제한)
+    *   OAuth2 신규 사용자 추가 정보 입력
+*   로그인
+    *   폼 로그인 및 OAuth2 로그인
+    *   리멤버미 기능 (2주/1일 유지)
+    *   로그인 요청 제한 (1분 3회)
+*   로그인 유지
+    *   액세스 토큰 및 리프레시 토큰 관리
+    *   자동 토큰 갱신
+*  사용자가 로그인/로그아웃 시 다른 페이지 이동 없이 가장 최근 페이지 위치 유지   
+
+**공통 헤더**
+
+*   경로별 최적화된 UI
+*   검색 및 사용자 계정 메뉴
+*   사용자 인증 상태 표시
+
+**게시물 관리 시스템**
+
+*   글 작성/수정
+    *   카테고리 선택
+    *   태그 관리
+    *   공개/비공개 설정
+    *   댓글 허용/비허용 설정
+    *   대표 이미지 선택
+*   파일 관리
+    *   이미지 파일 제한 (5MB)
+    *   일반 파일 제한 (10MB)
+    *   총 파일 크기 제한 (20MB)
+    *   미사용 파일 정리
+*   글 조회
+    *   Next Image를 통한 이미지 최적화
+    *   HTML 컨텐츠 파싱 및 렌더링
+    *   이미지 확대 기능
+
+**카테고리 시스템**
+
+*   2단계 카테고리 구조
+*   드래그앤드롭 구현
+*   상위↔하위 카테고리 이동 규칙
+*   자식 카테고리 보유 및 게시글 보유 시 삭제 제한
+*   트리 구조 편집 모드
+*   일괄 업데이트 (요청 최소화)
+
+**검색 시스템**
+
+*   인덱스/사용자별 페이지/사용자별 카카테고리 페이지 검색 분리
+*   검색어 자동완성
+*   최근 검색어 표시 
+
+**사용자별 및 인덱스 페이지**
+
+*   개인화된 URL 구조 ([blogId])
+*   블로그 주인/방문자(비로그인 사용자, 블로그 주인이 아닌 사용자) 권한 분리
+*   프로필 페이지
+*   카테고리 페이지
+*   무한 스크롤 (인덱스 페이지)   
+
+**사용자 프로필 관리**
+
+*   사용자 프로필 이미지 변경
+*   닉네임 변경
+*   블로그명 변경
+
+**권한 기반 접근 제어**
+*   블로그 주인/방문자 권한 분리
+*   공개/비공개 글 접근 제어
+    *   블로그 주인: 모든 글 조회/수정/삭제 가능
+    *   방문자: 공개 글만 조회 가능, 수정/삭제 불가
+*   URL을 통한 직접 접근 차단
+    *   비공개 글 URL 접근 시 not-found 처리
+    *   타인의 글 생성/수정 페이지 접근 시 권한 오류 표시
+*   인증 상태에 따른 동적 UI 처리
+    *   수정/삭제 버튼 표시 여부 동적 관리
+    *   비공개 글 표시 제어
+        * 블로그 주인: 글 목록 페이지에 공개/비공개 UI 
+        * 방문자: 공개글만 볼 수 있기 때문에 공개/비공개 UI 없음
+
+**Next.js 캐싱 전략**
+
+**캐시 적용 대상**
+
+*   사용자 프로필 정보
+*   카테고리 데이터
+*   사용자 존재 여부
+*   사용자 페이지 글 목록 초기 데이터
+
+**캐시 무효화**
+
+*   프로필 변경 시 관련 캐시 무효화
+*   카테고리 변경 시 카테고리 데이터 무효화
+*   글 작성/수정/삭제 시 관련 캐시 무효화
+*   자동 무효화 설정 (6-12시간)
+
+**프로젝트 구조**
+
+```
+src/
+├── actions/             # 서버 액션 관련
+├── app/
+│   ├── _components/     # 공통 UI 컴포넌트
+│   ├── [blogId]/        # 사용자별 블로그 페이지 (동적 라우팅)
+│   ├── components/      # 메인 페이지 컴포넌트
+│   └── oauth2/          # OAuth2 인증 및 콜백 처리 
+│   └── search/          # 메인 페이지 검색 기능 관련 페이지
+│   └── global.css, error.tsx, layout.tsx, loading.tsx, not-found.tsx, ...       # 전역 처리 관련 
+├── constants/           # 캐시 관련 상수
+├── customHooks/         # 커스텀 훅 모음(Mutation 작업 API요청)
+├── providers/           # 래퍼 컴포넌트 모음
+├── services/            # Mutation 작업 제외 API 요청 모음 
+└── store/              # zustand 전역 상태 관리
+├── types/              # Typescript 공통 타입 정의
+└── utils/              # 유틸리티 함수
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**개발 및 배포 환경**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+*   개발 환경: Next.js 개발 서버
+*   배포 환경: Vercel (HTTPS)
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+**향후 우선 순위**
 
-## Learn More
+현재는 핵심 기능 위주로 구현했으며, 추가적으로 아래 기능을 구현할 예정입니다:
 
-To learn more about Next.js, take a look at the following resources:
+*   글 임시 저장 기능: 작성 중인 글 보호
+*   실시간 알림 기능: WebSocket 기반
+*   댓글 및 대댓글 기능: 사용자 소통 강화
+*   좋아요 기능: 인기 게시물 식별
+*   반응형 디자인 개선: 모바일 최적화
+*   다크 모드 지원: 사용자 선호도 반영
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+읽어주셔서 감사합니다. 

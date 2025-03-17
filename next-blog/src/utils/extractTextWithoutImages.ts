@@ -17,6 +17,6 @@ export function extractTextWithoutImages(html: string): string {
          fileContainers[0].parentNode?.removeChild(fileContainers[0]);
      }
 
-    // 텍스트 추출
+    // HTML 태그 안에 있는 모든 태그를 무시하고 순수 텍스트만 추출
     return div.textContent || "";
 }
