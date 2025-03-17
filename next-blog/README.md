@@ -8,11 +8,15 @@ Next.js와 TypeScript를 활용한 개인 블로그 플랫폼입니다. 서버 �
 
 **관련 백엔드 프로젝트**
 
-이 프론트엔드는 다음 백엔드 프로젝트와 함께 동작합니다: https://github.com/yhs-2551/spring-boot/tree/main/blog-springboot-jpa
+이 프론트엔드는 다음 백엔드 프로젝트와 함께 동작합니다: 
+
+https://github.com/yhs-2551/spring-boot/tree/main/blog-springboot-jpa
 
 **데모 서비스**
 
-실제 구현된 블로그는 다음 링크에서 확인 가능합니다: https://dduhalog.duckdns.org/
+실제 구현된 블로그는 다음 링크에서 확인 가능합니다: 
+
+https://dduhalog.duckdns.org/
 
 **기술 스택**
 
@@ -206,6 +210,7 @@ src/
 *   실시간 알림 기능: WebSocket 기반
 *   댓글 및 대댓글 기능: 사용자 소통 강화
 *   좋아요 기능: 인기 게시물 식별
+*   태그 기능: 태그별 게시글 조회 처리
 *   반응형 디자인 개선: 모바일 최적화
 *   다크 모드 지원: 사용자 선호도 반영
 
