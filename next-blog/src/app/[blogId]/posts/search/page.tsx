@@ -1,7 +1,4 @@
-import React, { Suspense } from "react";
-import BlogList from "../components/BlogList";
-import Pagination from "@/app/_components/pagination/Pagination";
-import { notFound } from "next/navigation";
+import React, { Suspense } from "react"; 
 import UserPageSearchWrapper from "./components/UserPageSearchWrapper";
 // import { CacheTimes } from "@/constants/cache-constants";
 

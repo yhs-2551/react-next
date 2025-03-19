@@ -30,22 +30,25 @@ export default function UserPagePostEditDetailWrapper({ blogId, postId }: { blog
     const router = useRouter();
 
     useEffect(() => {
+        // 수정 페이지는 워낙 간결하기 때문에 FetchWithAuth 유틸리티 컴포넌트를 사용하지 않음
+        // 수정 페이지는 AuthCheck에서 이미 블로그 주인 검증 및 리프레시 토큰을 이용한 액세스 토큰 재발급까지 끝냈기 때문에 해당 사용자만 요청할 수 있음. 따라서 401처리 필요 없고, 액세스 토큰이 무조건 존재
         const fetchData = async () => {
             // AuthCheck에서 검증을 끝냈기 때문에 여기에선 무조건 access_token이 있음
             const token = localStorage.getItem("access_token") as string;
 
-            try {
-                setIsLoading(true);
-                const response = await fetchPostEditDetail(blogId, postId, token);
-                setPost(response.data);
-            } catch (error: unknown) {
-                if (error instanceof Error && error.message.includes("서버")) {
+            setIsLoading(true);
+            const response = await fetchPostEditDetail(blogId, postId, token);
+
+            if (response.success === false) {
+                if (response.status === 404) {
+                    router.push(`/404`);
+                } else if (response.status === 500) {
                     setAuthError(new Error("수정 페이지 데이터를 불러오는데 실패"));
                     return;
-                } else if (error instanceof Error && error.message.includes("게시글을 찾을 수 없습니다")) {
-                    router.push(`/404`);
                 }
             }
+
+            setPost(response.data);
         };
 
         fetchData().then(() => {

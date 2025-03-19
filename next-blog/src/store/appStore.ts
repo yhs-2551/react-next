@@ -94,13 +94,4 @@ export const useCategoryStore = create<CategoryState>((set) => ({
     categories: [],
     setCategories: (categories) => set({ categories }),
 }));
-
-interface SearchState {
-    searchTriggerNum: number;
-    triggerSearch: () => void;
-}
-
-export const useSearchStore = create<SearchState>((set) => ({
-    searchTriggerNum: 0,
-    triggerSearch: () => set((state) => ({ searchTriggerNum: state.searchTriggerNum + 1 })),
-}));
+ 

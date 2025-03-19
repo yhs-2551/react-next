@@ -1,8 +1,56 @@
 "use server";
 
-import { CacheTimes } from "@/constants/cache-constants"; 
+import { CacheTimes } from "@/constants/cache-constants";
 
 // import { CacheTimes } from "@/constants/cache-constants";
+
+async function editPageResponse(res: Response, postId: string, functionName: string) {
+    if (!res.ok && res.status === 404) {
+        console.error(`${functionName} 특정 사용자 수정 페이지 ${postId} 404 에러 실행`);
+        return { success: false, status: 404, message: `수정 페이지 ${postId} 게시글을 찾을 수 없습니다.` };
+    } else if (!res.ok) {
+        //  실제 처리는 클라이언트 컴포넌트에서 상태를 이용해서 에러 처리를 해야 error.tsx로 전달됨
+
+        console.error(`${functionName} 특정 사용자 수정 페이지 게시글 데이터를 불러오는데 실패`);
+        return { success: false, status: 500, message: "특정 사용자 상세 페이지 게시글 데이터를 불러오는데 실패하였습니다." };
+    }
+
+    return await res.json(); // json() 메서드 await 필요
+}
+
+async function userPostListsAndSearchSuggestionsPageResponse(res: Response, functionName: string) {
+    if (!res.ok && res.status === 401) {
+        console.error(`${functionName}  액세스 토큰 만료 실행`);
+        return { success: false, status: 401, message: "액세스 토큰이 만료 되었습니다." };
+    }
+
+    if (!res.ok) {
+        console.error(`${functionName} 서버측 오류로 데이터를 불러오는데 실패`);
+        return { success: false, status: 500, message: `${functionName} 데이터를 불러오는데 실패하였습니다.` };
+    }
+    return await res.json();
+}
+
+async function baseResponse(res: Response, functionName: string, postId?: string) {
+    if (!res.ok && res.status === 401) {
+        console.error(`${functionName}  액세스 토큰 만료 실행`);
+        return { success: false, status: 401, message: "액세스 토큰이 만료 되었습니다." };
+    } else if (!res.ok && res.status === 404) {
+        //  redirect("/404"); notfound()는 작동이 안함 try/catch로 감싸고 있는 유무와 상관 없이
+
+        if (postId) {
+            console.error(`${functionName} ${postId} 404 에러 실행`);
+            return { success: false, status: 404, message: `${functionName} ${postId} 게시글을 찾을 수 없습니다.` };
+        } else {
+            console.error(`${functionName} 404 에러 실행`);
+            return { success: false, status: 404, message: `${functionName} 데이터를 찾을 수 없습니다.` };
+        }
+    } else if (!res.ok) {
+        console.error(`${functionName} 서버측 오류로 데이터를 불러오는데 실패`);
+        return { success: false, status: 500, message: `${functionName} 데이터를 불러오는데 실패하였습니다.` };
+    }
+    return await res.json();
+}
 
 export async function getInfiniteScrollPosts(page: number = 3, size: number = 10) {
     const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/posts?page=${page}&size=${size}`, {
@@ -17,7 +65,7 @@ export async function getInfiniteScrollPosts(page: number = 3, size: number = 10
         throw new Error("무한 스크롤 포스트 데이터를 불러오는데 실패 하였습니다.");
     }
 
-    return response.json();
+    return await response.json();
 }
 
 export async function fetchSpecificUserPosts(blogId: string, token: string | null) {
@@ -32,16 +80,9 @@ export async function fetchSpecificUserPosts(blogId: string, token: string | nul
         },
     });
 
-    if (!res.ok && res.status === 401) {
-        console.error("fetchSpecificUserPosts 액세스 토큰 만료 분기 실행");
-        throw new Error("액세스 토큰 만료");
-    }
-
-    if (!res.ok) {
-        console.error("fetchSpecificUserPosts 서버측 오류로 인해 특정 사용자 게시글 목록 조회 실패");
-        throw new Error("서버측 오류로 인해 특정 사용자 게시글 목록 데이터를 불러오는데 실패하였습니다.");
-    }
-    return res.json();
+    //  await res.json();을 리턴하는 비동기 함수를 사용하기 위해선 아래처럼 다시 await 해주어야함
+    // 이유는 비동기 함수는 무조건 Promise를 리턴하기 때문에 자바스크립트 객체로서 사용하기 위해서 await 추가 해주어야 함
+    return await userPostListsAndSearchSuggestionsPageResponse(res, "fetchSpecificUserPosts");
 }
 
 export async function fetchSpecificUserPaginationPosts(blogId: string, pageNum: string, token: string | null) {
@@ -53,18 +94,7 @@ export async function fetchSpecificUserPaginationPosts(blogId: string, pageNum: 
         // next: { tags: ["posts-pagination"], revalidate: CacheTimes.MODERATE.POSTS_PAGINATION },
     });
 
-    if (!res.ok && res.status === 401) {
-        console.error("fetchSpecificUserPaginationPosts 액세스 토큰 만료 실행");
-        throw new Error("액세스 토큰 만료");
-    } else if (!res.ok && res.status === 404) {
-        console.error("fetchSpecificUserPaginationPosts 404에러 실행");
-        throw new Error("특정 사용자 페이지네이션 목록 데이터가 없습니다.");
-    } else if (!res.ok) {
-        console.error("fetchSpecificUserPaginationPosts 특정 사용자 페이지네이션 목록 데이터 조회 실패 실행");
-        throw new Error("특정 사용자 페이지네이션 목록 데이터를 불러오는데 실패하였습니다.");
-    }
-
-    return await res.json();
+    return await baseResponse(res, "fetchSpecificUserPaginationPosts");
 }
 
 // 사용자 카테고리 페이지 관련
@@ -83,18 +113,7 @@ export async function fetchSpecificUserCategoryPosts(blogId: string, categoryNam
         }
     );
 
-    if (!res.ok && res.status === 401) {
-        console.error("fetchSpecificUserCategoryPosts 액세스 토큰 만료 실행");
-        throw new Error("액세스 토큰 만료");
-    } else if (!res.ok && res.status === 404) {
-        console.error("fetchSpecificUserCategoryPosts 404에러 실행");
-        throw new Error("특정 사용자의 카테고리 목록 데이터가 없습니다.");
-    } else if (!res.ok) {
-        console.error("fetchSpecificUserCategoryPosts 특정 사용자의 카테고리 목록 데이터 조회 실패 실행");
-        throw new Error("특정 사용자의 카테고리 목록 데이터를 불러오는데 실패하였습니다.");
-    }
-
-    return await res.json();
+    return await baseResponse(res, "fetchSpecificUserCategoryPosts");
 }
 
 // 사용자 카테고리 페이지네이션 관련
@@ -110,18 +129,7 @@ export async function fetchSpecificUserCategoryPaginationPosts(blogId: string, c
         }
     );
 
-    if (!res.ok && res.status === 401) {
-        console.error("fetchSpecificUserCategoryPaginationPosts 액세스 토큰 만료 실행");
-        throw new Error("액세스 토큰 만료");
-    } else if (!res.ok && res.status === 404) {
-        console.error("fetchSpecificUserCategoryPaginationPosts 404에러 실행");
-        throw new Error("특정 사용자의 카테고리 페이지네이션 목록 데이터가 없습니다.");
-    } else if (!res.ok) {
-        console.error("fetchSpecificUserCategoryPaginationPosts 특정 사용자의 카테고리 페이지네이션 데이터 조회 실패 실행");
-        throw new Error("특정 사용자의 카테고리 페이지네이션 데이터를 불러오는데 실패하였습니다.");
-    }
-
-    return await res.json();
+    return await baseResponse(res, "fetchSpecificUserCategoryPaginationPosts");
 }
 
 export async function fetchPostDetail(blogId: string, postId: string, token: string | null) {
@@ -136,24 +144,11 @@ export async function fetchPostDetail(blogId: string, postId: string, token: str
         // }
     });
 
-    if (!res.ok && res.status === 401) {
-        console.error("fetchPostDetail  액세스 토큰 만료 실행");
-        throw new Error("액세스 토큰 만료");
-    } else if (!res.ok && res.status === 404) {
-        console.error(`fetchPostDetail ${postId} 404 에러 실행`);
-        throw new Error(`상세 페이지 ${postId} 게시글을 찾을 수 없습니다.`);
-        // return { success: false, error: "POST_NOT_FOUND", message: `상세 페이지 ${postId} 게시글을 찾을 수 없습니다.` };
-       //  redirect("/404"); notfound()는 작동이 안함 try/catch로 감싸고 있는 유무와 상관 없이
-    } else if (!res.ok) {
-        console.error("fetchPostDetail 서버측 오류로 특정 사용자 상세 페이지 게시글 데이터를 불러오는데 실패");
-        throw new Error("특정 사용자 상세 페이지 게시글 데이터를 불러오는데 실패하였습니다.");
-    }
-    return res.json();
+    return await baseResponse(res, "fetchPostDetail", postId);
 }
 
-// 수정 페이지는 AuthCheck에서 이미 블로그 주인 검증 및 리프레시 토큰을 이용한 액세스 토큰 재발급까지 끝냈기 때문에 해당 사용자만 요청할 수 있음. 따라서 액세스 토큰이 무조건 존재
-// 또한 얘를 실행하는 클라이언트 컴포넌트는 클라이언트 컴포넌트에서 임포트해서 실행하기 때문에 클라이언트 환경에서 실행
-// 또한 얘는 try catch로 감싸지 않기 때문에 여기서 throw new Error 를 던지면 바로 error.tsx로 전파
+// 수정 페이지는 AuthCheck에서 이미 블로그 주인 검증 및 리프레시 토큰을 이용한 액세스 토큰 재발급까지 끝냈기 때문에 해당 사용자만 요청할 수 있음. 따라서 401처리 필요 없고, 액세스 토큰이 무조건 존재
+// 클리이언트 컴포넌트에서 서버 액션 실행
 export async function fetchPostEditDetail(blogId: string, postId: string, token: string | null) {
     const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}${process.env.NEXT_PUBLIC_BACKEND_PATH}/${blogId}/posts/${postId}/edit`, {
         cache: "no-cache",
@@ -166,15 +161,7 @@ export async function fetchPostEditDetail(blogId: string, postId: string, token:
         // },
     });
 
-    if (!res.ok && res.status === 404) {
-        console.error(`fetchPostEditDetail 특정 사용자 수정 페이지 ${postId} 404 에러 실행`);
-        throw new Error(`수정 페이지 ${postId} 게시글을 찾을 수 없습니다.`);
-    } else if (!res.ok) {
-        console.error("fetchPostEditDetail 특정 사용자 수정 페이지 게시글 데이터를 불러오는데 실패");
-        throw new Error("서버측 오류로 인해 수정 페이지 데이터를 불러오는데 실패"); // 형식상 여기서 던지고 실제 처리는 클라이언트 컴포넌트에서 상태를 이용해서 에러 처리를 해야 error.tsx로 전달됨
-    }
-
-    return res.json();
+    return await editPageResponse(res, postId, "fetchPostEditDetail");
 }
 
 // 사용자 페이지 검색 결과
@@ -189,18 +176,7 @@ export async function searchPostsForUserPage(blogId: string, queryParams: string
         }
     );
 
-    if (!response.ok && response.status === 401) {
-        console.error("searchPostsForUserPage 액세스 토큰 만료 실행");
-        throw new Error("액세스 토큰 만료");
-    } else if (!response.ok && response.status === 404) {
-        console.error("특정 사용자 게시글 searchPostsForUserPage 404에러 실행");
-        throw new Error("특정 사용자 게시글 검색 결과가 없습니다.");
-    } else if (!response.ok) {
-        console.error("searchPostsForUserPage 특정 사용자 게시글 검색 조회 실패 실행");
-        throw new Error("특정 사용자 게시글 검색 데이터를 불러오는데 실패하였습니다");
-    }
-
-    return response.json();
+    return await baseResponse(response, "searchPostsForUserPage");
 }
 
 // 검색어 자동 완성
@@ -272,15 +248,8 @@ export async function getSearchSuggestions(
         );
     }
 
-    if (!res.ok && res.status === 401) {
-        console.error("getSearchSuggestions메서드 액세스 토큰 만료 실행");
-        throw new Error("액세스 토큰 만료");
-    } else if (!res.ok) {
-        console.error("getSearchSuggestions메서드 검색어 자동완성 실패");
-        throw new Error("검색어 자동완성 데이터를 불러오는데 실패하였습니다.");
-    }
-
-    const response = await res.json();
+    //userPostListsAndSearchSuggestionsPageResponse는 비동기 함수이기 때문에 무조건 await 필요. await 사용하지 않으면 promise 객체가 리턴됨
+    const response = await userPostListsAndSearchSuggestionsPageResponse(res, "getSearchSuggestions");
 
     return response.data.content.map(
         (item: any): SearchSuggestionProps => ({

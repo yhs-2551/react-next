@@ -63,55 +63,14 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
 
     const router = useRouter();
 
-    //   try {
-    //                 const response = await searchPostsForUserPage(blogId, queryParams, token);
-    //                 const { content, currentPage, totalPages, totalElements } = response.data;
-    //                 setSearchResults({ content, currentPage, totalPages, totalElements });
-    //             } catch (error: unknown) {
-    //                 if (error instanceof Error && error.message === "액세스 토큰 만료") {
-    //                     try {
-    //                         const newAccessToken = await refreshToken(); // 서버 액션에서 refreshToken을 호출하면 쿠키 전송이 안됨. refresh token을 use client쓰면 서버 액션 내에서 호출 불가
-    //                         if (newAccessToken) {
-    //                             const retryResponse = await searchPostsForUserPage(blogId, queryParams, newAccessToken);
-    //                             const { content, currentPage, totalPages, totalElements } = retryResponse.data;
-    //                             setSearchResults({ content, currentPage, totalPages, totalElements });
-    //                         }
-    //                     } catch (e: unknown) {
-    //                         if (e instanceof CustomHttpError && e.status === 401) {
-    //                             localStorage.removeItem("access_token");
-
-    //                             toast.error(
-    //                                 <span>
-    //                                     <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
-    //                                 </span>,
-    //                                 {
-    //                                     onClose: () => {
-    //                                         window.location.reload();
-    //                                     },
-    //                                 }
-    //                             );
-    //                         } else {
-    //                             throw e;
-    //                         }
-    //                     }
-    //                 } else {
-    //                     throw error; //  throw new Error("특정 사용자 게시글 검색 데이터를 불러오는데 실패하였습니다"); 를 던져서 error.tsx가 실행될 수 있도록
-    //                 }
-    //             } finally {
-    //                 setIsLoading(false);
-    //             }
-
     useEffect(() => {
         const fetchSuggestions = async () => {
             const token = localStorage.getItem("access_token");
 
-            try {
-                const data = await getSearchSuggestions(blogId, token, debouncedKeyword, searchType, categoryName, categoryNameByQueryParams);
-                const processedData = processSearchSuggestions(data);
+            const data = await getSearchSuggestions(blogId, token, debouncedKeyword, searchType, categoryName, categoryNameByQueryParams);
 
-                setSuggestions(processedData);
-            } catch (error: unknown) {
-                if (error instanceof Error && error.message === "액세스 토큰 만료") {
+            if (data.success === false) {
+                if (data.status === 401) {
                     try {
                         const newAccessToken = await refreshToken();
                         if (newAccessToken) {
@@ -123,6 +82,12 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
                                 categoryName,
                                 categoryNameByQueryParams
                             );
+
+                            if (retryData.success === false && retryData.status === 500) {
+                                // 검색어 자동완성은 500에러가 발생해도, ux를 위해 굳이 에러 페이지로 안넘기면서 로그만 찍음
+                                console.error("검색어 자동완성 데이터를 불러오는데 실패하였습니다.");
+                            }
+
                             const retryProcessedData = processSearchSuggestions(retryData);
                             setSuggestions(retryProcessedData);
                         }
@@ -131,7 +96,7 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
                             localStorage.removeItem("access_token");
                             toast.error(
                                 <span>
-                                    <span style={{ fontSize: "0.7rem" }}>{error.message}</span>
+                                    <span style={{ fontSize: "0.7rem" }}>{e.message}</span>
                                 </span>,
                                 {
                                     onClose: () => {
@@ -139,14 +104,16 @@ export default function SearchInput({ blogId, searchType, onSearch, categoryName
                                     },
                                 }
                             );
-                        } else {
-                            throw e;
                         }
                     }
                 } else {
-                    throw error;
+                    // 검색어 자동완성은 500에러가 발생해도, ux를 위해 굳이 에러 페이지로 안넘기면서 로그만 찍음
+                    console.error("검색어 자동완성 데이터를 불러오는데 실패하였습니다.");
                 }
             }
+
+            const processedData = processSearchSuggestions(data);
+            setSuggestions(processedData);
         };
 
         fetchSuggestions();
