@@ -43,6 +43,7 @@ interface AuthState {
     isShowOAuth2NewUserModal: boolean;
     tempOAuth2UserUniqueId: string;
     isOAuth2Redirect: boolean;
+    isUserLoggedOut: boolean;
     setShowLogin: (show: boolean) => void;
     setShowSignUp: (show: boolean) => void;
     setShowEmailVerification: (show: boolean) => void;
@@ -54,6 +55,7 @@ interface AuthState {
     setShowOAuth2NewUserModal: (status: boolean) => void;
     setTempOAuth2UserUniqueId: (id: string) => void;
     setOAuth2Redirect: (status: boolean) => void;
+    setUserLoggedOut: (status: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -68,6 +70,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     isShowOAuth2NewUserModal: false,
     tempOAuth2UserUniqueId: "",
     isOAuth2Redirect: false,
+    isUserLoggedOut: false,
     setShowLogin: (show) => set({ showLogin: show }),
     setShowSignUp: (show) => set({ showSignUp: show }),
     setShowEmailVerification: (show) => set({ showEmailVerification: show }),
@@ -79,6 +82,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     setShowOAuth2NewUserModal: (status) => set({ isShowOAuth2NewUserModal: status }),
     setTempOAuth2UserUniqueId: (id) => set({ tempOAuth2UserUniqueId: id }),
     setOAuth2Redirect: (status) => set({ isOAuth2Redirect: status }),
+    setUserLoggedOut: (status) => set({ isUserLoggedOut: status }),
 }));
 
 interface CategoryState {

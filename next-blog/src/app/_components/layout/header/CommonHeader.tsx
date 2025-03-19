@@ -25,7 +25,7 @@ interface UserPrivateProfile {
 export default function CommonHeader() {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
-    const { isInitialized, setShowLogin, isAuthenticated, setInitialized, setAuthenticated, setHeaderLogin } = useAuthStore();
+    const { isInitialized, setShowLogin, isAuthenticated, setInitialized, setAuthenticated, setHeaderLogin, setUserLoggedOut } = useAuthStore();
     const { blogName, profileImage, profileUpdate, setProfileUpdate } = userProfileStore();
 
     const [userPrivateProfile, setUserPrivateProfile] = useState<UserPrivateProfile>({
@@ -76,7 +76,7 @@ export default function CommonHeader() {
             }
         };
 
-        //isAuthenticated는 일반 form 로그인
+        //isAuthenticated는 일반 form 로그인, isInitialized는 OAuth2 로그인
         if (isInitialized || isAuthenticated) {
             // useEffect 내부가 아닌 외부에서 실행하면 서버사이드 렌더링에서 브라우저의 localStorage를 정의할 수 없다는 오류 발생.
             const accessToken = localStorage.getItem("access_token");
@@ -138,6 +138,7 @@ export default function CommonHeader() {
                     setAuthenticated(false);
                     setInitialized(false);
                     setIsUserMenuOpen(false);
+                    setUserLoggedOut(true);
                     // window.location.reload();
                 }
             } catch (error: any) {

@@ -12,7 +12,7 @@ import React, { useEffect, useState } from "react";
 
 import { useParams, useRouter } from "next/navigation";
 
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import { fetchIsAuthor, postStatusChange } from "@/services/api";
 
 import { FileMetadata, PostResponse } from "@/types/PostTypes";
@@ -42,7 +42,7 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
 
     const router = useRouter();
 
-    const { isInitialized } = useAuthStore();
+    const { isInitialized, isAuthenticated, isUserLoggedOut, setUserLoggedOut } = useAuthStore();
 
     const imageUrls = post.files?.map((file) => file.fileUrl) || [];
 
@@ -139,24 +139,32 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     //  액세스 토큰이 유효하다면 작성자 인지 확인하는 로직
     // 일부 React Hook 특히 useEffect는 React Strict mode에서 두 번 실행 함. 끄고 싶다면 next.config.mjs에서 스트릭트 모드 off 해야함.
     useEffect(() => {
-        if (isInitialized) {
-            const accessToken: string | null = localStorage.getItem("access_token");
+        const accessToken: string | null = localStorage.getItem("access_token");
 
-            if (!accessToken) return; // 비로그인 사용자 처리
-
-            const fetchAuthorStatus: () => Promise<void> = async (): Promise<void> => {
-                try {
-                    const isAuthor = await fetchIsAuthor(blogId, accessToken);
-
-                    if (isAuthor) setIsAuthor(isAuthor);
-                } catch (error) {
-                    console.error("작성자 확인 실패 오류: ", error);
-                }
-            };
-
-            fetchAuthorStatus();
+        // 비로그인 사용자 또는 기존 사용자가 로그아웃하고 상세 페이지에 다시 왔을 때 불필요하게 컴포넌트가 재실행되지 않기 위해서 아래처럼 처리
+        if (isUserLoggedOut && !accessToken) {
+            // 로그인된 사용자가 로그아웃 했을 때 처리
+            setIsAuthor(false);
+            setUserLoggedOut(false);
+            return;
         }
-    }, [isInitialized]);
+        if (!accessToken) {
+            return; // 비로그인 사용자 및 로그인된 사용자가 로그아웃하고 다시 상세페이지에 들어왔을때 처리
+        }
+
+        const fetchAuthorStatus: () => Promise<void> = async (): Promise<void> => {
+            try {
+                const isAuthor = await fetchIsAuthor(blogId, accessToken);
+
+                if (isAuthor) setIsAuthor(isAuthor);
+            } catch (error) {
+                console.error("작성자 확인 실패 오류: ", error);
+            }
+        };
+
+        fetchAuthorStatus();
+    }, [isInitialized, isAuthenticated]);
+
     useEffect(() => {
         let observer: MutationObserver;
 
@@ -236,32 +244,38 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     // 아래 toast, setTimeout 캐시 무효화 순서 저렇게 해야만 올바르게 작동함. 시간만 조정 가능
     const handleDelete: () => void = (): void => {
         const onSuccess = async (data: { message: string } | undefined, variables: void, context: unknown) => {
-            sessionStorage.setItem("isDeleting", "true");
+            
+            // isDeleting true 아래 코드 사용 안해도 일단 작동 잘하는데, 나중에 문제 없을 시 주석 삭제. 혹시 몰라서 남겨둠
+            // 아래 코드는 notfound.tsx와 연관이 있음 
+            // sessionStorage.setItem("isDeleting", "true");
 
             sessionStorage.removeItem("cached-users-posts");
 
-            toast.success(
-                <span>
-                    <span style={{ fontSize: "0.8rem", whiteSpace: "pre-line" }}>{data?.message || "게시글이 성공적으로 삭제되었습니다."}</span>
-                </span>,
-                {
-                    autoClose: 500,
-                }
-            );
+            await revalidatePostsAndCategories(blogId);
 
-            setTimeout(async () => {
-                await revalidatePostsAndCategories(blogId);
-                // await revalidateAllRelatedCaches(blogId);
-                // await revalidatePostDetailPage(blogId, postId);
-                // await revalidatePostEditPage(blogId, postId);
+            router.replace(`/${blogId}/posts`);
 
-                router.replace(`/${blogId}/posts`);
-            }, 1000);
 
-            // setTimeout(() => {
-            //     // window.location.replace(`/${blogId}/posts`);
+            // 토스트 사용 시 삭제 -> 토스트 메시지 나온 후 검정색 깜빡임 있는거 해결 안되어서 일단 토스트 안씀
+            // toast.success(
+            //     <span>
+            //         <span style={{ fontSize: "0.8rem", whiteSpace: "pre-line" }}>{data?.message || "게시글이 성공적으로 삭제되었습니다."}</span>
+            //     </span>,
+            //     {
+            //         autoClose: 500,
+            //     }
+            // );
+
+            // setTimeout(async () => {
+            //     await revalidatePostsAndCategories(blogId);
+            //     // await revalidateAllRelatedCaches(blogId);
+            //     // await revalidatePostDetailPage(blogId, postId);
+            //     // await revalidatePostEditPage(blogId, postId);
+
             //     router.replace(`/${blogId}/posts`);
-            // }, 2500);
+            // }, 1000);
+
+         
         };
 
         const onError = (error: unknown) => {
@@ -321,9 +335,11 @@ function BlogDetail({ initialData, postId }: { initialData: PostResponse; postId
     };
 
     // 아래 ToastProvider 최상위 layout에 있는데, 삭제시에 toast가 작동을 안해서 아래와 같이 추가하니까 작동
+    // 현재는 토스트 사용시 삭제할 때 검정 깜빡임 문제 때문에 ToastProvider 주석 처리 
     return (
         <>
-            <ToastProvider />
+     
+             {/* <ToastProvider /> */}
 
             <div className='container mx-auto mt-[120px] max-w-4xl'>
                 {/* Category and Date */}

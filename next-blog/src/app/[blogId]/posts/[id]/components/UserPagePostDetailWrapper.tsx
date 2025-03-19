@@ -39,6 +39,7 @@ export default function UserPagePostDetailWrapper({ blogId, postId }: { blogId: 
                 const token = localStorage.getItem("access_token");
 
                 const response = await fetchPostDetail(blogId, postId, token);
+
                 setPost(response.data);
             } catch (error: unknown) {
                 if (error instanceof Error && error.message === "액세스 토큰 만료") {

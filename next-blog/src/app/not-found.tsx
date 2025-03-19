@@ -3,20 +3,21 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 export default function NotFound() {
-    
-    const [isDeleting, setIsDeleting] = useState(false);
     const router = useRouter();
 
-    useEffect(() => {
-        const deleteStatus = sessionStorage.getItem("isDeleting") === "true";
-        setIsDeleting(deleteStatus);
-    }, []);
+    // 아래 주석 처리해도 작동 잘 되는 것 같음. 후에 문제 안생기면 주석 삭제
+    // const [isDeleting, setIsDeleting] = useState(false);
 
-    if (isDeleting) {
-        return null;
-    }
+    // useEffect(() => {
+    //     const deleteStatus = sessionStorage.getItem("isDeleting") === "true";
+    //     setIsDeleting(deleteStatus);
+    // }, []);
+
+    // if (isDeleting) {
+
+    //     return null;
+    // }
 
     return (
         // z-index를 통해 common header를 가리도록 설정

@@ -25,7 +25,8 @@ export default function RootLayout({
     return (
         <html lang='en'>
             <body className={inter.className}>
-                <ToastProvider />
+                {/* 전역 토스트 프로바이더 제대로 작동 안해서 안써도 될 것 같긴 한데 일단 보류  */}
+                <ToastProvider /> 
                 <AuthProvider />
                 <div className='page-wrapper min-h-screen flex flex-col'>
                     <CommonHeader />

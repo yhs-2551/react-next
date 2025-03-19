@@ -331,6 +331,9 @@ const Category: React.FC = () => {
     };
     const renderCategoryOptions = (categories: CategoryType[], level: number = 0) => {
         const isDisabled = (category: CategoryType) => {
+            // 선택된 카테고리의 직속 부모로 이동 비활성화. 현재 해당 직속 부모에 속해있기 때문에 활성화 할 필요x
+            if (selectedCategory?.categoryUuidParent === category.categoryUuid) return true;
+
             // 선택된 카테고리 자체를 비활성화
             if (category.categoryUuid === selectedCategory?.categoryUuid) return true;
 

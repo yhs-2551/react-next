@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/appStore";
 import EmptyState from "@/app/_components/search/EmptyState";
 import { FiFileText } from "react-icons/fi";
 import { useParams, useSearchParams } from "next/navigation";
+import { extractImageFromPost } from "@/utils/extractImageFromHtml";
 
 interface BlogListProps {
     initialData: PostResponse[];
@@ -80,7 +81,7 @@ function BlogList({ initialData, keyword, isSearch, totalElements }: BlogListPro
                             categoryName={post.categoryName}
                             postStatus={post.postStatus}
                             thumbnailUrl={
-                                post.featuredImageUrl ||
+                                extractImageFromPost(post) ||
                                 "https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/default-featured-image.jpg"
                             }
                         />

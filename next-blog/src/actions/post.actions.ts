@@ -142,6 +142,7 @@ export async function fetchPostDetail(blogId: string, postId: string, token: str
     } else if (!res.ok && res.status === 404) {
         console.error(`fetchPostDetail ${postId} 404 에러 실행`);
         throw new Error(`상세 페이지 ${postId} 게시글을 찾을 수 없습니다.`);
+        // return { success: false, error: "POST_NOT_FOUND", message: `상세 페이지 ${postId} 게시글을 찾을 수 없습니다.` };
        //  redirect("/404"); notfound()는 작동이 안함 try/catch로 감싸고 있는 유무와 상관 없이
     } else if (!res.ok) {
         console.error("fetchPostDetail 서버측 오류로 특정 사용자 상세 페이지 게시글 데이터를 불러오는데 실패");
