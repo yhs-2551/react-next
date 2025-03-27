@@ -1,30 +1,22 @@
-# React + TypeScript + Vite
+## React & TypeScript 기반 이커머스 프로젝트 (연습 및 학습용)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React와 TypeScript를 활용한 이커머스 웹 애플리케이션 학습용 프로젝트입니다. Vite를 기반으로 작성되었으며 상품 목록, 상세 페이지, 필터링 기능 등을 제공합니다.
 
-Currently, two official plugins are available:
+**기술 스택**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+*   **프론트엔드:** React, TypeScript
+*   **빌드 도구:** Vite
+*   **라우팅:** React Router
+*   **스타일링:** Tailwind CSS
+*   **상태 관리:** React Context API
+*   **아이콘:** Lucide icon
 
-## Expanding the ESLint configuration
+**주요 기능**
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json', './tsconfig.app.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
-
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+*   상품 목록 표시
+*   카테고리별 필터링
+*   가격별 정렬
+*   검색 기능
+*   상품 상세 페이지
+*   인기 판매자 5명 노출
+*   기타

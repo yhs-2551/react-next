@@ -1,30 +1,29 @@
-# React + TypeScript + Vite
+## React를 사용한 사진 갤러리 앱 (PhotoSplash, 연습 및 학습용)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Unsplash API를 활용하여 이미지를 검색하고 북마크할 수 있는 웹 애플리케이션입니다.
 
-Currently, two official plugins are available:
+**기술 스택**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+-   **프론트엔드:** React, TypeScript
+-   **빌드 도구:** Vite
+-   **라우팅:** React Router
+-   **스타일링:** SCSS Modules
+-   **상태 관리:** Recoil
+-   **HTTP 클라이언트:** Axios
+-   **알림:** react-simple-toasts
+-   **데이터 처리:** match-sorter, sort-by
+-   **데이터 저장:** localforage
 
-## Expanding the ESLint configuration
+**주요 기능**
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json', './tsconfig.app.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
-
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+-   **이미지 갤러리**
+    -   그리드 형태의 이미지 레이아웃
+-   **이미지 검색**
+    -   키워드 기반 검색
+-   **페이지네이션**
+    -   이미지 목록 페이지 단위 탐색
+-   **이미지 상세 정보**
+    -   모달 형식 상세 정보 표시
+-   **북마크 기능**
+    -   이미지 즐겨찾기 저장
+    -   북마크 목록 별도 관리
