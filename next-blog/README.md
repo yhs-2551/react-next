@@ -9,10 +9,6 @@ Next.js와 TypeScript를 활용한 다중 사용자 처리 블로그 프로젝�
 - 그 외 기타 기능
 
 **관련 백엔드 Github 저장소:** [blog-backend](https://github.com/yhs-2551/spring-boot/tree/main/blog-springboot-jpa)
- 
-**데모 서비스:**  [dduhalog](
-https://dduhalog.duckdns.org/)
-
 
 **기술 스택**
 
