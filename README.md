@@ -21,3 +21,7 @@
     *   **react-ecommerce**
         *   **기술 스택:** React, TypeScript, Vite, Tailwind CSS, React Router, Axios
         *   **설명:** 간단한 이커머스 웹 애플리케이션으로, 상품 목록 표시, 카테고리/가격별 필터링, 상품 상세 페이지, 탑5 판매자 등의 기능을 제공합니다.
+    *    **react-chatapp**
+        *   **기술 스택:** Vite, React, React Router, Tailwind CSS, TypeScript, Zustand, Axios, react-hot-toast, daysiUI, lucide-icon
+        *   **설명:** 간단한 채팅 웹 애플리케이션으로, 1:1 채팅 기능, 다양한 테마 선택, 온라인/비온라인 사용자 구분등의 기능을 제공합니다.
+
