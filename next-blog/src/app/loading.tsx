@@ -1,9 +1,4 @@
-interface GlobalLoadingProps {
-    type?: "auth" | "default";
-    message?: string;
-}
-
-export default function GlobalLoading({ type = "default", message }: GlobalLoadingProps) {
+export default function GlobalLoading() {
     // 추후 주석 삭제 예정
     // if (type === "auth" || message) {
     //     return (

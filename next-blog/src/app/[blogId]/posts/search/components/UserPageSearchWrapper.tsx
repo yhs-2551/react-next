@@ -4,9 +4,9 @@ import { Suspense, useEffect, useState } from "react";
 import BlogList from "../../components/BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { PostsReadBaseProps } from "@/types/PostTypes";
-import GlobalLoading from "@/app/loading";
 import { useRouter } from "next/navigation";
 import { FetchWithAuth } from "@/utils/FetchWithAuth";
+import BlogLoading from "@/app/[blogId]/loading";
 
 interface SearchWrapperProps {
     blogId: string;
@@ -75,7 +75,7 @@ export default function UserPageSearchWrapper({ blogId, searchParams }: SearchWr
         return <BlogList initialData={[]} isSearch={true} />;
     }
 
-    if (isLoading) return <GlobalLoading />;
+    if (isLoading) return <BlogLoading />;
 
     if (authError) {
         throw authError;

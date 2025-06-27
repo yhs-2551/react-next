@@ -4,9 +4,9 @@ import { Suspense, useEffect, useState } from "react";
 import BlogList from "./BlogList";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { PostsReadBaseProps } from "@/types/PostTypes";
-
-import GlobalLoading from "@/app/loading";
+ 
 import { FetchWithAuth } from "@/utils/FetchWithAuth";
+import BlogLoading from "../../loading";
 
 export default function UserPagePostListWrapper({ blogId }: { blogId: string }) {
     const [posts, setPosts] = useState<PostsReadBaseProps>({
@@ -34,7 +34,7 @@ export default function UserPagePostListWrapper({ blogId }: { blogId: string }) 
         });
     }, [blogId]);
 
-    if (isLoading) return <GlobalLoading />;
+    if (isLoading) return <BlogLoading />;
 
     if (authError) {
         throw authError;

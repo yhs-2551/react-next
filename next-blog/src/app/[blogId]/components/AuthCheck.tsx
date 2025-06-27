@@ -6,11 +6,11 @@ import { useEffect, useState } from "react";
 
 import { useAuthStore } from "@/store/appStore";
 
-import GlobalLoading from "@/app/loading";
-
 import { fetchIsAuthor } from "@/services/api";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { toast } from "react-toastify";
+
+import BlogLoading from "../loading";
 
 // 여기에 블로그 주인 유무 확인해서 error.tsx 컴포넌트를 호출하는데, 호출하는 찰나의 순간에 해당 블로그의 content가 살짝 보이는 현상 발생.
 // 어차피 다른 사용자도 볼 수 있는 데이터라 직접적인 수정을 하는거 아니면 상관x, 나중에 보안이 중요한 데이터가 발생시 이전 방식 or 다른 방식으로 수정 고려
@@ -77,7 +77,7 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
     }, [isHeaderLogin, pathBlogId, isAuthenticated, isInitialized]);
 
     if (isChecking) {
-        return <GlobalLoading type='auth' message='사용자 권한 확인 중...' />;
+        return <BlogLoading />;
     }
 
     if (authError) {

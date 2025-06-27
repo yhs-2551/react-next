@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PostResponse } from "@/types/PostTypes";
-import GlobalLoading from "@/app/loading";
+import { PostResponse } from "@/types/PostTypes"; 
 import ClientWrapper from "@/providers/ClientWrapper";
 import BlogDetail from "./BlogDetail";
 import { useRouter } from "next/navigation";
 import { FetchWithAuth } from "@/utils/FetchWithAuth";
+import BlogLoading from "@/app/[blogId]/loading";
 
 export default function UserPagePostDetailWrapper({ blogId, postId }: { blogId: string; postId: string }) {
     const [post, setPost] = useState<PostResponse>({
@@ -39,7 +39,7 @@ export default function UserPagePostDetailWrapper({ blogId, postId }: { blogId: 
         });
     }, [blogId]);
 
-    if (isLoading) return <GlobalLoading />;
+    if (isLoading) return <BlogLoading />;
 
     if (authError) {
         throw authError;

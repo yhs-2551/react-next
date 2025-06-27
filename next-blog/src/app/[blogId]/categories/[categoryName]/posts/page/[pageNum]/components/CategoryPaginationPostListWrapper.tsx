@@ -2,11 +2,11 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Pagination from "@/app/_components/pagination/Pagination";
-import { PostsReadBaseProps } from "@/types/PostTypes";
-import GlobalLoading from "@/app/loading";
+import { PostsReadBaseProps } from "@/types/PostTypes"; 
 import BlogList from "@/app/[blogId]/posts/components/BlogList";
 import { useRouter } from "next/navigation";
 import { FetchWithAuth } from "@/utils/FetchWithAuth";
+import BlogLoading from "@/app/[blogId]/loading";
 
 export default function CategoryPaginationPostListWrapper({
     blogId,
@@ -50,7 +50,7 @@ export default function CategoryPaginationPostListWrapper({
         });
     }, [blogId]);
 
-    if (isLoading) return <GlobalLoading />;
+    if (isLoading) return <BlogLoading />;
 
     if (authError) {
         throw authError;

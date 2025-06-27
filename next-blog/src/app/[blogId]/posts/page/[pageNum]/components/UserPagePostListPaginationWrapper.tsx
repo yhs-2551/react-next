@@ -3,10 +3,10 @@
 import { Suspense, useEffect, useState } from "react";
 import Pagination from "@/app/_components/pagination/Pagination";
 import { PostsReadBaseProps } from "@/types/PostTypes";
-import GlobalLoading from "@/app/loading";
 import BlogList from "../../../components/BlogList";
 import { useRouter } from "next/navigation";
 import { FetchWithAuth } from "@/utils/FetchWithAuth";
+import BlogLoading from "@/app/[blogId]/loading";
 
 export default function UserPagePostListPaginationWrapper({ blogId, pageNum }: { blogId: string; pageNum: string }) {
     const [posts, setPosts] = useState<PostsReadBaseProps>({
@@ -38,7 +38,7 @@ export default function UserPagePostListPaginationWrapper({ blogId, pageNum }: {
         });
     }, [blogId]);
 
-    if (isLoading) return <GlobalLoading />;
+    if (isLoading) return <BlogLoading />;
 
     if (authError) {
         throw authError;
