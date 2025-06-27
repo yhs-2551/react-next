@@ -77,7 +77,7 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
     }, [isHeaderLogin, pathBlogId, isAuthenticated, isInitialized]);
 
     if (isChecking) {
-        return <GlobalLoading type='auth' message='사용자 인증 진행 중...' />;
+        return <GlobalLoading type='auth' message='사용자 권한 확인 중...' />;
     }
 
     if (authError) {

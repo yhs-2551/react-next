@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from "react";
 import CommonSideNavigation from "@/app/_components/layout/sidebar/CommonSideNavigation";
 import { useDebounce } from "use-debounce";
 import { userProfileStore } from "@/store/appStore";
-import { ClipLoader } from "react-spinners";
+import { RingLoader } from "react-spinners";
 import useUpdateProfile from "@/customHooks/useUpdateProfile";
 import { CustomHttpError } from "@/utils/CustomHttpError";
 import { toast } from "react-toastify";
@@ -292,7 +292,7 @@ const UserManage = () => {
                             }`}
                             onClick={handleSave}
                         >
-                            {isLoading ? <ClipLoader color='#ffffff' size={20} /> : updateSuccess ? "저장 완료" : "변경사항 저장"}
+                            {isLoading ? <RingLoader color='#ffffff' size={20} /> : updateSuccess ? "저장 완료" : "변경사항 저장"}
                         </button>
                     </div>
                 </section>

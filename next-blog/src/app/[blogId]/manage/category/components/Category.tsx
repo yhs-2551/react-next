@@ -3,7 +3,7 @@
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import ClipLoader from "react-spinners/ClipLoader";
+import { RingLoader } from "react-spinners";
 
 import { TbCategory } from "react-icons/tb";
 
@@ -35,8 +35,7 @@ import CommonSideNavigation from "@/app/_components/layout/sidebar/CommonSideNav
 import { useCategoryStore } from "@/store/appStore";
 import { revalidateCategories } from "@/actions/revalidate";
 import { CustomHttpError } from "@/utils/CustomHttpError";
-import { revalidatePath } from "next/cache";
-import ToastProvider from "@/providers/ToastProvider";
+ import ToastProvider from "@/providers/ToastProvider";
 
 // 컴포넌트 외부에 헬퍼 함수 정의
 const buildCategoryTree = (categories: CategoryType[]): CategoryType[] => {
@@ -625,7 +624,7 @@ const Category: React.FC = () => {
                                 {createCategoryMutation.isSuccess && !createCategoryMutation.isPending ? (
                                     "저장 완료"
                                 ) : createCategoryMutation.isPending ? (
-                                    <ClipLoader color='#ffffff' size={20} />
+                                    <RingLoader color='#ffffff' size={20} />
                                 ) : (
                                     "변경사항 저장"
                                 )}

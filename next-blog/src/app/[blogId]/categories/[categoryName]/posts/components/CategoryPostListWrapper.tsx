@@ -2,11 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Pagination from "@/app/_components/pagination/Pagination";
-import { fetchSpecificUserCategoryPosts } from "@/actions/post.actions";
 import { PostsReadBaseProps } from "@/types/PostTypes";
-import { refreshToken } from "@/services/api";
-import { CustomHttpError } from "@/utils/CustomHttpError";
-import { toast } from "react-toastify";
 import GlobalLoading from "@/app/loading";
 import BlogList from "@/app/[blogId]/posts/components/BlogList";
 import { useRouter } from "next/navigation";

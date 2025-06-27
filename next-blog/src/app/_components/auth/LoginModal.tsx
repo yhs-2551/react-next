@@ -1,6 +1,8 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import NextImage from "next/image";
+
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useDebounce } from "use-debounce";
@@ -10,12 +12,10 @@ import { FcGoogle } from "react-icons/fc";
 import { loginUser } from "@/services/api";
 
 import { useAuthStore } from "@/store/appStore";
-import { CustomHttpError } from "@/utils/CustomHttpError"; 
+import { CustomHttpError } from "@/utils/CustomHttpError";
 
 import { HiEye } from "react-icons/hi";
 import { HiEyeOff } from "react-icons/hi";
-
-
 
 export interface LoginFormData {
     email: string;
@@ -120,7 +120,6 @@ function LoginModal() {
 
             setTimeout(() => {
                 setAuthenticated(true);
-
             }, 350);
         } catch (error: unknown) {
             if (error instanceof CustomHttpError) {
@@ -181,13 +180,16 @@ function LoginModal() {
                     >
                         {/* 왼쪽 부분 - 이미지와 텍스트 */}
                         <div className='flex flex-col items-center justify-center w-1/2 p-6 bg-gray-100 rounded-l-lg'>
-                            {/* <Image
-                                src='/profile.png'
-                                width={150}
-                                height={150}
-                                alt='환영 이미지'
-                            /> */}
-                            <h2 className='mt-4 text-xl font-semibold text-gray-800'>환영합니다!</h2>
+                            <NextImage
+                                src='https://iceamericano-blog-storage.s3.ap-northeast-2.amazonaws.com/default/baby-tiger.png'
+                                width={256}
+                                height={256}
+                                alt='환영합니다 아기사자 이미지'
+                                quality={100}
+                                sizes='(max-width: 160px) 100vw, 256px'
+                                className='w-60 h-60'
+                            />
+                            <h2 className='mt-8 text-2xl font-semibold text-gray-800'>환영합니다!</h2>
                         </div>
 
                         {/* 오른쪽 부분 - 로그인 폼 */}
