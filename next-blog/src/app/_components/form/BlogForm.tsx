@@ -440,7 +440,7 @@ function BlogForm({ initialData, postId }: { initialData?: PostResponse; postId?
                     </div>
                 </fieldset>
 
-                <div className='fixed bottom-0 left-0 right-0 bg-gray-50 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] px-6 py-4 z-[1300]'>
+                <div className='sm:px-36 fixed bottom-0 left-0 right-0 bg-gray-50 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] px-16 py-4 z-[1300]'>
                     <div className='max-w-screen-xl mx-auto flex justify-between items-center'>
                         <button
                             type='button'

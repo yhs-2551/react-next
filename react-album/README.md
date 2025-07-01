@@ -1,6 +1,6 @@
-## React를 사용한 사진 갤러리 앱 (PhotoSplash, 연습 및 학습용)
+## React를 사용한 사진 갤러리 앱 (PhotoSplash)
 
-Unsplash API를 활용하여 이미지를 검색하고 북마크할 수 있는 웹 애플리케이션입니다.
+Unsplash API를 활용하여 이미지를 검색하고 북마크할 수 있는 웹 앱.
 
 **기술 스택**
 

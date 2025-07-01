@@ -1,8 +1,7 @@
 # React를 활용한 Chat App
 
-React와 Node.js 기반의 실시간 채팅 애플리케이션.
-
- Socket.IO를 활용하여 실시간 메시지 전송 기능을 구현.
+React와 Node.js 기반의 실시간 채팅 실습용 프로젝트.
+Socket.IO를 활용하여 실시간 메시지 전송 기능을 구현.
 ## 기술 스택
 
 ### 프론트엔드
@@ -46,4 +45,6 @@ src/
 ## 백엔드 연동
 
 이 프로젝트는 node.js 백엔드 서버와 함께 작동 하며,
-백엔드 서버 코드는 node/chatapp 저장소에서 확인할 수 있다. 
+백엔드 서버 코드는 node/chatapp 저장소에서 확인할 수 있음. 
+
+**관련 백엔드:** [node.js-backend](https://github.com/yhs-2551/node/tree/main/chatapp)
